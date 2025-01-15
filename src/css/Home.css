@@ -1,7 +1,9 @@
 body {
     margin: 0;
     padding: 0;
-    font-family: "Arial", sans-serif;
+    font-family: "Barlow Condensed", serif;
+    font-weight: 400;
+    font-style: normal;
     color: #365e32;
     background-color: #f7f4ea;
     box-sizing: border-box;
@@ -15,8 +17,8 @@ body {
   .home-header {
     text-align: center;
     padding: 50px 20px;
-    background-color: #365e32;
-    color: #ffffff;
+    /* background-color: #e0e6df; */
+    color: #2f572a;
   }
   
   .home-title {
@@ -112,4 +114,50 @@ body {
     font-size: 1rem;
     color: #6b705c;
   }
+
+  /* carousel de imagines */
+
+  h3 {
+    font-size: 4rem;
+  }
+
+  p.carousel {
+    font-size: 2rem;
+  }
+
+  img.carousel {
+    filter: brightness(60%);
+    padding-top: 1.5rem;
+  }
+
+  /* bidrwatching container */
+
+  .birdwatching {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+    /* background-color: #e0e6df; */
+
+  }
+  .birdwatching h4 {
+    padding-top: 25%;
+    font-size: 3rem;
+  }
+
+  .birdwatching p {
+    font-size: 1.5rem;
+    padding-top: 1rem;
+  }
+
+  .accomodations {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .accomodations p{
+    padding-top: 40%;
+  }
+
+ 
+
+
   

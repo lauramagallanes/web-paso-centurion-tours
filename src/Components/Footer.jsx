@@ -7,7 +7,7 @@ import "../css/Footer.css"
 
 const Footer = () => {
   return (
-    <Container className='footer'>
+    <Container fluid className='footer'>
       <Row>
         <Col>Contacto: +598 98394653</Col>
         <Col>email: pasocenturiontours@gmail.com</Col>

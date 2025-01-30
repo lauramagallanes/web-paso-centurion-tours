@@ -1,0 +1,22 @@
+export const images = {
+    surucua: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN1434.JPG",
+    paisaje1: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN0716.JPG",
+    paisaje2: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN0710.JPG",
+    paisajeRocoso: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN0810.JPG",
+    grupoPersonas: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN1803.JPG",
+    yerbalito: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN1810.JPG",
+    personasFotografiando: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN1985.JPG",
+    picochato: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN2094.JPG",
+    paisajeYGente: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN2145.JPG",
+    mosquetaCoronaOliva: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN2186.JPG",
+    grupoPersonas2: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN2227.JPG",
+    carpinteritoEnano: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN2401.jpg",
+    trepadorOscuro: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN2992.jpg",
+    bataraPintado: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN4949+(2).jpg",
+    paisajePalmeras: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN4993.JPG",
+    picoleznaEstriado: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN5172.JPG",
+    seriema: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN5964.JPG",
+    aperea: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN6047.JPG",
+    pirinchoDeMonte: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN6884.JPG",
+    ocaso: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN7425.JPG"
+}

@@ -1,10 +1,13 @@
-body {
+body, html {
     margin: 0;
     padding: 0;
-    font-family: "Arial", sans-serif;
+    font-family: "Barlow Condensed", serif;
+    font-weight: 400;
+    font-style: normal;
     color: #365e32;
     background-color: #f7f4ea;
     box-sizing: border-box;
+    width: 100%;
   }
   
   .home-container {
@@ -15,8 +18,8 @@ body {
   .home-header {
     text-align: center;
     padding: 50px 20px;
-    background-color: #365e32;
-    color: #ffffff;
+    /* background-color: #e0e6df; */
+    color: #2f572a;
   }
   
   .home-title {
@@ -82,8 +85,9 @@ body {
   
   /* Features Section */
   .home-features {
-    display: flex;
-    justify-content: space-around;
+    display:block;
+    /* justify-content: space-around; */
+    text-align: center;
     gap: 20px;
     padding: 40px 5%;
     background-color: #f7f4ea;
@@ -112,4 +116,69 @@ body {
     font-size: 1rem;
     color: #6b705c;
   }
+
+  /* carousel de imagines */
+
+  h3 {
+    font-size: 4rem;
+  }
+
+  p.carousel {
+    font-size: 2rem;
+  }
+
+  img.carousel {
+    filter: brightness(60%);
+    padding-top: 1.5rem;
+  }
+
+  /* bidrwatching container */
+
+  .birdwatching {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+    /* background-color: #e0e6df; */
+
+  }
+  .birdwatching h4 {
+    /* padding-top: 25%; */
+    font-size: 3rem;
+  }
+
+  .birdwatching p {
+    font-size: 1.5rem;
+    padding-top: 1rem;
+  }
+
+  .accomodations {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  
+
+  /* rounded-img */
+
+  .rounded-img {
+    border-radius: 15px; /* Bordes redondeados */
+      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Sombra suave */
+      width: 100%; /* Ajusta la imagen al ancho de la etiqueta */
+      height: auto; /* Mantiene las proporciones */
+      display: block; /* Asegura que respete márgenes y alineación */
+  }
+
+  .left-content {
+    padding-right: 3rem;
+    margin-left: -4rem;
+  }
+  .right-content {
+    padding-left: 3rem;
+    margin-right: -6rem;
+  }
+
+ 
+
+
   

@@ -1,83 +1,72 @@
+
+
+import ImageCarousel from "../Components/imageCarousel"
 import "../css/Home.css"
+import { images } from "../utils/images"
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import PhotoGallery from "../Components/PhotoGallery";
 
 const Home = () => {
+
+  const sizes = ["large", "wide", "tall", ""]
+  const photoArray = Object.entries(images).map(([key, value], index) => ({
+    src: value,
+    alt: key.replace(/([A-Z])/g, " $1").trim(),
+    size: sizes[index % sizes.length],
+  }))
   return (
     <main className="home-container">
     <header className="home-header" aria-labelledby="main-title">
       <h1 id="main-title" className="home-title">
-        Paso Centurión
+        Tinambú - Paso Centurión
       </h1>
-      <p className="home-subtitle">
-        Un santuario natural para amantes del eco y aviturismo.
-      </p>
+      <h2>(Pagina en construcción)</h2>
+      <ImageCarousel/>
     </header>
 
-    <section className="home-hero" aria-labelledby="hero-title">
-      <div className="home-hero-content">
-        <h2 id="hero-title" className="home-hero-title">
-          Explora la Naturaleza
-        </h2>
-        <p className="home-hero-text">
-          Sumérgete en la riqueza de Paso Centurión. Desde aves exóticas hasta
-          paisajes que inspiran paz, vive una experiencia inolvidable rodeado
-          de biodiversidad.
-        </p>
-        <button className="home-cta-button" aria-label="Descubre más sobre Paso Centurión">
-          Descubre más
-        </button>
-      </div>
-      <img
-        src="https://source.unsplash.com/featured/?nature,landscape"
-        alt="Un paisaje natural de Paso Centurión con montañas y vegetación exuberante."
-        className="home-hero-image"
-      />
+    <section className="birdwatching" aria-labelledby="hero-title">
+    <Container>
+      <Row>
+        <Col className="left-content">
+          <h4>Birdwatching Observación de aves</h4>
+          <p>Paso Centurion es uno de los mejores lugares del uruguay para observar aves, con mas de 280 especies registradas, entre las que destacan el Surucuá, el Batará Pintado, la Perdiz de Monte, y el Anambé Grande</p>
+        </Col>
+        <Col className="right-content">
+          <img src={images.bataraPintado} alt="batara pintado" style={{maxWidth: "70%"}} className="rounded-img"/>
+        </Col>
+        
+      </Row>
+      <Row className="accomodations">
+        
+        <Col className="left-content">
+          <img src={images.ocaso} alt="alojamiento en Tinambú" style={{maxWidth: "100%"}} className="rounded-img"/>
+        </Col>
+        <Col className="right-content">
+          <h4>Alojamiento</h4>
+          <p>Habitacion contruida en barro con techo vivo</p>
+          <p>Capacidad para hasta 4 personas</p>
+          <p>Acceso a observatorio de aves</p>
+        </Col>
+      </Row>
+      <Row classname="senderismo">
+        <Col className="left-content">
+          <h4>Senderismo</h4>
+          <p>Paso Centurion es uno de los mejores lugares del uruguay para observar aves, con mas de 280 especies registradas, entre las que destacan el Surucuá, el Batará Pintado, la Perdiz de Monte, y el Anambé Grande</p>
+        </Col>
+        <Col className="right-content">
+          <img src={images.grupoPersonas2} alt="senderismo en Rio Yaguarón" style={{maxWidth: "70%"}} className="rounded-img"/>
+        </Col>
+        
+      </Row>
+    </Container>
     </section>
 
     <section className="home-features" aria-labelledby="features-title">
-      <h2 id="features-title" className="home-section-title">
-        Descubre lo que tenemos para ti
-      </h2>
-      <div className="home-feature" role="article" aria-labelledby="feature-1-title">
-        <img
-          src="https://source.unsplash.com/featured/?birds"
-          alt="Aves exóticas en su hábitat natural."
-          className="home-feature-image"
-        />
-        <h3 id="feature-1-title" className="home-feature-title">
-          Aves Únicas
-        </h3>
-        <p className="home-feature-text">
-          Descubre especies exclusivas como el Trogon surrucura en su entorno
-          natural.
-        </p>
-      </div>
-      <div className="home-feature" role="article" aria-labelledby="feature-2-title">
-        <img
-          src="https://source.unsplash.com/featured/?forest"
-          alt="Bosques nativos en Paso Centurión."
-          className="home-feature-image"
-        />
-        <h3 id="feature-2-title" className="home-feature-title">
-          Bosques Nativos
-        </h3>
-        <p className="home-feature-text">
-          Camina entre paisajes intactos que cuentan la historia de nuestro
-          ecosistema.
-        </p>
-      </div>
-      <div className="home-feature" role="article" aria-labelledby="feature-3-title">
-        <img
-          src="https://source.unsplash.com/featured/?hiking"
-          alt="Senderos guiados por Paso Centurión."
-          className="home-feature-image"
-        />
-        <h3 id="feature-3-title" className="home-feature-title">
-          Senderismo Guiado
-        </h3>
-        <p className="home-feature-text">
-          Aventúrate por rutas impresionantes acompañado de guías locales.
-        </p>
-      </div>
+      <h3>Galeria</h3>
+      
+      <PhotoGallery photos={photoArray} />
     </section>
 
     <script type="application/ld+json">

@@ -2,7 +2,7 @@
 
 const Context = () => {
   return (
-    <div>Context</div>
+    <div></div>
   )
 }
 

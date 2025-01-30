@@ -1,6 +1,6 @@
 
 
-import ImageCarousel from "../Components/imageCarousel"
+import ImageCarousel from "../Components/ImageCarousel"
 import "../css/Home.css"
 import { images } from "../utils/images"
 import Container from 'react-bootstrap/Container';

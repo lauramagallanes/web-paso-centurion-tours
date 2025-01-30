@@ -1,11 +1,38 @@
 .footer {
     background-color: rgb(41, 33, 33);
     color: antiquewhite;
-    padding-top: 2rem;
-    padding-bottom: 1rem;
-    padding-left: 1rem;
+    padding: 2rem 1rem;
     font-size: 1.2rem;
-    width: auto;
-    
+    text-align: center; /* Centrar texto en pantallas pequeñas */
+}
 
+.footer .row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem; /* Espaciado entre columnas */
+}
+
+.footer .col {
+    flex: 1;
+    min-width: 200px; /* Evita que se vuelvan demasiado estrechos */
+    text-align: center; /* Centra el contenido */
+}
+
+/* Ajustes para pantallas más pequeñas */
+@media (max-width: 768px) {
+    .footer {
+        font-size: 1rem;
+        padding: 1.5rem 1rem;
+    }
+    
+    .footer .row {
+        flex-direction: column; /* Apila los elementos en columnas */
+    }
+
+    .footer .col {
+        min-width: auto;
+        padding: 0.5rem 0;
+    }
 }

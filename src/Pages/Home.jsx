@@ -41,7 +41,7 @@ const Home = () => {
       <Row className="accomodations">
         
         <Col className="left-content">
-          <img src={images.ocaso} alt="alojamiento en Tinambú" style={{maxWidth: "100%"}} className="rounded-img"/>
+          <img src={images.habitacion} alt="alojamiento en Tinambú" style={{maxWidth: "100%"}} className="rounded-img"/>
         </Col>
         <Col className="right-content">
           <h4>Alojamiento</h4>

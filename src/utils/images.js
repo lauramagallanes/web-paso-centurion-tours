@@ -18,5 +18,6 @@ export const images = {
     seriema: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN5964.JPG",
     aperea: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN6047.JPG",
     pirinchoDeMonte: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN6884.JPG",
-    ocaso: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN7425.JPG"
+    ocaso: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN7425.JPG",
+    habitacion: "https://imagenespasocenturion.s3.us-east-1.amazonaws.com/habitacion.png"
 }

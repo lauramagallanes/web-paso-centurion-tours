@@ -1,48 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import apiService from '../services/apiService';
 
 // Hook genérico para llamadas a API
-export function useApi<T>(
-  endpoint: string,
-  options?: {
-    immediate?: boolean;
-    includeAuth?: boolean;
-    dependencies?: any[];
-  }
-) {
+export function useApi<T = any>() {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const execute = async (endpoint: string, options?: RequestInit) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await apiService.get<any>(endpoint, options?.includeAuth || false);
-      if (response.success) {
-        setData(response.data);
-      } else {
-        setError(response.error || 'Error desconocido');
+      const response = await fetch(`${apiService.baseURL}${endpoint}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options?.headers,
+          ...(apiService.getAuthHeaders())
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const result = await response.json();
+      setData(result);
+      return result;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error de conexión');
+      const errorMessage = err instanceof Error ? err.message : 'Error de conexión';
+      setError(errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (options?.immediate !== false) {
-      fetchData();
-    }
-  }, options?.dependencies || []);
+  const clearError = () => setError(null);
+  const clearData = () => setData(null);
 
-  const refetch = () => {
-    fetchData();
-  };
-
-  return { data, loading, error, refetch };
+  return { data, loading, error, execute, clearError, clearData };
 }
 
 // Hook específico para habitaciones

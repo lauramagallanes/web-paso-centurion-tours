@@ -22,6 +22,17 @@ class ApiService {
     return headers;
   }
 
+  // Método público para obtener headers de autenticación (para useApi)
+  public getAuthHeaders(): HeadersInit {
+    const token = localStorage.getItem('accessToken');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }
+
+  // Getter público para baseURL (para useApi)
+  public get baseURL(): string {
+    return this.baseURL;
+  }
+
   // Método privado para manejar respuestas
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {

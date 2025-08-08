@@ -1,0 +1,167 @@
+name: Full-Stack CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # Frontend Testing & Building
+  frontend:
+    runs-on: ubuntu-latest
+    name: Frontend (React)
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install frontend dependencies
+      run: npm ci
+      
+    - name: Run frontend linting
+      run: npm run lint
+      
+    - name: Frontend type checking
+      run: npm run type-check
+      
+    - name: Build frontend
+      run: npm run build
+      
+    - name: Upload frontend build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-build
+        path: dist/
+        retention-days: 1
+
+  # Backend Testing & Building (cuando lo agregues)
+  backend:
+    runs-on: ubuntu-latest
+    name: Backend (Java Spring Boot)
+    needs: frontend
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: 'maven'
+        
+    - name: Cache Maven packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Build and test backend
+      run: |
+        # Asumiendo que el backend estará en una carpeta 'backend' o 'api'
+        if [ -f "backend/pom.xml" ]; then
+          cd backend
+          mvn clean install
+          mvn test
+        else
+          echo "Backend not found, skipping..."
+        fi
+      
+    - name: Upload backend JAR artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-jar
+        path: backend/target/*.jar
+        retention-days: 1
+      if: success()
+
+  # Deployment to AWS EC2
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to AWS EC2
+    needs: [frontend, backend]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download frontend artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-build
+        path: frontend-dist/
+        
+    - name: Download backend artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: backend-jar
+        path: backend-jar/
+      if: success()
+        
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+        
+    - name: Add EC2 to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Deploy to EC2
+      run: |
+        # Crear script de deployment temporal
+        cat > deploy.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        echo "Starting deployment..."
+        
+        # Detener aplicación actual si está corriendo
+        sudo systemctl stop paso-centurion-app || true
+        
+        # Backup de la versión anterior
+        sudo cp -r /var/www/paso-centurion /var/www/paso-centurion.backup.$(date +%Y%m%d_%H%M%S) || true
+        
+        # Crear directorio si no existe
+        sudo mkdir -p /var/www/paso-centurion
+        
+        # Copiar frontend
+        sudo cp -r frontend-dist/* /var/www/paso-centurion/
+        
+        # Copiar backend JAR si existe
+        if [ -f "backend-jar/*.jar" ]; then
+          sudo cp backend-jar/*.jar /var/www/paso-centurion/
+        fi
+        
+        # Configurar permisos
+        sudo chown -R www-data:www-data /var/www/paso-centurion
+        sudo chmod -R 755 /var/www/paso-centurion
+        
+        # Reiniciar servicios
+        sudo systemctl restart nginx
+        sudo systemctl start paso-centurion-app || true
+        
+        echo "Deployment completed successfully!"
+        EOF
+        
+        chmod +x deploy.sh
+        
+        # Transferir archivos y ejecutar deployment
+        scp -r frontend-dist/ ec2-user@${{ secrets.EC2_HOST }}:/tmp/
+        if [ -d "backend-jar" ]; then
+          scp -r backend-jar/ ec2-user@${{ secrets.EC2_HOST }}:/tmp/
+        fi
+        scp deploy.sh ec2-user@${{ secrets.EC2_HOST }}:/tmp/
+        
+        ssh ec2-user@${{ secrets.EC2_HOST }} "cd /tmp && ./deploy.sh"

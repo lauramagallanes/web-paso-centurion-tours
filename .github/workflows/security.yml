@@ -1,0 +1,65 @@
+name: Security & Dependency Checks
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sundays
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  security-frontend:
+    runs-on: ubuntu-latest
+    name: Frontend Security
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate
+      
+    - name: Check for outdated packages
+      run: npm outdated || true
+      
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+  security-backend:
+    runs-on: ubuntu-latest
+    name: Backend Security
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: 'maven'
+        
+    - name: Run Maven dependency check
+      run: |
+        if [ -f "backend/pom.xml" ]; then
+          cd backend
+          mvn dependency:check
+          mvn org.owasp:dependency-check-maven:check
+        else
+          echo "Backend not found, skipping..."
+        fi

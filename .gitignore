@@ -22,3 +22,25 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Spring Boot
+*.log
+logs/
+spring.log
+
+# AWS
+.aws/
+aws-credentials
+
+# GitHub Actions
+.github/workflows/.env

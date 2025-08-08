@@ -1,82 +1,172 @@
-# Paso Centurión Tours - React + TypeScript + Vite
+# Tinambú – Paso Centurión Tours
 
-This is a React application built with TypeScript and Vite for Paso Centurión Tours, a birdwatching and eco-tourism destination in Uruguay.
+Plataforma web para turismo ecológico y observación de aves en Paso Centurión, Uruguay.
 
-## Features
+## 🏗️ Arquitectura del Proyecto
 
-- **TypeScript**: Full TypeScript support with strict type checking
-- **React 18**: Latest React features with hooks and modern patterns
-- **Vite**: Fast development server and build tool
-- **React Bootstrap**: UI components for consistent design
-- **ESLint**: Code linting with TypeScript support
-- **Dark Mode**: Built with dark mode in mind
+### Backend (Spring Boot + Java)
+- **Arquitectura en capas**: Controller, Service, Repository, Entity, DTO
+- **Patrones de diseño**: Factory y Strategy para diferentes tipos de reservas
+- **Base de datos**: PostgreSQL
+- **Autenticación**: JWT + Spring Security
+- **Contenedorización**: Docker
 
-## Development
+### Frontend (React + TypeScript)
+- **Arquitectura basada en componentes**
+- **Gestión de estado**: Context API
+- **Enrutamiento**: React Router
+- **Estilos**: Bootstrap + CSS personalizado
 
-### Prerequisites
+## 📁 Estructura del Proyecto
 
-- Node.js (version 16 or higher)
-- npm or yarn
-
-### Installation
-
-```bash
-npm install
+```
+web-paso-centurion-tours/
+├── backend/                    # Aplicación Spring Boot
+│   ├── src/main/java/com/tinambu/tours/
+│   │   ├── controller/         # Controladores REST
+│   │   ├── service/           # Lógica de negocio
+│   │   ├── repository/        # Acceso a datos
+│   │   ├── entity/           # Entidades JPA
+│   │   ├── dto/              # Data Transfer Objects
+│   │   ├── factory/          # Factory patterns
+│   │   ├── strategy/         # Strategy patterns
+│   │   └── config/           # Configuraciones
+│   ├── src/main/resources/    # Recursos de configuración
+│   └── Dockerfile            # Configuración Docker backend
+├── frontend/                  # Aplicación React
+│   ├── src/
+│   │   ├── components/       # Componentes reutilizables
+│   │   ├── pages/           # Páginas de la aplicación
+│   │   ├── contexts/        # Context API
+│   │   ├── hooks/           # Custom hooks
+│   │   ├── services/        # Servicios API
+│   │   └── utils/           # Utilidades
+│   └── Dockerfile           # Configuración Docker frontend
+├── memory-bank/             # Documentación del proyecto
+└── docker-compose.yml      # Orquestación de servicios
 ```
 
-### Development Server
+## 🚀 Configuración y Desarrollo
 
+### Prerrequisitos
+- Java 17+
+- Node.js 18+
+- Docker & Docker Compose
+- PostgreSQL (si no usas Docker)
+
+### Configuración del Entorno
+
+1. **Copiar variables de entorno**:
+   ```bash
+   cp env.example .env
+   ```
+
+2. **Configurar variables en `.env`**:
+   - Configuración de base de datos
+   - Clave secreta JWT
+   - Puertos de aplicación
+
+### Desarrollo Local
+
+#### Backend (Spring Boot)
 ```bash
+cd backend
+mvn clean install
+mvn spring-boot:run
+```
+
+#### Frontend (React)
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-The development server will start at `http://localhost:5173`
-
-### Build
+### Desarrollo con Docker
 
 ```bash
-npm run build
+# Construir y ejecutar todos los servicios
+docker compose up --build
+
+# Solo base de datos
+docker compose up postgres
+
+# Backend + Base de datos
+docker compose up postgres backend
 ```
 
-### Type Checking
+## 🏨 Dominio de Reservas
+
+### Tipos de Reserva
+
+#### Reserva de Alojamiento
+- **Unidad**: por persona, por noche
+- **Capacidad**: mínimo 2, máximo 4 personas por habitación
+- **Precio**: 1500 UYU por persona por noche
+- **Exclusividad**: La habitación se bloquea completamente para las fechas seleccionadas
+
+#### Reserva de Senderos
+- **Unidad**: por persona, por día
+- **Restricción de guía**: Solo un sendero por turno (mañana/tarde) por día por guía
+- **Agrupación**: Permitida si no se excede el límite del grupo (definido al crear el sendero)
+- **Bloqueo**: Bloquea al guía para ese turno específico
+
+## 🔐 Autenticación y Autorización
+
+- **Usuarios visitantes**: Pueden realizar reservas sin registro
+- **Administradores**: Acceso completo al panel de administración
+- **JWT**: Tokens para sesiones de administrador
+- **Spring Security**: Protección de endpoints del backend
+
+## 📊 Panel de Administración
+
+### Funcionalidades
+- Gestión de reservas (ver, confirmar, cancelar)
+- Administración de habitaciones (crear, editar, deshabilitar)
+- Administración de senderos y actividades
+- Gestión de guías y disponibilidad
+- Reportes de ocupación y ingresos
+
+## 🌍 Despliegue en Producción
+
+### AWS Infrastructure
+- **EC2**: Hosting de aplicación y base de datos
+- **S3**: Almacenamiento de imágenes (habitaciones, senderos)
+- **Nginx**: Reverse proxy y servidor web
+- **Docker**: Contenedorización de servicios
+
+### Comandos de Despliegue
 
 ```bash
-npm run type-check
+# Construcción para producción
+docker compose -f docker-compose.prod.yml up --build
+
+# Backup de base de datos
+docker exec tinambu-postgres pg_dump -U postgres tinambu_tours > backup.sql
 ```
 
-### Linting
+## 🧪 Testing
 
+### Backend
 ```bash
-npm run lint
+cd backend
+mvn test
 ```
 
-## Project Structure
-
-```
-src/
-├── Components/     # Reusable React components
-├── Context/       # React context providers
-├── Layout/        # Layout components
-├── Pages/         # Page components
-├── css/           # CSS stylesheets
-├── utils/         # Utility functions and constants
-└── types.d.ts     # Global type declarations
+### Frontend
+```bash
+cd frontend
+npm test
 ```
 
-## Technologies Used
+## 📝 Contribución
 
-- **React 18.3.1**: UI library
-- **TypeScript**: Type safety and better developer experience
-- **Vite 5.4.8**: Build tool and development server
-- **React Bootstrap**: UI component library
-- **React Router DOM**: Client-side routing
-- **Axios**: HTTP client for API calls
+1. Seguir la arquitectura en capas establecida
+2. Implementar patrones de diseño apropiados
+3. Mantener la documentación actualizada en `memory-bank/`
+4. Escribir tests para nueva funcionalidad
+5. Validar configuraciones Docker antes de commit
 
-## TypeScript Configuration
+## 📞 Contacto
 
-The project uses strict TypeScript configuration with:
-- Strict type checking enabled
-- JSX support for React components
-- Module resolution for bundler compatibility
-- ESLint integration for TypeScript files
-# GitHub Actions Test
+Para más información sobre el proyecto Tinambú – Paso Centurión Tours, contactar al equipo de desarrollo.

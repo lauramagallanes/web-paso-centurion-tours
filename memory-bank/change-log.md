@@ -25,4 +25,21 @@ Notes:
 - Next steps: continue defining implementation plans.
 - CI/CD: GitHub Actions configured for automated testing, security checks, and deployment to AWS EC2.
 
+### 📅 2025-01-27 (Evening)
+- **MAJOR**: Complete project restructuring into frontend/backend architecture
+- **Added**: Spring Boot backend with layered architecture (Controller, Service, Repository, Entity, DTO)
+- **Added**: Factory and Strategy pattern folders for reservation types
+- **Added**: Complete Docker configuration (backend/frontend Dockerfiles + docker-compose.yml)
+- **Added**: PostgreSQL database initialization scripts
+- **Added**: Nginx configuration for frontend reverse proxy
+- **Reorganized**: React frontend with improved folder structure (components, pages, contexts, hooks, services)
+- **Added**: Comprehensive project documentation and README
+- **Added**: Environment configuration templates
+- **Updated**: .gitignore for full-stack development
+
+Notes:
+- Project now follows the architecture defined in `architecture.md` and `design-patterns.md`
+- Ready for development with clear separation between frontend and backend
+- Docker-ready for both development and production environments
+
 Contributors: Laura Magallanes

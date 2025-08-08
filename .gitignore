@@ -1,46 +1,47 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# OS
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
 
-# Java
-*.class
-*.jar
-*.war
-*.ear
-target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# Environment variables
+.env
+.env.local
+.env.production
 
-# Spring Boot
+# Backend (Spring Boot)
+backend/target/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+backend/src/main/resources/application-*.yml
+
+# Frontend (React)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+
+# Database
+*.sql
+*.db
+*.sqlite
+
+# Logs
 *.log
 logs/
-spring.log
 
-# AWS
-.aws/
-aws-credentials
+# Docker
+.docker/
 
-# GitHub Actions
-.github/workflows/.env
+# Temporary files
+*.tmp
+*.temp
+
+# Build artifacts
+build/
+out/

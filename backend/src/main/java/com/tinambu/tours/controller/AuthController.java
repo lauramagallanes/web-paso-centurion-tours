@@ -1,0 +1,256 @@
+package com.tinambu.tours.controller;
+
+import com.tinambu.tours.dto.request.LoginRequest;
+import com.tinambu.tours.dto.request.SignupRequest;
+import com.tinambu.tours.dto.response.ApiResponse;
+import com.tinambu.tours.dto.response.JwtResponse;
+import com.tinambu.tours.dto.response.UsuarioResponse;
+import com.tinambu.tours.entity.usuario.TipoUsuario;
+import com.tinambu.tours.entity.usuario.Usuario;
+import com.tinambu.tours.security.JwtUtil;
+import com.tinambu.tours.service.UsuarioService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@CrossOrigin(origins = {"${cors.allowed-origins}"})
+public class AuthController {
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private UsuarioService usuarioService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    /**
+     * Login de usuario
+     * Endpoint público para autenticación
+     */
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<JwtResponse>> login(@Valid @RequestBody LoginRequest loginRequest) {
+        try {
+            // Autenticar credenciales
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    loginRequest.getEmail(), 
+                    loginRequest.getPassword()
+                )
+            );
+
+            // Cargar detalles del usuario
+            UserDetails userDetails = usuarioService.loadUserByUsername(loginRequest.getEmail());
+            Usuario usuario = usuarioService.obtenerUsuarioPorEmail(loginRequest.getEmail());
+
+            // Verificar que el usuario esté activo
+            if (!usuario.getActivo()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Usuario desactivado"));
+            }
+
+            // Generar tokens
+            String accessToken = jwtUtil.generateToken(userDetails);
+            String refreshToken = jwtUtil.generateRefreshToken(userDetails);
+
+            // Crear respuesta
+            JwtResponse jwtResponse = new JwtResponse(
+                accessToken,
+                refreshToken,
+                "Bearer",
+                convertirAUsuarioResponse(usuario)
+            );
+
+            return ResponseEntity.ok(
+                ApiResponse.success(jwtResponse, "Login exitoso")
+            );
+
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Credenciales inválidas"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error interno del servidor"));
+        }
+    }
+
+    /**
+     * Registro de nuevo usuario (solo visitantes)
+     * Endpoint público para registro
+     */
+    @PostMapping("/signup")
+    public ResponseEntity<ApiResponse<UsuarioResponse>> signup(@Valid @RequestBody SignupRequest signupRequest) {
+        try {
+            // Verificar si el email ya existe
+            if (usuarioService.existeUsuarioConEmail(signupRequest.getEmail())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Ya existe un usuario con este email"));
+            }
+
+            // Crear nuevo usuario visitante
+            Usuario nuevoUsuario = usuarioService.crearVisitante(
+                signupRequest.getEmail(),
+                signupRequest.getPassword(),
+                signupRequest.getNombreCompleto()
+            );
+
+            UsuarioResponse usuarioResponse = convertirAUsuarioResponse(nuevoUsuario);
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(usuarioResponse, "Usuario registrado exitosamente"));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error interno del servidor"));
+        }
+    }
+
+    /**
+     * Refresh token
+     * Permite obtener un nuevo access token usando el refresh token
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<JwtResponse>> refreshToken(
+            @RequestHeader("Authorization") String refreshTokenHeader) {
+        try {
+            if (!refreshTokenHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Formato de token inválido"));
+            }
+
+            String refreshToken = refreshTokenHeader.substring(7);
+
+            // Validar que sea un refresh token
+            if (!jwtUtil.isRefreshToken(refreshToken) || !jwtUtil.isValidToken(refreshToken)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Refresh token inválido o expirado"));
+            }
+
+            // Obtener usuario del token
+            String username = jwtUtil.extractUsername(refreshToken);
+            UserDetails userDetails = usuarioService.loadUserByUsername(username);
+            Usuario usuario = usuarioService.obtenerUsuarioPorEmail(username);
+
+            // Verificar que el usuario esté activo
+            if (!usuario.getActivo()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Usuario desactivado"));
+            }
+
+            // Generar nuevos tokens
+            String newAccessToken = jwtUtil.generateToken(userDetails);
+            String newRefreshToken = jwtUtil.generateRefreshToken(userDetails);
+
+            JwtResponse jwtResponse = new JwtResponse(
+                newAccessToken,
+                newRefreshToken,
+                "Bearer",
+                convertirAUsuarioResponse(usuario)
+            );
+
+            return ResponseEntity.ok(
+                ApiResponse.success(jwtResponse, "Token renovado exitosamente")
+            );
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Error al renovar token"));
+        }
+    }
+
+    /**
+     * Validar token actual
+     * Endpoint para verificar si el token del usuario sigue siendo válido
+     */
+    @GetMapping("/validate")
+    public ResponseEntity<ApiResponse<UsuarioResponse>> validateToken(
+            @RequestHeader("Authorization") String tokenHeader) {
+        try {
+            if (!tokenHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Formato de token inválido"));
+            }
+
+            String token = tokenHeader.substring(7);
+
+            if (!jwtUtil.isValidToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Token inválido o expirado"));
+            }
+
+            String username = jwtUtil.extractUsername(token);
+            Usuario usuario = usuarioService.obtenerUsuarioPorEmail(username);
+
+            if (!usuario.getActivo()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Usuario desactivado"));
+            }
+
+            UsuarioResponse usuarioResponse = convertirAUsuarioResponse(usuario);
+            return ResponseEntity.ok(
+                ApiResponse.success(usuarioResponse, "Token válido")
+            );
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Token inválido"));
+        }
+    }
+
+    /**
+     * Logout (invalidar token en cliente)
+     * En implementación JWT stateless, el logout se maneja en el frontend
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout() {
+        // En JWT stateless, el logout se maneja eliminando el token del cliente
+        // Aquí podríamos implementar una blacklist de tokens si fuera necesario
+        return ResponseEntity.ok(
+            ApiResponse.success("Logout exitoso")
+        );
+    }
+
+    /**
+     * Obtener información del usuario actual
+     */
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UsuarioResponse>> getCurrentUser(
+            @RequestHeader("Authorization") String tokenHeader) {
+        try {
+            String token = tokenHeader.substring(7);
+            String username = jwtUtil.extractUsername(token);
+            Usuario usuario = usuarioService.obtenerUsuarioPorEmail(username);
+
+            UsuarioResponse usuarioResponse = convertirAUsuarioResponse(usuario);
+            return ResponseEntity.ok(ApiResponse.success(usuarioResponse));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("No se pudo obtener información del usuario"));
+        }
+    }
+
+    // Helper method para convertir Usuario a UsuarioResponse
+    private UsuarioResponse convertirAUsuarioResponse(Usuario usuario) {
+        UsuarioResponse response = new UsuarioResponse();
+        response.setId(usuario.getId());
+        response.setEmail(usuario.getEmail());
+        response.setNombreCompleto(usuario.getNombreCompleto());
+        response.setTipo(usuario.getTipo());
+        response.setActivo(usuario.getActivo());
+        response.setFechaCreacion(usuario.getFechaCreacion());
+        return response;
+    }
+}

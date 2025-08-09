@@ -1,0 +1,43 @@
+# Example Terraform variables file for Paso Centurión Tours
+# Copy this file to terraform.tfvars and update the values
+
+# AWS Configuration
+aws_region  = "us-east-1"
+environment = "production"
+
+# Project Configuration
+project_name = "paso-centurion-tours"
+
+# Network Configuration
+vpc_cidr                = "10.0.0.0/16"
+public_subnet_cidrs     = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs    = ["10.0.10.0/24", "10.0.20.0/24"]
+allowed_ssh_cidrs       = ["YOUR_IP_ADDRESS/32"]  # Replace with your IP
+
+# EC2 Configuration
+instance_type      = "t3.micro"      # Free tier eligible
+root_volume_size   = 20              # GB
+
+# SSH Key - Add your public key here
+public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDIizWC2dGDyC2apf/B4tp7YJHZsacJ1b3SX3JLY1zXNftDR6Jo2XIMPRkAH6siaV/Bz07FsFMINLFD5Vkmfq0dHjMmO19I0CJSshmcD1FQhzQljh18a3Q+qfg01BV5v1xXZkYnO7zTYOP74j2271oCJg4EkAyThl8JFW1ws/zLAmnW2VequsNPi+JhysgFNseW0LjX/U5IvvjTaA0YFEGBXNjpXMVBQAeTbnU4YYFG+N1zhH98VeVhzFBKdHHElfQILWLQLa6ISR5ct9zuXNdkhzPBmmS6wR8FvkehjDEJ21zfjlUU8BorayN8pDQH0DJYnNeTkVsUTp0vdcPtYO9WFuRl4MQByiSCCON1sbZUtDq12UBzj5+WQVLoOCQHgZpT05xKuzYk1eX0tn4CsM3DwuimadBvcg07sLzqU1DdE1cR+a0bMHNUYHECn3P6yK/hVYCcijCqGnEtCU74TVTPI+qgh9fbutnAjrMRl92gKKoADR41wBWznxATe+prb+CFTr5/xsQCIQlfahPxTHclpDXMt+cDEXyEXoHPKVQ0imf1Cu8uGPMZCj5bANIFVkClQg08V8kFhe8bAJKOWO/wHFsWVrmfbLjdFG7yG/WPHzPNomFk2gnnrY6SbSA6mbhEnZ/BplYPx24VXMXTOVMXe6uVz8dlfY6fmJGTq3N+0w== laura@laura"
+
+# Database Configuration
+create_database             = true
+db_instance_class          = "db.t3.micro"  # Free tier eligible
+db_allocated_storage       = 20             # GB
+db_max_allocated_storage   = 100            # GB
+postgres_version           = "15.4"
+db_name                    = "pasocenturiondb"
+db_username                = "dbadmin"
+db_password                = "CHANGE_THIS_SECURE_PASSWORD_123!"  # Use a strong password
+db_backup_retention_period = 7
+db_backup_window          = "03:00-04:00"
+db_maintenance_window     = "sun:04:00-sun:05:00"
+
+# Optional: Domain and SSL
+# domain_name         = "pasocenturion.com"
+# ssl_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+
+# Monitoring
+enable_monitoring    = true
+log_retention_days   = 30

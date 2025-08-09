@@ -1,0 +1,301 @@
+name: Terraform Infrastructure
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'terraform/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'terraform/**'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Terraform action to perform'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  terraform-validate:
+    runs-on: ubuntu-latest
+    name: Validate Terraform
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        
+    - name: Terraform Format Check
+      working-directory: ./terraform
+      run: terraform fmt -check -recursive
+      
+    - name: Terraform Init
+      working-directory: ./terraform
+      run: terraform init -backend=false
+      
+    - name: Terraform Validate
+      working-directory: ./terraform
+      run: terraform validate
+
+  terraform-plan:
+    runs-on: ubuntu-latest
+    name: Terraform Plan
+    needs: terraform-validate
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'plan')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        terraform_wrapper: false
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Create terraform.tfvars
+      working-directory: ./terraform
+      run: |
+        cat > terraform.tfvars << EOF
+        aws_region = "${{ env.AWS_REGION }}"
+        environment = "${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}"
+        project_name = "paso-centurion-tours"
+        
+        # Network Configuration
+        vpc_cidr = "10.0.0.0/16"
+        public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+        private_subnet_cidrs = ["10.0.10.0/24", "10.0.20.0/24"]
+        allowed_ssh_cidrs = ["0.0.0.0/0"]
+        
+        # EC2 Configuration
+        instance_type = "t3.micro"
+        root_volume_size = 20
+        public_key = "${{ secrets.EC2_PUBLIC_KEY }}"
+        
+        # Database Configuration
+        create_database = true
+        db_instance_class = "db.t3.micro"
+        db_allocated_storage = 20
+        db_max_allocated_storage = 100
+        postgres_version = "15.4"
+        db_name = "pasocenturiondb"
+        db_username = "dbadmin"
+        db_password = "${{ secrets.DB_PASSWORD }}"
+        
+        # Monitoring
+        enable_monitoring = true
+        log_retention_days = 30
+        EOF
+        
+    - name: Terraform Init
+      working-directory: ./terraform
+      run: terraform init
+      
+    - name: Terraform Plan
+      working-directory: ./terraform
+      run: |
+        terraform plan -detailed-exitcode -out=tfplan
+        echo "PLAN_EXITCODE=$?" >> $GITHUB_ENV
+      continue-on-error: true
+      
+    - name: Save Plan
+      uses: actions/upload-artifact@v4
+      if: env.PLAN_EXITCODE == '2'
+      with:
+        name: terraform-plan
+        path: terraform/tfplan
+        retention-days: 5
+        
+    - name: Comment Plan on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const { execSync } = require('child_process');
+          
+          try {
+            // Get terraform plan output
+            const planOutput = execSync('cd terraform && terraform show -no-color tfplan', { encoding: 'utf8' });
+            
+            const comment = `## Terraform Plan Results
+            
+            ### Changes Preview
+            \`\`\`
+            ${planOutput.slice(0, 8000)}${planOutput.length > 8000 ? '\n... (truncated)' : ''}
+            \`\`\`
+            
+            **Plan Status:** ${process.env.PLAN_EXITCODE === '2' ? '✅ Changes detected' : process.env.PLAN_EXITCODE === '0' ? '✅ No changes' : '❌ Plan failed'}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Error posting comment:', error);
+          }
+
+  terraform-apply:
+    runs-on: ubuntu-latest
+    name: Terraform Apply
+    needs: terraform-validate
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        terraform_wrapper: false
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Create terraform.tfvars
+      working-directory: ./terraform
+      run: |
+        cat > terraform.tfvars << EOF
+        aws_region = "${{ env.AWS_REGION }}"
+        environment = "production"
+        project_name = "paso-centurion-tours"
+        
+        # Network Configuration
+        vpc_cidr = "10.0.0.0/16"
+        public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+        private_subnet_cidrs = ["10.0.10.0/24", "10.0.20.0/24"]
+        allowed_ssh_cidrs = ["0.0.0.0/0"]
+        
+        # EC2 Configuration
+        instance_type = "t3.micro"
+        root_volume_size = 20
+        public_key = "${{ secrets.EC2_PUBLIC_KEY }}"
+        
+        # Database Configuration
+        create_database = true
+        db_instance_class = "db.t3.micro"
+        db_allocated_storage = 20
+        db_max_allocated_storage = 100
+        postgres_version = "15.4"
+        db_name = "pasocenturiondb"
+        db_username = "dbadmin"
+        db_password = "${{ secrets.DB_PASSWORD }}"
+        
+        # Monitoring
+        enable_monitoring = true
+        log_retention_days = 30
+        EOF
+        
+    - name: Terraform Init
+      working-directory: ./terraform
+      run: terraform init
+      
+    - name: Terraform Apply
+      working-directory: ./terraform
+      run: terraform apply -auto-approve
+      
+    - name: Save Terraform Outputs
+      working-directory: ./terraform
+      run: |
+        terraform output -json > terraform-outputs.json
+        
+    - name: Upload Terraform Outputs
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-outputs
+        path: terraform/terraform-outputs.json
+        retention-days: 30
+        
+    - name: Update GitHub Secrets
+      run: |
+        # Get outputs from Terraform
+        cd terraform
+        PUBLIC_IP=$(terraform output -raw web_server_public_ip)
+        S3_BUCKET=$(terraform output -raw s3_deployments_bucket)
+        DB_ENDPOINT=$(terraform output -raw database_endpoint 2>/dev/null || echo "")
+        
+        echo "Infrastructure deployed successfully!"
+        echo "Public IP: $PUBLIC_IP"
+        echo "S3 Bucket: $S3_BUCKET"
+        echo "DB Endpoint: $DB_ENDPOINT"
+        
+        # Note: Automatic secret updates require additional permissions
+        # For now, outputs are saved as artifacts for manual configuration
+
+  terraform-destroy:
+    runs-on: ubuntu-latest
+    name: Terraform Destroy
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
+    environment: destruction
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        terraform_wrapper: false
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Create terraform.tfvars
+      working-directory: ./terraform
+      run: |
+        cat > terraform.tfvars << EOF
+        aws_region = "${{ env.AWS_REGION }}"
+        environment = "production"
+        project_name = "paso-centurion-tours"
+        public_key = "${{ secrets.EC2_PUBLIC_KEY }}"
+        db_password = "${{ secrets.DB_PASSWORD }}"
+        EOF
+        
+    - name: Terraform Init
+      working-directory: ./terraform
+      run: terraform init
+      
+    - name: Terraform Destroy
+      working-directory: ./terraform
+      run: terraform destroy -auto-approve
+      
+    - name: Confirm Destruction
+      run: echo "Infrastructure destroyed successfully!"

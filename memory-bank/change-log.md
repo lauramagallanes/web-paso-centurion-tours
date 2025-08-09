@@ -19,6 +19,11 @@ This document keeps track of all updates made to the project.
 - **Added**: Comprehensive testing pipeline for frontend and backend
 - **Updated**: `.gitignore` to include Java and AWS specific patterns
 - **Added**: Documentation for GitHub Actions configuration
+- **Added**: Complete Terraform Infrastructure as Code setup
+- **Added**: AWS infrastructure with VPC, EC2, RDS, S3, and security groups
+- **Added**: Terraform workflow for automated infrastructure management
+- **Added**: Deployment scripts and EC2 user data configuration
+- **Added**: Comprehensive AWS setup guide and documentation
 
 Notes:
 - Objective: initialize the memory bank and organize the project structure for AI-assisted development.

@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/reservas")
+@RequestMapping("/reservas")
 @CrossOrigin(origins = {"${cors.allowed-origins}"})
 public class ReservaController {
 

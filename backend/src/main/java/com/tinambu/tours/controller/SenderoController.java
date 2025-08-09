@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/senderos")
+@RequestMapping("/senderos")
 @CrossOrigin(origins = {"${cors.allowed-origins}"})
 public class SenderoController {
 

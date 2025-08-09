@@ -1,8 +1,8 @@
 import React from 'react';
-import MainNavbar from '../Components/MainNavbar'
-import Footer from '../Components/Footer'
+import MainNavbar from '../common/MainNavbar'
+import Footer from '../common/Footer'
 import { Outlet } from 'react-router-dom'
-import WhatsAppButton from '../Components/WhatsappButton'
+import WhatsAppButton from '../common/WhatsappButton'
 
 const PublicLayout: React.FC = () => {
   return (

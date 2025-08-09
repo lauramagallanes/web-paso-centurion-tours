@@ -13,6 +13,9 @@ Thumbs.db
 .env.local
 .env.production
 
+# Local documentation with sensitive information
+README-LOCAL.md
+
 # Backend (Spring Boot)
 backend/target/
 backend/.mvn/

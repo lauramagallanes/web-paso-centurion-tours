@@ -1,172 +1,309 @@
-# Tinambú – Paso Centurión Tours
+# 🦅 Tinambú Paso Centurión Tours
 
-Plataforma web para turismo ecológico y observación de aves en Paso Centurión, Uruguay.
+Una plataforma completa de ecoturismo y avistamiento de aves desarrollada con tecnologías modernas full-stack.
 
-## 🏗️ Arquitectura del Proyecto
+## 📋 Descripción
 
-### Backend (Spring Boot + Java)
-- **Arquitectura en capas**: Controller, Service, Repository, Entity, DTO
-- **Patrones de diseño**: Factory y Strategy para diferentes tipos de reservas
-- **Base de datos**: PostgreSQL
-- **Autenticación**: JWT + Spring Security
-- **Contenedorización**: Docker
+Tinambú Paso Centurión Tours es una aplicación web para gestión de reservas de turismo ecológico, especializada en avistamiento de aves y turismo de naturaleza. La plataforma permite a los visitantes explorar actividades, hacer reservas y gestionar su experiencia turística.
 
-### Frontend (React + TypeScript)
-- **Arquitectura basada en componentes**
-- **Gestión de estado**: Context API
-- **Enrutamiento**: React Router
-- **Estilos**: Bootstrap + CSS personalizado
+## 🏗️ Arquitectura
+
+### Frontend
+- **React 18** con TypeScript
+- **Vite** como bundler
+- **React Router** para navegación
+- **Bootstrap 5** para UI/UX
+- **Axios** para comunicación HTTP
+- **Context API** para manejo de estado
+
+### Backend
+- **Spring Boot 3.2** con Java 17
+- **Spring Security** con JWT
+- **Spring Data JPA** con Hibernate
+- **PostgreSQL** como base de datos
+- **Docker** para containerización
+
+### DevOps & Testing
+- **Docker Compose** para orquestación
+- **GitHub Actions** para CI/CD
+- **JUnit 5 + Mockito** para tests backend
+- **Vitest + Testing Library** para tests frontend
+- **Playwright** para tests E2E
+
+## 🚀 Inicio Rápido
+
+### Opción 1: Script Automatizado (Recomendado)
+
+```bash
+# Clonar el repositorio
+git clone <repository-url>
+cd web-paso-centurion-tours
+
+# Ejecutar script de configuración
+./setup-application.sh
+```
+
+### Opción 2: Manual
+
+```bash
+# 1. Configurar entorno
+cp env.example .env
+
+# 2. Construir y ejecutar con Docker
+docker compose up --build -d
+
+# 3. Configurar usuario administrador (ver README-LOCAL.md para detalles)
+```
+
+## 🌐 Acceso a la Aplicación
+
+- **Frontend**: http://localhost:80
+- **Backend API**: http://localhost:8080/api
+- **Base de Datos**: localhost:5432
+
+> ℹ️ **Nota**: Las credenciales de administrador se configuran durante la instalación. Consulta el archivo `README-LOCAL.md` para detalles específicos del entorno local.
+
+## 🧪 Testing
+
+### Tests Unitarios Backend
+```bash
+cd backend
+mvn test
+mvn test -Dtest=UsuarioServiceTest
+```
+
+### Tests Frontend
+```bash
+cd frontend
+npm test                    # Tests unitarios
+npm run test:coverage      # Con coverage
+npm run test:ui            # Interfaz visual
+```
+
+### Tests E2E
+```bash
+cd frontend
+npm run test:e2e           # Tests Playwright
+npm run test:e2e:ui        # Interfaz visual
+```
+
+### Suite Completa de Tests
+```bash
+# Backend
+docker compose exec backend mvn test
+
+# Frontend  
+docker compose exec frontend npm test
+
+# E2E (requiere aplicación corriendo)
+npm run test:e2e
+```
 
 ## 📁 Estructura del Proyecto
 
 ```
 web-paso-centurion-tours/
-├── backend/                    # Aplicación Spring Boot
-│   ├── src/main/java/com/tinambu/tours/
-│   │   ├── controller/         # Controladores REST
-│   │   ├── service/           # Lógica de negocio
-│   │   ├── repository/        # Acceso a datos
-│   │   ├── entity/           # Entidades JPA
-│   │   ├── dto/              # Data Transfer Objects
-│   │   ├── factory/          # Factory patterns
-│   │   ├── strategy/         # Strategy patterns
-│   │   └── config/           # Configuraciones
-│   ├── src/main/resources/    # Recursos de configuración
-│   └── Dockerfile            # Configuración Docker backend
-├── frontend/                  # Aplicación React
+├── frontend/                 # Aplicación React
 │   ├── src/
-│   │   ├── components/       # Componentes reutilizables
-│   │   ├── pages/           # Páginas de la aplicación
+│   │   ├── components/      # Componentes React
 │   │   ├── contexts/        # Context API
-│   │   ├── hooks/           # Custom hooks
+│   │   ├── pages/           # Páginas principales
 │   │   ├── services/        # Servicios API
-│   │   └── utils/           # Utilidades
-│   └── Dockerfile           # Configuración Docker frontend
-├── memory-bank/             # Documentación del proyecto
-└── docker-compose.yml      # Orquestación de servicios
+│   │   ├── utils/           # Utilidades
+│   │   └── tests/           # Tests unitarios
+│   ├── tests/               # Tests E2E (Playwright)
+│   ├── Dockerfile
+│   └── package.json
+│
+├── backend/                 # API Spring Boot
+│   ├── src/
+│   │   ├── main/java/com/tinambu/tours/
+│   │   │   ├── controller/  # Controladores REST
+│   │   │   ├── service/     # Lógica de negocio
+│   │   │   ├── entity/      # Entidades JPA
+│   │   │   ├── repository/  # Repositorios
+│   │   │   ├── security/    # Configuración JWT
+│   │   │   └── config/      # Configuraciones
+│   │   └── test/            # Tests unitarios
+│   ├── Dockerfile
+│   └── pom.xml
+│
+├── database/                # Scripts de BD
+├── .github/workflows/       # GitHub Actions
+├── docker-compose.yml       # Orquestación Docker
+├── setup-application.sh     # Script de configuración
+└── README.md
 ```
 
-## 🚀 Configuración y Desarrollo
+## 🔧 Comandos Útiles
 
-### Prerrequisitos
-- Java 17+
-- Node.js 18+
-- Docker & Docker Compose
-- PostgreSQL (si no usas Docker)
-
-### Configuración del Entorno
-
-1. **Copiar variables de entorno**:
-   ```bash
-   cp env.example .env
-   ```
-
-2. **Configurar variables en `.env`**:
-   - Configuración de base de datos
-   - Clave secreta JWT
-   - Puertos de aplicación
-
-### Desarrollo Local
-
-#### Backend (Spring Boot)
+### Docker
 ```bash
-cd backend
-mvn clean install
-mvn spring-boot:run
+# Iniciar aplicación
+docker compose up -d
+
+# Ver logs
+docker compose logs -f [servicio]
+
+# Parar aplicación
+docker compose down
+
+# Reconstruir imágenes
+docker compose build --no-cache
+
+# Estado de contenedores
+docker compose ps
 ```
 
-#### Frontend (React)
+### Base de Datos
 ```bash
-cd frontend
-npm install
-npm run dev
+# Conectar a PostgreSQL
+docker compose exec postgres psql -U postgres -d tinambu_tours
+
+# Backup
+docker compose exec postgres pg_dump -U postgres tinambu_tours > backup.sql
+
+# Restore
+docker compose exec -T postgres psql -U postgres tinambu_tours < backup.sql
 ```
 
-### Desarrollo con Docker
-
+### Desarrollo
 ```bash
-# Construir y ejecutar todos los servicios
-docker compose up --build
+# Frontend en modo desarrollo
+cd frontend && npm run dev
 
-# Solo base de datos
-docker compose up postgres
+# Backend en modo desarrollo
+cd backend && mvn spring-boot:run
 
-# Backend + Base de datos
-docker compose up postgres backend
+# Linting
+npm run lint                # Frontend
+mvn checkstyle:check        # Backend
 ```
 
-## 🏨 Dominio de Reservas
+## 🔐 Configuración de Seguridad
 
-### Tipos de Reserva
+### Variables de Entorno
+Las variables de entorno se configuran en el archivo `.env`. Ver `env.example` para referencia y `README-LOCAL.md` para configuración específica del entorno de desarrollo.
 
-#### Reserva de Alojamiento
-- **Unidad**: por persona, por noche
-- **Capacidad**: mínimo 2, máximo 4 personas por habitación
-- **Precio**: 1500 UYU por persona por noche
-- **Exclusividad**: La habitación se bloquea completamente para las fechas seleccionadas
+### Endpoints de API
 
-#### Reserva de Senderos
-- **Unidad**: por persona, por día
-- **Restricción de guía**: Solo un sendero por turno (mañana/tarde) por día por guía
-- **Agrupación**: Permitida si no se excede el límite del grupo (definido al crear el sendero)
-- **Bloqueo**: Bloquea al guía para ese turno específico
+#### Públicos
+- `POST /api/auth/login` - Iniciar sesión
+- `POST /api/auth/signup` - Registrarse
+- `GET /api/habitaciones` - Listar habitaciones
+- `GET /api/senderos` - Listar senderos
+- `GET /api/guias` - Listar guías
 
-## 🔐 Autenticación y Autorización
+#### Protegidos (Requieren JWT)
+- `GET /api/reservas/mis-reservas` - Mis reservas
+- `POST /api/reservas` - Crear reserva
 
-- **Usuarios visitantes**: Pueden realizar reservas sin registro
-- **Administradores**: Acceso completo al panel de administración
-- **JWT**: Tokens para sesiones de administrador
-- **Spring Security**: Protección de endpoints del backend
+#### Admin (Requieren rol ADMIN)
+- `GET /admin/**` - Panel administrativo
+- `PUT /api/reservas/admin/**` - Gestión de reservas
+- `DELETE /api/**` - Eliminar recursos
 
-## 📊 Panel de Administración
+## 🚦 CI/CD
 
-### Funcionalidades
-- Gestión de reservas (ver, confirmar, cancelar)
-- Administración de habitaciones (crear, editar, deshabilitar)
-- Administración de senderos y actividades
-- Gestión de guías y disponibilidad
-- Reportes de ocupación y ingresos
+### GitHub Actions
+- **CI/CD Principal** (`.github/workflows/ci-cd.yml`)
+  - Build y test frontend/backend
+  - Validación de código
+  - Deploy automático
 
-## 🌍 Despliegue en Producción
+- **Seguridad** (`.github/workflows/security.yml`)
+  - Análisis de vulnerabilidades
+  - Audit de dependencias
+  - Escaneo con Snyk
 
-### AWS Infrastructure
-- **EC2**: Hosting de aplicación y base de datos
-- **S3**: Almacenamiento de imágenes (habitaciones, senderos)
-- **Nginx**: Reverse proxy y servidor web
-- **Docker**: Contenedorización de servicios
+- **Testing** (`.github/workflows/test.yml`)
+  - Suite completa de tests
+  - Coverage reports
+  - Tests E2E
 
-### Comandos de Despliegue
+### Secrets Requeridos
+Para configuración de CI/CD, consultar documentación de deployment y `README-LOCAL.md` para detalles específicos.
 
+## 🐛 Troubleshooting
+
+### Problemas Comunes
+
+**Puerto en uso**
 ```bash
-# Construcción para producción
-docker compose -f docker-compose.prod.yml up --build
+# Verificar puertos ocupados
+lsof -i :80 -i :8080 -i :5432
 
-# Backup de base de datos
-docker exec tinambu-postgres pg_dump -U postgres tinambu_tours > backup.sql
+# Cambiar puertos en docker-compose.yml
 ```
 
-## 🧪 Testing
-
-### Backend
+**Error de conexión a BD**
 ```bash
-cd backend
-mvn test
+# Verificar estado de PostgreSQL
+docker compose logs postgres
+
+# Reiniciar base de datos
+docker compose restart postgres
 ```
 
-### Frontend
+**Error 401 en login**
 ```bash
-cd frontend
-npm test
+# Verificar JWT secret
+echo $JWT_SECRET
+
+# Revisar logs del backend
+docker compose logs backend | grep -i error
 ```
 
-## 📝 Contribución
+**Frontend no carga**
+```bash
+# Verificar build del frontend
+docker compose logs frontend
 
-1. Seguir la arquitectura en capas establecida
-2. Implementar patrones de diseño apropiados
-3. Mantener la documentación actualizada en `memory-bank/`
-4. Escribir tests para nueva funcionalidad
-5. Validar configuraciones Docker antes de commit
+# Reconstruir imagen
+docker compose build frontend --no-cache
+```
 
-## 📞 Contacto
+### Logs de Debug
+```bash
+# Habilitar logs detallados
+export LOG_LEVEL=DEBUG
+export SHOW_SQL=true
 
-Para más información sobre el proyecto Tinambú – Paso Centurión Tours, contactar al equipo de desarrollo.
+# Ver logs en tiempo real
+docker compose logs -f backend frontend
+```
+
+## 🤝 Contribución
+
+1. Fork el proyecto
+2. Crear feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Abrir Pull Request
+
+### Estándares de Código
+- **Frontend**: ESLint + Prettier
+- **Backend**: Checkstyle + SpotBugs
+- **Tests**: Cobertura mínima 80%
+- **Commits**: Conventional Commits
+
+## 📄 Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+
+## 👥 Equipo
+
+- **Desarrollo Full-Stack**: [Tu Nombre]
+- **DevOps**: [Tu Nombre]
+- **Testing**: [Tu Nombre]
+
+## 📞 Soporte
+
+Para soporte técnico o preguntas:
+- **Email**: soporte@tinambu.com
+- **Issues**: [GitHub Issues](link-to-issues)
+- **Documentación**: [Wiki](link-to-wiki)
+
+---
+
+**¡Gracias por contribuir al ecoturismo sostenible! 🌿🦅**

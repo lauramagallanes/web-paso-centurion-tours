@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import "../css/PhotoGallery.css";
+import "../../assets/styles/PhotoGallery.css";
 
 interface Photo {
   src: string;

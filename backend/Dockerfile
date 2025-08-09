@@ -1,5 +1,5 @@
 # Multi-stage build for Spring Boot application
-FROM maven:3.9.4-openjdk-17-slim AS build
+FROM maven:3.8-openjdk-17 AS build
 
 WORKDIR /app
 

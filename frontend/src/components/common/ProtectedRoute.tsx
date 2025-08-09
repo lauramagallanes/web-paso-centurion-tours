@@ -33,7 +33,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Si requiere admin y no es admin, redirigir al home
-  if (requireAdmin && state.user.tipoUsuario !== 'ADMIN') {
+  if (requireAdmin && state.user.tipo !== 'ADMIN') {
     return <Navigate to="/" replace />;
   }
 

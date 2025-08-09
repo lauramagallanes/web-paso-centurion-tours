@@ -201,20 +201,20 @@ public class SenderoService {
         private final BigDecimal duracionPromedio;
         private final BigDecimal precioPromedio;
         private final long senderosFaciles;
-        private final long senderosModera dos;
+        private final long senderosModera;
         private final long senderosDificiles;
         private final long senderosExpertos;
 
         public SenderoStats(long totalSenderos, long senderosActivos, int capacidadTotalMaxima,
                            BigDecimal duracionPromedio, BigDecimal precioPromedio,
-                           long senderosFaciles, long senderosModera dos, long senderosDificiles, long senderosExpertos) {
+                           long senderosFaciles, long senderosModera, long senderosDificiles, long senderosExpertos) {
             this.totalSenderos = totalSenderos;
             this.senderosActivos = senderosActivos;
             this.capacidadTotalMaxima = capacidadTotalMaxima;
             this.duracionPromedio = duracionPromedio;
             this.precioPromedio = precioPromedio;
             this.senderosFaciles = senderosFaciles;
-            this.senderosModera dos = senderosModera dos;
+            this.senderosModera = senderosModera;
             this.senderosDificiles = senderosDificiles;
             this.senderosExpertos = senderosExpertos;
         }
@@ -226,7 +226,7 @@ public class SenderoService {
         public BigDecimal getDuracionPromedio() { return duracionPromedio; }
         public BigDecimal getPrecioPromedio() { return precioPromedio; }
         public long getSenderosFaciles() { return senderosFaciles; }
-        public long getSenderosModera dos() { return senderosModera dos; }
+        public long getSenderosModera() { return senderosModera; }
         public long getSenderosDificiles() { return senderosDificiles; }
         public long getSenderosExpertos() { return senderosExpertos; }
     }

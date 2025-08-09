@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/guias")
+@RequestMapping("/guias")
 @CrossOrigin(origins = {"${cors.allowed-origins}"})
 public class GuiaController {
 

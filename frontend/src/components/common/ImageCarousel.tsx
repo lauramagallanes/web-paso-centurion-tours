@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Carousel from 'react-bootstrap/Carousel';
 //import ExampleCarouselImage from 'components/ExampleCarouselImage';
-import { images } from '../utils/images';
+import { images } from '../../utils/images';
 
 const ImageCarousel: React.FC = () => {
   const [index, setIndex] = useState<number>(0);

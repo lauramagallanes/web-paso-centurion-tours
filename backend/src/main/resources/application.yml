@@ -4,6 +4,8 @@ server:
     context-path: /api
 
 spring:
+  main:
+    allow-circular-references: true
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:tinambu_tours}
     username: ${DB_USERNAME:postgres}
@@ -12,7 +14,7 @@ spring:
   
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: ${SHOW_SQL:false}
     properties:
       hibernate:
@@ -21,7 +23,7 @@ spring:
   
   security:
     jwt:
-      secret: ${JWT_SECRET:your-secret-key-here}
+      secret: ${JWT_SECRET:your-super-secret-jwt-key-here-must-be-at-least-256-bits-long-for-security}
       expiration: 86400000 # 24 hours
 
 logging:

@@ -91,22 +91,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        String servletPath = request.getServletPath();
         
-        // No filtrar endpoints de autenticación
-        if (path.startsWith("/api/auth/")) {
+        logger.debug("JWT Filter - URI: " + path + ", Context: " + contextPath + ", Servlet: " + servletPath);
+        
+        // No filtrar endpoints de autenticación (sin prefijo /api porque ya estamos en el contexto)
+        if (path.startsWith("/auth/") || path.contains("/auth/")) {
+            logger.debug("Skipping JWT filter for auth endpoint: " + path);
             return true;
         }
         
         // No filtrar health checks
-        if (path.equals("/api/health") || path.equals("/actuator/health")) {
+        if (path.equals("/health") || path.equals("/actuator/health") || path.contains("/health")) {
+            logger.debug("Skipping JWT filter for health endpoint: " + path);
             return true;
         }
         
         // No filtrar recursos estáticos
         if (path.startsWith("/static/") || path.startsWith("/public/")) {
+            logger.debug("Skipping JWT filter for static resources: " + path);
             return true;
         }
         
+        logger.debug("JWT filter will process: " + path);
         return false;
     }
 }

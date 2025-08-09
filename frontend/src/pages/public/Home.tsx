@@ -1,11 +1,11 @@
 import React from 'react';
-import ImageCarousel from "../Components/ImageCarousel"
-import "../css/Home.css"
-import { images } from "../utils/images"
+import ImageCarousel from "../../components/common/ImageCarousel"
+import "../../assets/styles/Home.css"
+import { images } from "../../utils/images"
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import PhotoGallery from "../Components/PhotoGallery";
+import PhotoGallery from "../../components/common/PhotoGallery";
 
 const Home: React.FC = () => {
 

@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/habitaciones")
+@RequestMapping("/habitaciones")
 @CrossOrigin(origins = {"${cors.allowed-origins}"})
 public class HabitacionController {
 

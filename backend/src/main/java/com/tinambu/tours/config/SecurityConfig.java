@@ -61,27 +61,27 @@ public class SecurityConfig {
             
             // Configurar autorización de requests
             .authorizeHttpRequests(authz -> authz
-                // Endpoints completamente públicos
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/health").permitAll()
+                // Endpoints completamente públicos (sin prefijo /api porque ya estamos en el contexto)
+                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/health").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 
                 // Endpoints públicos de consulta (solo GET)
-                .requestMatchers(HttpMethod.GET, "/api/habitaciones/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/senderos/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/guias/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/habitaciones/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/senderos/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/guias/**").permitAll()
                 
                 // Endpoints públicos de reservas (para visitantes)
-                .requestMatchers(HttpMethod.POST, "/api/reservas").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/reservas/verificar-disponibilidad").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/reservas/calcular-precio").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/reservas/codigo/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/reservas/email/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/reservas").permitAll()
+                .requestMatchers(HttpMethod.POST, "/reservas/verificar-disponibilidad").permitAll()
+                .requestMatchers(HttpMethod.POST, "/reservas/calcular-precio").permitAll()
+                .requestMatchers(HttpMethod.GET, "/reservas/codigo/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/reservas/email/**").permitAll()
                 
                 // Endpoints administrativos - requieren autenticación y rol ADMIN
-                .requestMatchers("/api/*/admin/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/reservas/admin/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
+                .requestMatchers("/*/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/reservas/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/**").hasRole("ADMIN")
                 
                 // Cualquier otro endpoint requiere autenticación
                 .anyRequest().authenticated())
@@ -140,7 +140,7 @@ public class SecurityConfig {
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12); // Strength 12 para mayor seguridad
+        return new BCryptPasswordEncoder(10); // Strength 10 temporal para testing
     }
 
     /**

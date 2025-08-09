@@ -29,7 +29,7 @@ class ApiService {
   }
 
   // Getter público para baseURL (para useApi)
-  public get baseURL(): string {
+  public get apiBaseURL(): string {
     return this.baseURL;
   }
 

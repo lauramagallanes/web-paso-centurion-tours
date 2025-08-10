@@ -28,9 +28,12 @@ spring:
 
 logging:
   level:
-    com.tinambu.tours: ${LOG_LEVEL:INFO}
+    com.tinambu.tours: DEBUG
     org.springframework.security: DEBUG
-    org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type: DEBUG
+    org.hibernate: DEBUG
+    root: ERROR
 
 # CORS Configuration
 cors:

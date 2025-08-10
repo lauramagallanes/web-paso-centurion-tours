@@ -30,6 +30,16 @@ public class JwtUtil {
      */
     private SecretKey getSigningKey() {
         byte[] keyBytes = secret.getBytes();
+        // Asegurar que la clave tenga al menos 256 bits (32 bytes) para HMAC-SHA512
+        if (keyBytes.length < 32) {
+            // Expandir la clave usando SHA-256 para obtener 32 bytes
+            try {
+                java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+                keyBytes = md.digest(keyBytes);
+            } catch (java.security.NoSuchAlgorithmException e) {
+                throw new RuntimeException("SHA-256 algorithm not available", e);
+            }
+        }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -101,7 +111,7 @@ public class JwtUtil {
             .setSubject(subject)
             .setIssuedAt(now)
             .setExpiration(expirationDate)
-            .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+            .signWith(getSigningKey(), SignatureAlgorithm.HS256)
             .compact();
     }
 
@@ -175,7 +185,7 @@ public class JwtUtil {
             .setSubject(userDetails.getUsername())
             .setIssuedAt(now)
             .setExpiration(expirationDate)
-            .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+            .signWith(getSigningKey(), SignatureAlgorithm.HS256)
             .compact();
     }
 

@@ -132,7 +132,7 @@ class AuthControllerTest {
                 .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpected(jsonPath("$.error").value("Usuario desactivado"));
+                .andExpect(jsonPath("$.error").value("Usuario desactivado"));
     }
 
     @Test

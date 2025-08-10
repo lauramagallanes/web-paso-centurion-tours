@@ -140,7 +140,7 @@ public class SecurityConfig {
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(10); // Strength 10 temporal para testing
+        return new BCryptPasswordEncoder(12); // Strength 12 para producción
     }
 
     /**

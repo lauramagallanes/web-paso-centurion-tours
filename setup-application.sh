@@ -49,11 +49,34 @@ print_info() {
     echo -e "${PURPLE}[INFO]${NC} $1"
 }
 
+# Función para cargar variables de entorno de forma segura
+load_env_vars() {
+    if [ -f .env ]; then
+        # Cargar variables de entorno
+        export $(grep -v '^#' .env | xargs)
+        
+        # Establecer valores por defecto si no están definidos
+        export ADMIN_EMAIL=${ADMIN_EMAIL:-admin@tinambu.com}
+        export ADMIN_PASSWORD=${ADMIN_PASSWORD:-$(openssl rand -base64 12)}
+        export ADMIN_NAME=${ADMIN_NAME:-"Admin Sistema"}
+        
+        print_info "Variables de entorno cargadas desde .env"
+    else
+        print_warning "Archivo .env no encontrado, usando valores por defecto"
+        export ADMIN_EMAIL="admin@tinambu.com"
+        export ADMIN_PASSWORD=$(openssl rand -base64 12)
+        export ADMIN_NAME="Admin Sistema"
+    fi
+}
+
 # =============================================================================
 # PASO 1: VERIFICACIÓN DE REQUISITOS PREVIOS
 # =============================================================================
 
 print_step "Verificando requisitos previos..."
+
+# Cargar variables de entorno de forma segura
+load_env_vars
 
 # Verificar Docker
 if ! command -v docker &> /dev/null; then
@@ -108,7 +131,12 @@ DB_USERNAME=postgres
 DB_PASSWORD=secure_password_2024
 
 # JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-here-must-be-at-least-256-bits-long-for-security
+JWT_SECRET=your-super-secret-jwt-key-here-must-be-at-least-256-bits-long-for-security-and-hmac-sha256-compatibility-2024
+
+# Admin User Configuration (CHANGE THESE IN PRODUCTION!)
+ADMIN_EMAIL=admin@tinambu.com
+ADMIN_PASSWORD=admin123
+ADMIN_NAME=Admin Sistema
 
 # Application Configuration
 BACKEND_PORT=8080
@@ -237,23 +265,38 @@ print_step "Configurando datos iniciales..."
 print_info "Creando usuario administrador..."
 
 # Verificar si el usuario admin ya existe
-if docker compose exec postgres psql -U postgres -d tinambu_tours -c "SELECT email FROM usuarios.usuarios WHERE email='admin@tinambu.com';" | grep -q "admin@tinambu.com"; then
+if docker compose exec postgres psql -U postgres -d tinambu_tours -c "SELECT email FROM usuarios.usuarios WHERE email='$ADMIN_EMAIL';" | grep -q "$ADMIN_EMAIL"; then
     print_info "Usuario administrador ya existe"
 else
     print_info "Creando nuevo usuario administrador..."
+    print_info "Email: $ADMIN_EMAIL"
     
     # Crear usuario admin usando el endpoint de signup
     signup_response=$(curl -s -X POST http://localhost:8080/api/auth/signup \
         -H "Content-Type: application/json" \
-        -d '{"email":"admin@tinambu.com","password":"admin123","nombreCompleto":"Administrador"}' || echo '{"success":false}')
+        -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\",\"confirmPassword\":\"$ADMIN_PASSWORD\",\"nombreCompleto\":\"$ADMIN_NAME\"}" || echo '{"success":false}')
     
     if echo "$signup_response" | grep -q '"success":true'; then
         print_success "Usuario administrador creado exitosamente"
         
         # Cambiar tipo de usuario a ADMIN
         print_info "Configurando permisos de administrador..."
-        if docker compose exec postgres psql -U postgres -d tinambu_tours -c "UPDATE usuarios.usuarios SET tipo='ADMIN' WHERE email='admin@tinambu.com';"; then
+        if docker compose exec postgres psql -U postgres -d tinambu_tours -c "UPDATE usuarios.usuarios SET tipo='ADMIN' WHERE email='$ADMIN_EMAIL';"; then
             print_success "Permisos de administrador configurados"
+            
+            # Verificar que el login funciona
+            print_info "Verificando que el login funciona..."
+            sleep 2
+            login_response=$(curl -s -X POST http://localhost:8080/api/auth/login \
+                -H "Content-Type: application/json" \
+                -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" || echo '{"success":false}')
+            
+            if echo "$login_response" | grep -q '"success":true'; then
+                print_success "Login de administrador verificado exitosamente"
+            else
+                print_warning "Login de administrador no funciona correctamente"
+                print_info "Respuesta del servidor: $login_response"
+            fi
         else
             print_warning "Error al configurar permisos de administrador"
         fi
@@ -335,6 +378,18 @@ else
     print_warning "✗ Conexión a base de datos: FALLO"
 fi
 
+# Test login functionality
+print_info "Verificando funcionalidad de login..."
+login_test=$(curl -s -X POST http://localhost:8080/api/auth/login \
+    -H "Content-Type: application/json" \
+    -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" || echo '{"success":false}')
+
+if echo "$login_test" | grep -q '"success":true'; then
+    print_success "✓ Sistema de autenticación: OK"
+else
+    print_warning "✗ Sistema de autenticación: FALLO"
+fi
+
 # =============================================================================
 # PASO 9: INFORMACIÓN FINAL Y INSTRUCCIONES
 # =============================================================================
@@ -351,6 +406,8 @@ echo "🚀 BACKEND (Spring):     http://localhost:8080"
 echo "🗄️  BASE DE DATOS:        localhost:5432"
 echo ""
 echo "👤 CREDENCIALES DE ADMINISTRADOR:"
+echo "   📧 Email:    $ADMIN_EMAIL"
+echo "   🔒 Password: $ADMIN_PASSWORD"
 echo "   Ver archivo README-LOCAL.md para detalles completos"
 echo ""
 echo "🔧 COMANDOS ÚTILES:"

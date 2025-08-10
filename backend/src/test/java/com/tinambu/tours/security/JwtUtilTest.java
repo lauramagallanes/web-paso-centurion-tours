@@ -3,6 +3,7 @@ package com.tinambu.tours.security;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.GrantedAuthority;
@@ -11,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,7 +27,7 @@ class JwtUtilTest {
 
     private JwtUtil jwtUtil;
 
-    @Mock
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private UserDetails userDetails;
 
     @BeforeEach
@@ -39,9 +41,6 @@ class JwtUtilTest {
         
         // Configurar mock de UserDetails
         when(userDetails.getUsername()).thenReturn("test@example.com");
-        when(userDetails.getAuthorities()).thenReturn(
-            List.of(new SimpleGrantedAuthority("ROLE_USER"))
-        );
     }
 
     @Test

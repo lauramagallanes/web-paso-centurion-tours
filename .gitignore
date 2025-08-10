@@ -16,6 +16,16 @@ Thumbs.db
 # Local documentation with sensitive information
 README-LOCAL.md
 
+# Environment files with credentials
+.env
+.env.local
+.env.backup.*
+
+# Generated credential files
+*credentials*.txt
+*password*.txt
+generate-admin-credentials.sh
+
 # Backend (Spring Boot)
 backend/target/
 backend/.mvn/

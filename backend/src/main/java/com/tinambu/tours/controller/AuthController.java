@@ -10,6 +10,7 @@ import com.tinambu.tours.entity.usuario.Usuario;
 import com.tinambu.tours.security.JwtUtil;
 import com.tinambu.tours.service.UsuarioService;
 import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,8 @@ public class AuthController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+
 
     /**
      * Login de usuario
@@ -253,4 +256,6 @@ public class AuthController {
         response.setFechaCreacion(usuario.getFechaCreacion());
         return response;
     }
+
+
 }

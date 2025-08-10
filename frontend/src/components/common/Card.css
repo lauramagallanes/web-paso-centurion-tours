@@ -1,0 +1,576 @@
+/* Card System - Based on Figma Design */
+
+.card {
+  /* Base styles */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+/* Card Variants */
+
+/* Default Card */
+.card-default {
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 3px var(--color-shadow);
+}
+
+/* Elevated Card */
+.card-elevated {
+  border: none;
+  box-shadow: 0 4px 12px var(--color-shadow-md);
+}
+
+/* Outlined Card */
+.card-outlined {
+  border: 2px solid var(--color-border);
+  box-shadow: none;
+  background-color: transparent;
+}
+
+/* Filled Card */
+.card-filled {
+  border: none;
+  box-shadow: none;
+  background-color: var(--color-surface-variant);
+}
+
+/* Nature Themed Card */
+.card-nature {
+  border: 1px solid var(--color-secondary);
+  box-shadow: 0 2px 8px rgba(107, 121, 46, 0.15);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-neutral-100) 100%);
+}
+
+.card-nature::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-secondary) 0%, var(--color-accent-green) 100%);
+}
+
+/* Booking Themed Card */
+.card-booking {
+  border: 1px solid var(--color-accent-blue);
+  box-shadow: 0 2px 8px rgba(59, 136, 195, 0.15);
+  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(59, 136, 195, 0.05) 100%);
+}
+
+.card-booking::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-accent-blue) 0%, var(--color-accent-salmon) 100%);
+}
+
+/* Card Sizes */
+.card-sm {
+  padding: var(--space-3);
+  border-radius: 8px;
+}
+
+.card-md {
+  padding: var(--space-4);
+  border-radius: 12px;
+}
+
+.card-lg {
+  padding: var(--space-6);
+  border-radius: 16px;
+}
+
+.card-xl {
+  padding: var(--space-8);
+  border-radius: 20px;
+}
+
+/* Card States */
+.card-hoverable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--color-shadow-lg);
+}
+
+.card-clickable {
+  cursor: pointer;
+}
+
+.card-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--color-shadow-lg);
+}
+
+.card-clickable:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px var(--color-shadow-md);
+}
+
+/* Loading State */
+.card-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.card-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(2px);
+}
+
+[data-theme="dark"] .card-loading-overlay {
+  background-color: rgba(25, 25, 25, 0.8);
+}
+
+.card-spinner {
+  width: 32px;
+  height: 32px;
+  color: var(--color-secondary);
+}
+
+.spinner {
+  width: 100%;
+  height: 100%;
+  animation: spin 1s linear infinite;
+}
+
+.spinner-circle {
+  animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
+
+/* Card Components */
+
+/* Card Header */
+.card-header {
+  padding: 0 0 var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-4);
+}
+
+.card-header:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.card-header h1,
+.card-header h2,
+.card-header h3,
+.card-header h4,
+.card-header h5,
+.card-header h6 {
+  margin-bottom: var(--space-2);
+  color: var(--color-text);
+}
+
+/* Card Body */
+.card-body {
+  flex: 1;
+  padding: 0;
+}
+
+.card-body p {
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-3);
+}
+
+.card-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Card Footer */
+.card-footer {
+  padding: var(--space-4) 0 0 0;
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.card-footer:first-child {
+  padding-top: 0;
+  border-top: none;
+  margin-top: 0;
+}
+
+/* Card Image */
+.card-image {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-neutral-100);
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-4) calc(-1 * var(--space-4));
+}
+
+.card-sm .card-image {
+  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-3)) var(--space-3) calc(-1 * var(--space-3));
+  border-radius: 8px 8px 0 0;
+}
+
+.card-md .card-image {
+  border-radius: 12px 12px 0 0;
+}
+
+.card-lg .card-image {
+  border-radius: 16px 16px 0 0;
+}
+
+.card-xl .card-image {
+  border-radius: 20px 20px 0 0;
+}
+
+.card-image-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.card-hoverable:hover .card-image-img,
+.card-clickable:hover .card-image-img {
+  transform: scale(1.05);
+}
+
+/* Image Aspect Ratios */
+.card-image-square {
+  aspect-ratio: 1 / 1;
+}
+
+.card-image-video {
+  aspect-ratio: 16 / 9;
+}
+
+.card-image-wide {
+  aspect-ratio: 21 / 9;
+}
+
+.card-image-tall {
+  aspect-ratio: 3 / 4;
+}
+
+/* Specialized Card Types */
+
+/* Activity Card */
+.activity-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.activity-card .card-image {
+  position: relative;
+}
+
+.activity-card .card-image::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+
+.activity-card .card-badge {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  background-color: var(--color-secondary);
+  color: white;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 6px;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  z-index: 5;
+}
+
+/* Accommodation Card */
+.accommodation-card {
+  border: 1px solid var(--color-border);
+  transition: all 0.3s ease;
+}
+
+.accommodation-card:hover {
+  border-color: var(--color-secondary);
+  box-shadow: 0 8px 24px rgba(107, 121, 46, 0.15);
+}
+
+.accommodation-card .card-price {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--color-secondary);
+}
+
+.accommodation-card .card-price-unit {
+  font-size: var(--text-sm);
+  font-weight: var(--font-normal);
+  color: var(--color-text-secondary);
+}
+
+/* Text utility classes for cards */
+.text-text {
+  color: var(--color-text);
+}
+
+.text-text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-text-muted {
+  color: var(--color-text-muted);
+}
+
+.text-success {
+  color: var(--color-success);
+}
+
+.text-error {
+  color: var(--color-error);
+}
+
+/* Activity Card specific styles */
+.activity-card .card-price {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--color-secondary);
+}
+
+.activity-card .card-price-unit {
+  font-size: var(--text-sm);
+  font-weight: var(--font-normal);
+  color: var(--color-text-secondary);
+}
+
+/* Testimonial Card */
+.testimonial-card {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-neutral-100) 100%);
+  border: 1px solid var(--color-border);
+  position: relative;
+}
+
+.testimonial-card::before {
+  content: '"';
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-3);
+  font-size: 3rem;
+  font-weight: var(--font-bold);
+  color: var(--color-secondary);
+  opacity: 0.3;
+  line-height: 1;
+}
+
+.testimonial-card .card-body {
+  padding-top: var(--space-6);
+}
+
+/* Stats Card */
+.stats-card {
+  text-align: center;
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-accent-green) 100%);
+  color: white;
+  border: none;
+}
+
+.stats-card .stats-number {
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
+  line-height: 1;
+  margin-bottom: var(--space-2);
+}
+
+.stats-card .stats-label {
+  font-size: var(--text-sm);
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Card Grid Layouts */
+.card-grid {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.card-grid-1 {
+  grid-template-columns: 1fr;
+}
+
+.card-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.card-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.card-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Responsive Card Grids */
+@media (max-width: 1024px) {
+  .card-grid-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .card-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .card-grid-4,
+  .card-grid-3,
+  .card-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .card {
+    margin-bottom: var(--space-4);
+  }
+}
+
+@media (max-width: 480px) {
+  .card-lg {
+    padding: var(--space-4);
+  }
+  
+  .card-xl {
+    padding: var(--space-6);
+  }
+  
+  .card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Dark Theme Adjustments */
+[data-theme="dark"] .card-nature {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-neutral-800) 100%);
+}
+
+[data-theme="dark"] .card-booking {
+  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(59, 136, 195, 0.1) 100%);
+}
+
+[data-theme="dark"] .testimonial-card {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-neutral-800) 100%);
+}
+
+[data-theme="dark"] .activity-card .card-image::after {
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+}
+
+/* Dark theme text overrides for better contrast */
+[data-theme="dark"] .text-text {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .text-text-secondary {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .text-text-muted {
+  color: var(--color-text-muted);
+}
+
+/* Amenity tags styling */
+.bg-neutral-100 {
+  background-color: var(--color-neutral-100);
+}
+
+.accommodation-amenities .bg-neutral-100 {
+  background-color: var(--color-surface-variant);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+[data-theme="dark"] .accommodation-amenities .bg-neutral-100 {
+  background-color: var(--color-neutral-700);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .card {
+    border-width: 2px;
+  }
+  
+  .card-outlined {
+    border-width: 3px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card-image-img {
+    transition: none;
+  }
+  
+  .card-hoverable:hover,
+  .card-clickable:hover {
+    transform: none;
+  }
+  
+  .card-hoverable:hover .card-image-img,
+  .card-clickable:hover .card-image-img {
+    transform: none;
+  }
+  
+  .spinner,
+  .spinner-circle {
+    animation: none;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .card {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+}

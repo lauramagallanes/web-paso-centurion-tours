@@ -1,0 +1,115 @@
+/* Tinambú Tours - Color System */
+/* Based on Figma design analysis */
+
+:root {
+  /* Primary Colors - Dark theme base */
+  --color-primary: #191919;
+  --color-primary-hover: #202020;
+  --color-primary-active: #2c2c2c;
+  
+  /* Secondary Colors */
+  --color-secondary: #6b792e;
+  --color-secondary-hover: #5a6626;
+  --color-secondary-active: #4a5420;
+  
+  /* Accent Colors */
+  --color-accent-blue: #3b88c3;
+  --color-accent-blue-hover: #2d6ea3;
+  --color-accent-salmon: #d99e82;
+  --color-accent-green: #aabe50;
+  
+  /* Neutral Colors */
+  --color-neutral-100: #faf0e8;
+  --color-neutral-200: #fff5eb;
+  --color-neutral-300: #e7e5e5;
+  --color-neutral-400: #d4d4d4;
+  --color-neutral-500: #807a75;
+  --color-neutral-600: #5b5b5b;
+  --color-neutral-700: #444444;
+  --color-neutral-800: #202020;
+  --color-neutral-900: #191919;
+  
+  /* Semantic Colors - Light Theme */
+  --color-background: #fefcfb;
+  --color-surface: #ffffff;
+  --color-surface-variant: #fff9f4;
+  --color-text: #191919;
+  --color-text-secondary: #444444;
+  --color-text-muted: #5b5b5b;
+  
+  /* Interactive Colors */
+  --color-link: #3b88c3;
+  --color-link-hover: #2d6ea3;
+  --color-link-visited: #33829d;
+  
+  /* Status Colors */
+  --color-success: #aabe50;
+  --color-success-bg: #f0f4e8;
+  --color-warning: #d99e82;
+  --color-warning-bg: #fdf5f1;
+  --color-error: #c53030;
+  --color-error-bg: #fed7d7;
+  --color-info: #3b88c3;
+  --color-info-bg: #e6f3ff;
+  
+  /* Border Colors */
+  --color-border: #d4d4d4;
+  --color-border-hover: #5b5b5b;
+  --color-border-focus: #3b88c3;
+  
+  /* Shadow Colors */
+  --color-shadow: rgba(25, 25, 25, 0.1);
+  --color-shadow-md: rgba(25, 25, 25, 0.15);
+  --color-shadow-lg: rgba(25, 25, 25, 0.2);
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  /* Primary Colors remain the same for dark theme */
+  --color-primary: #191919;
+  --color-primary-hover: #202020;
+  --color-primary-active: #2c2c2c;
+  
+  /* Backgrounds for dark theme */
+  --color-background: #0d0d0b;
+  --color-surface: #191919;
+  --color-surface-variant: #202020;
+  
+  /* Text colors for dark theme */
+  --color-text: #fefcfb;
+  --color-text-secondary: #e7e5e5;
+  --color-text-muted: #d4d4d4;
+  
+  /* Borders for dark theme */
+  --color-border: #444444;
+  --color-border-hover: #5b5b5b;
+  
+  /* Shadows for dark theme */
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  --color-shadow-md: rgba(0, 0, 0, 0.4);
+  --color-shadow-lg: rgba(0, 0, 0, 0.5);
+  
+  /* Status backgrounds for dark theme */
+  --color-success-bg: rgba(170, 190, 80, 0.1);
+  --color-warning-bg: rgba(217, 158, 130, 0.1);
+  --color-error-bg: rgba(197, 48, 48, 0.1);
+  --color-info-bg: rgba(59, 136, 195, 0.1);
+}
+
+/* Utility Classes */
+.text-primary { color: var(--color-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-muted { color: var(--color-text-muted); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-error { color: var(--color-error); }
+.text-info { color: var(--color-info); }
+
+.bg-primary { background-color: var(--color-primary); }
+.bg-secondary { background-color: var(--color-secondary); }
+.bg-surface { background-color: var(--color-surface); }
+.bg-neutral-100 { background-color: var(--color-neutral-100); }
+.bg-neutral-200 { background-color: var(--color-neutral-200); }
+
+.border-default { border-color: var(--color-border); }
+.border-focus { border-color: var(--color-border-focus); }

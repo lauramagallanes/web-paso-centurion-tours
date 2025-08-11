@@ -1,5 +1,7 @@
 package com.tinambu.tours.service;
 
+import com.tinambu.tours.dto.request.SenderoRequest;
+import com.tinambu.tours.dto.response.SenderoResponse;
 import com.tinambu.tours.entity.sendero.NivelDificultad;
 import com.tinambu.tours.entity.sendero.Sendero;
 import com.tinambu.tours.repository.SenderoRepository;
@@ -10,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -21,37 +24,40 @@ public class SenderoService {
     /**
      * Crear nuevo sendero
      */
-    public Sendero crearSendero(Sendero sendero) {
+    public SenderoResponse crearSendero(SenderoRequest senderoRequest) {
         // Validar que el nombre no esté duplicado
-        if (senderoRepository.findByNombre(sendero.getNombre()).isPresent()) {
-            throw new IllegalArgumentException("Ya existe un sendero con el nombre: " + sendero.getNombre());
+        if (senderoRepository.findByNombre(senderoRequest.getNombre()).isPresent()) {
+            throw new IllegalArgumentException("Ya existe un sendero con el nombre: " + senderoRequest.getNombre());
         }
 
-        return senderoRepository.save(sendero);
+        Sendero sendero = convertirRequestAEntidad(senderoRequest);
+        Sendero senderoGuardado = senderoRepository.save(sendero);
+        return convertirEntidadAResponse(senderoGuardado);
     }
 
     /**
      * Actualizar sendero existente
      */
-    public Sendero actualizarSendero(UUID id, Sendero senderoActualizado) {
+    public SenderoResponse actualizarSendero(UUID id, SenderoRequest senderoRequest) {
         Sendero sendero = obtenerSenderoPorId(id);
 
         // Verificar si cambió el nombre y si ya existe
-        if (!sendero.getNombre().equals(senderoActualizado.getNombre()) &&
-            senderoRepository.findByNombre(senderoActualizado.getNombre()).isPresent()) {
-            throw new IllegalArgumentException("Ya existe un sendero con el nombre: " + senderoActualizado.getNombre());
+        if (!sendero.getNombre().equals(senderoRequest.getNombre()) &&
+            senderoRepository.findByNombre(senderoRequest.getNombre()).isPresent()) {
+            throw new IllegalArgumentException("Ya existe un sendero con el nombre: " + senderoRequest.getNombre());
         }
 
         // Actualizar campos
-        sendero.setNombre(senderoActualizado.getNombre());
-        sendero.setDescripcion(senderoActualizado.getDescripcion());
-        sendero.setDuracionHoras(senderoActualizado.getDuracionHoras());
-        sendero.setNivelDificultad(senderoActualizado.getNivelDificultad());
-        sendero.setCapacidadMaximaGrupo(senderoActualizado.getCapacidadMaximaGrupo());
-        sendero.setPrecioPorPersona(senderoActualizado.getPrecioPorPersona());
-        sendero.setUrlImagen(senderoActualizado.getUrlImagen());
+        sendero.setNombre(senderoRequest.getNombre());
+        sendero.setDescripcion(senderoRequest.getDescripcion());
+        sendero.setDuracionHoras(senderoRequest.getDuracionHoras());
+        sendero.setNivelDificultad(senderoRequest.getNivelDificultad());
+        sendero.setCapacidadMaximaGrupo(senderoRequest.getCapacidadMaximaGrupo());
+        sendero.setPrecioPorPersona(senderoRequest.getPrecioPorPersona());
+        sendero.setUrlImagen(senderoRequest.getUrlImagen());
 
-        return senderoRepository.save(sendero);
+        Sendero senderoActualizado = senderoRepository.save(sendero);
+        return convertirEntidadAResponse(senderoActualizado);
     }
 
     /**
@@ -67,59 +73,90 @@ public class SenderoService {
      * Buscar senderos por capacidad mínima
      */
     @Transactional(readOnly = true)
-    public List<Sendero> buscarPorCapacidadMinima(Integer numeroPersonas) {
-        return senderoRepository.findByCapacidadMinima(numeroPersonas);
+    public List<SenderoResponse> buscarPorCapacidadMinima(Integer numeroPersonas) {
+        List<Sendero> senderos = senderoRepository.findByCapacidadMinima(numeroPersonas);
+        return senderos.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     /**
      * Buscar senderos por nivel de dificultad
      */
     @Transactional(readOnly = true)
-    public List<Sendero> buscarPorNivelDificultad(NivelDificultad nivelDificultad) {
-        return senderoRepository.findByNivelDificultadAndActivoTrue(nivelDificultad);
+    public List<SenderoResponse> buscarPorNivelDificultad(NivelDificultad nivelDificultad) {
+        List<Sendero> senderos = senderoRepository.findByNivelDificultadAndActivoTrue(nivelDificultad);
+        return senderos.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     /**
      * Buscar senderos por rango de duración
      */
     @Transactional(readOnly = true)
-    public List<Sendero> buscarPorRangoDuracion(BigDecimal duracionMin, BigDecimal duracionMax) {
-        return senderoRepository.findByRangoDuracion(duracionMin, duracionMax);
+    public List<SenderoResponse> buscarPorRangoDuracion(BigDecimal duracionMin, BigDecimal duracionMax) {
+        List<Sendero> senderos = senderoRepository.findByRangoDuracion(duracionMin, duracionMax);
+        return senderos.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     /**
      * Buscar senderos por rango de precios
      */
     @Transactional(readOnly = true)
-    public List<Sendero> buscarPorRangoPrecio(BigDecimal precioMin, BigDecimal precioMax) {
-        return senderoRepository.findByRangoPrecio(precioMin, precioMax);
+    public List<SenderoResponse> buscarPorRangoPrecio(BigDecimal precioMin, BigDecimal precioMax) {
+        List<Sendero> senderos = senderoRepository.findByRangoPrecio(precioMin, precioMax);
+        return senderos.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     /**
      * Buscar senderos por texto en nombre o descripción
      */
     @Transactional(readOnly = true)
-    public List<Sendero> buscarPorTexto(String texto) {
-        return senderoRepository.findByNombreOrDescripcionContaining(texto);
+    public List<SenderoResponse> buscarPorTexto(String texto) {
+        List<Sendero> senderos = senderoRepository.findByNombreOrDescripcionContaining(texto);
+        return senderos.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     // Métodos de consulta con ordenamiento
     @Transactional(readOnly = true)
-    public List<Sendero> obtenerSenderosOrdenadosPorDificultad() {
-        return senderoRepository.findAllOrderByDificultad();
+    public List<SenderoResponse> obtenerSenderosOrdenadosPorDificultad() {
+        List<Sendero> senderos = senderoRepository.findAllOrderByDificultad();
+        return senderos.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<Sendero> obtenerSenderosOrdenadosPorDuracion() {
-        return senderoRepository.findAllOrderByDuracion();
+    public List<SenderoResponse> obtenerSenderosOrdenadosPorDuracion() {
+        List<Sendero> senderos = senderoRepository.findAllOrderByDuracion();
+        return senderos.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<Sendero> obtenerSenderosOrdenadosPorPrecio() {
-        return senderoRepository.findAllOrderByPrecio();
+    public List<SenderoResponse> obtenerSenderosOrdenadosPorPrecio() {
+        List<Sendero> senderos = senderoRepository.findAllOrderByPrecio();
+        return senderos.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     // Métodos de consulta básicos
+    @Transactional(readOnly = true)
+    public SenderoResponse obtenerSenderoPorIdPublico(UUID id) {
+        Sendero sendero = obtenerSenderoPorId(id);
+        return convertirEntidadAResponse(sendero);
+    }
+
+    // Método interno para obtener entidad (usado internamente por el servicio)
     @Transactional(readOnly = true)
     public Sendero obtenerSenderoPorId(UUID id) {
         return senderoRepository.findById(id)
@@ -133,13 +170,19 @@ public class SenderoService {
     }
 
     @Transactional(readOnly = true)
-    public List<Sendero> obtenerTodosLosSenderos() {
-        return senderoRepository.findAll();
+    public List<SenderoResponse> obtenerTodosLosSenderos() {
+        List<Sendero> senderos = senderoRepository.findAll();
+        return senderos.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<Sendero> obtenerSenderosActivos() {
-        return senderoRepository.findByActivoTrue();
+    public List<SenderoResponse> obtenerSenderosActivos() {
+        List<Sendero> senderos = senderoRepository.findByActivoTrue();
+        return senderos.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -229,5 +272,39 @@ public class SenderoService {
         public long getSenderosModera() { return senderosModera; }
         public long getSenderosDificiles() { return senderosDificiles; }
         public long getSenderosExpertos() { return senderosExpertos; }
+    }
+
+    // ========== MÉTODOS DE CONVERSIÓN ==========
+
+    /**
+     * Convierte un SenderoRequest DTO a entidad Sendero
+     */
+    private Sendero convertirRequestAEntidad(SenderoRequest request) {
+        Sendero sendero = new Sendero();
+        sendero.setNombre(request.getNombre());
+        sendero.setDescripcion(request.getDescripcion());
+        sendero.setDuracionHoras(request.getDuracionHoras());
+        sendero.setNivelDificultad(request.getNivelDificultad());
+        sendero.setCapacidadMaximaGrupo(request.getCapacidadMaximaGrupo());
+        sendero.setPrecioPorPersona(request.getPrecioPorPersona());
+        sendero.setUrlImagen(request.getUrlImagen());
+        return sendero;
+    }
+
+    /**
+     * Convierte una entidad Sendero a SenderoResponse DTO
+     * Excluye información interna como estado activo y fechas de auditoría
+     */
+    private SenderoResponse convertirEntidadAResponse(Sendero sendero) {
+        SenderoResponse response = new SenderoResponse();
+        response.setId(sendero.getId());
+        response.setNombre(sendero.getNombre());
+        response.setDescripcion(sendero.getDescripcion());
+        response.setDuracionHoras(sendero.getDuracionHoras());
+        response.setNivelDificultad(sendero.getNivelDificultad());
+        response.setCapacidadMaximaGrupo(sendero.getCapacidadMaximaGrupo());
+        response.setPrecioPorPersona(sendero.getPrecioPorPersona());
+        response.setUrlImagen(sendero.getUrlImagen());
+        return response;
     }
 }

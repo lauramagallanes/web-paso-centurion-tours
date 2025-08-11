@@ -1,5 +1,7 @@
 package com.tinambu.tours.service;
 
+import com.tinambu.tours.dto.request.GuiaRequest;
+import com.tinambu.tours.dto.response.GuiaResponse;
 import com.tinambu.tours.entity.guia.Guia;
 import com.tinambu.tours.entity.reserva.TurnoSendero;
 import com.tinambu.tours.repository.GuiaRepository;
@@ -10,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -21,55 +24,62 @@ public class GuiaService {
     /**
      * Crear nuevo guía
      */
-    public Guia crearGuia(Guia guia) {
+    public GuiaResponse crearGuia(GuiaRequest guiaRequest) {
         // Validar que el email no esté duplicado (si se proporciona)
-        if (guia.getEmail() != null && guiaRepository.findByEmail(guia.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Ya existe un guía con el email: " + guia.getEmail());
+        if (guiaRequest.getEmail() != null && guiaRepository.findByEmail(guiaRequest.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Ya existe un guía con el email: " + guiaRequest.getEmail());
         }
 
-        return guiaRepository.save(guia);
+        Guia guia = convertirRequestAEntidad(guiaRequest);
+        Guia guiaGuardado = guiaRepository.save(guia);
+        return convertirEntidadAResponse(guiaGuardado);
     }
 
     /**
      * Actualizar guía existente
      */
-    public Guia actualizarGuia(UUID id, Guia guiaActualizado) {
+    public GuiaResponse actualizarGuia(UUID id, GuiaRequest guiaRequest) {
         Guia guia = obtenerGuiaPorId(id);
 
         // Verificar si cambió el email y si ya existe
-        if (guiaActualizado.getEmail() != null && 
-            !guiaActualizado.getEmail().equals(guia.getEmail()) &&
-            guiaRepository.findByEmail(guiaActualizado.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Ya existe un guía con el email: " + guiaActualizado.getEmail());
+        if (guiaRequest.getEmail() != null && 
+            !guiaRequest.getEmail().equals(guia.getEmail()) &&
+            guiaRepository.findByEmail(guiaRequest.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Ya existe un guía con el email: " + guiaRequest.getEmail());
         }
 
         // Actualizar campos
-        guia.setNombre(guiaActualizado.getNombre());
-        guia.setApellido(guiaActualizado.getApellido());
-        guia.setEmail(guiaActualizado.getEmail());
-        guia.setBiografia(guiaActualizado.getBiografia());
-        guia.setAnosExperiencia(guiaActualizado.getAnosExperiencia());
-        guia.setEspecialidades(guiaActualizado.getEspecialidades());
-        guia.setUrlFoto(guiaActualizado.getUrlFoto());
+        guia.setNombre(guiaRequest.getNombre());
+        guia.setApellido(guiaRequest.getApellido());
+        guia.setEmail(guiaRequest.getEmail());
+        guia.setBiografia(guiaRequest.getBiografia());
+        guia.setAnosExperiencia(guiaRequest.getAnosExperiencia());
+        guia.setEspecialidades(guiaRequest.getEspecialidades());
+        guia.setUrlFoto(guiaRequest.getUrlFoto());
 
-        return guiaRepository.save(guia);
+        Guia guiaActualizado = guiaRepository.save(guia);
+        return convertirEntidadAResponse(guiaActualizado);
     }
 
     /**
      * Activar/desactivar guía
      */
-    public Guia cambiarEstadoGuia(UUID id, boolean activo) {
+    public GuiaResponse cambiarEstadoGuia(UUID id, boolean activo) {
         Guia guia = obtenerGuiaPorId(id);
         guia.setActivo(activo);
-        return guiaRepository.save(guia);
+        Guia guiaActualizado = guiaRepository.save(guia);
+        return convertirEntidadAResponse(guiaActualizado);
     }
 
     /**
      * Buscar guías disponibles para una fecha y turno específicos
      */
     @Transactional(readOnly = true)
-    public List<Guia> buscarGuiasDisponibles(LocalDate fecha, TurnoSendero turno) {
-        return guiaRepository.findGuiasDisponibles(fecha, turno);
+    public List<GuiaResponse> buscarGuiasDisponibles(LocalDate fecha, TurnoSendero turno) {
+        List<Guia> guias = guiaRepository.findGuiasDisponibles(fecha, turno);
+        return guias.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -84,24 +94,33 @@ public class GuiaService {
      * Buscar guías por especialidad
      */
     @Transactional(readOnly = true)
-    public List<Guia> buscarPorEspecialidad(String especialidad) {
-        return guiaRepository.findByEspecialidadContaining(especialidad);
+    public List<GuiaResponse> buscarPorEspecialidad(String especialidad) {
+        List<Guia> guias = guiaRepository.findByEspecialidadContaining(especialidad);
+        return guias.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     /**
      * Buscar guías por años de experiencia mínima
      */
     @Transactional(readOnly = true)
-    public List<Guia> buscarPorExperienciaMinima(Integer anosMinimos) {
-        return guiaRepository.findByAnosExperienciaMinima(anosMinimos);
+    public List<GuiaResponse> buscarPorExperienciaMinima(Integer anosMinimos) {
+        List<Guia> guias = guiaRepository.findByAnosExperienciaMinima(anosMinimos);
+        return guias.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     /**
      * Buscar guías por nombre
      */
     @Transactional(readOnly = true)
-    public List<Guia> buscarPorNombre(String nombre) {
-        return guiaRepository.findByNombreCompletoContaining(nombre);
+    public List<GuiaResponse> buscarPorNombre(String nombre) {
+        List<Guia> guias = guiaRepository.findByNombreCompletoContaining(nombre);
+        return guias.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -114,11 +133,21 @@ public class GuiaService {
 
     // Métodos de consulta con ordenamiento
     @Transactional(readOnly = true)
-    public List<Guia> obtenerGuiasOrdenadosPorExperiencia() {
-        return guiaRepository.findAllOrderByExperiencia();
+    public List<GuiaResponse> obtenerGuiasOrdenadosPorExperiencia() {
+        List<Guia> guias = guiaRepository.findAllOrderByExperiencia();
+        return guias.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     // Métodos de consulta básicos
+    @Transactional(readOnly = true)
+    public GuiaResponse obtenerGuiaPorIdPublico(UUID id) {
+        Guia guia = obtenerGuiaPorId(id);
+        return convertirEntidadAResponse(guia);
+    }
+
+    // Método interno para obtener entidad (usado internamente por el servicio)
     @Transactional(readOnly = true)
     public Guia obtenerGuiaPorId(UUID id) {
         return guiaRepository.findById(id)
@@ -132,13 +161,19 @@ public class GuiaService {
     }
 
     @Transactional(readOnly = true)
-    public List<Guia> obtenerTodosLosGuias() {
-        return guiaRepository.findAll();
+    public List<GuiaResponse> obtenerTodosLosGuias() {
+        List<Guia> guias = guiaRepository.findAll();
+        return guias.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<Guia> obtenerGuiasActivos() {
-        return guiaRepository.findByActivoTrue();
+    public List<GuiaResponse> obtenerGuiasActivos() {
+        List<Guia> guias = guiaRepository.findByActivoTrue();
+        return guias.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -179,6 +214,40 @@ public class GuiaService {
 
         return new GuiaStats(totalGuias, guiasActivos, experienciaPromedio, 
                            guiasConExperiencia, guiasConEspecialidades);
+    }
+
+    // ========== MÉTODOS DE CONVERSIÓN ==========
+
+    /**
+     * Convierte un GuiaRequest DTO a entidad Guia
+     */
+    private Guia convertirRequestAEntidad(GuiaRequest request) {
+        Guia guia = new Guia();
+        guia.setNombre(request.getNombre());
+        guia.setApellido(request.getApellido());
+        guia.setEmail(request.getEmail());
+        guia.setBiografia(request.getBiografia());
+        guia.setAnosExperiencia(request.getAnosExperiencia());
+        guia.setEspecialidades(request.getEspecialidades());
+        guia.setUrlFoto(request.getUrlFoto());
+        return guia;
+    }
+
+    /**
+     * Convierte una entidad Guia a GuiaResponse DTO
+     * Excluye información sensible como email para respuestas públicas
+     */
+    private GuiaResponse convertirEntidadAResponse(Guia guia) {
+        GuiaResponse response = new GuiaResponse();
+        response.setId(guia.getId());
+        response.setNombre(guia.getNombre());
+        response.setApellido(guia.getApellido());
+        response.setNombreCompleto(guia.getNombreCompleto());
+        response.setBiografia(guia.getBiografia());
+        response.setAnosExperiencia(guia.getAnosExperiencia());
+        response.setEspecialidades(guia.getEspecialidades());
+        response.setUrlFoto(guia.getUrlFoto());
+        return response;
     }
 
     // Clase interna para estadísticas

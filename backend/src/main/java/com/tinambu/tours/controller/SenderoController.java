@@ -1,6 +1,8 @@
 package com.tinambu.tours.controller;
 
+import com.tinambu.tours.dto.request.SenderoRequest;
 import com.tinambu.tours.dto.response.ApiResponse;
+import com.tinambu.tours.dto.response.SenderoResponse;
 import com.tinambu.tours.entity.sendero.NivelDificultad;
 import com.tinambu.tours.entity.sendero.Sendero;
 import com.tinambu.tours.service.SenderoService;
@@ -30,10 +32,10 @@ public class SenderoController {
      * Endpoint público para mostrar opciones de senderos
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Sendero>>> obtenerSenderosActivos() {
+    public ResponseEntity<ApiResponse<List<SenderoResponse>>> obtenerSenderosActivos() {
         try {
-            List<Sendero> senderos = senderoService.obtenerSenderosActivos();
-            return ResponseEntity.ok(ApiResponse.success(senderos));
+            List<SenderoResponse> senderosResponse = senderoService.obtenerSenderosActivos();
+            return ResponseEntity.ok(ApiResponse.success(senderosResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al obtener senderos"));
@@ -45,10 +47,10 @@ public class SenderoController {
      * Endpoint público para ver detalles de un sendero
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Sendero>> obtenerSenderoPorId(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<SenderoResponse>> obtenerSenderoPorId(@PathVariable UUID id) {
         try {
-            Sendero sendero = senderoService.obtenerSenderoPorId(id);
-            return ResponseEntity.ok(ApiResponse.success(sendero));
+            SenderoResponse response = senderoService.obtenerSenderoPorIdPublico(id);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(e.getMessage()));
@@ -60,10 +62,10 @@ public class SenderoController {
      * Endpoint público
      */
     @GetMapping("/capacidad/{numeroPersonas}")
-    public ResponseEntity<ApiResponse<List<Sendero>>> buscarPorCapacidad(@PathVariable Integer numeroPersonas) {
+    public ResponseEntity<ApiResponse<List<SenderoResponse>>> buscarPorCapacidad(@PathVariable Integer numeroPersonas) {
         try {
-            List<Sendero> senderos = senderoService.buscarPorCapacidadMinima(numeroPersonas);
-            return ResponseEntity.ok(ApiResponse.success(senderos));
+            List<SenderoResponse> senderosResponse = senderoService.buscarPorCapacidadMinima(numeroPersonas);
+            return ResponseEntity.ok(ApiResponse.success(senderosResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al buscar por capacidad"));
@@ -75,10 +77,10 @@ public class SenderoController {
      * Endpoint público
      */
     @GetMapping("/dificultad/{nivelDificultad}")
-    public ResponseEntity<ApiResponse<List<Sendero>>> buscarPorNivelDificultad(@PathVariable NivelDificultad nivelDificultad) {
+    public ResponseEntity<ApiResponse<List<SenderoResponse>>> buscarPorNivelDificultad(@PathVariable NivelDificultad nivelDificultad) {
         try {
-            List<Sendero> senderos = senderoService.buscarPorNivelDificultad(nivelDificultad);
-            return ResponseEntity.ok(ApiResponse.success(senderos));
+            List<SenderoResponse> senderosResponse = senderoService.buscarPorNivelDificultad(nivelDificultad);
+            return ResponseEntity.ok(ApiResponse.success(senderosResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al buscar por dificultad"));
@@ -90,12 +92,12 @@ public class SenderoController {
      * Endpoint público
      */
     @GetMapping("/duracion")
-    public ResponseEntity<ApiResponse<List<Sendero>>> buscarPorRangoDuracion(
+    public ResponseEntity<ApiResponse<List<SenderoResponse>>> buscarPorRangoDuracion(
             @RequestParam BigDecimal duracionMin,
             @RequestParam BigDecimal duracionMax) {
         try {
-            List<Sendero> senderos = senderoService.buscarPorRangoDuracion(duracionMin, duracionMax);
-            return ResponseEntity.ok(ApiResponse.success(senderos));
+            List<SenderoResponse> senderosResponse = senderoService.buscarPorRangoDuracion(duracionMin, duracionMax);
+            return ResponseEntity.ok(ApiResponse.success(senderosResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al buscar por duración"));
@@ -107,12 +109,12 @@ public class SenderoController {
      * Endpoint público
      */
     @GetMapping("/precio")
-    public ResponseEntity<ApiResponse<List<Sendero>>> buscarPorRangoPrecio(
+    public ResponseEntity<ApiResponse<List<SenderoResponse>>> buscarPorRangoPrecio(
             @RequestParam BigDecimal precioMin,
             @RequestParam BigDecimal precioMax) {
         try {
-            List<Sendero> senderos = senderoService.buscarPorRangoPrecio(precioMin, precioMax);
-            return ResponseEntity.ok(ApiResponse.success(senderos));
+            List<SenderoResponse> senderosResponse = senderoService.buscarPorRangoPrecio(precioMin, precioMax);
+            return ResponseEntity.ok(ApiResponse.success(senderosResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al buscar por precio"));
@@ -124,10 +126,10 @@ public class SenderoController {
      * Endpoint público
      */
     @GetMapping("/buscar")
-    public ResponseEntity<ApiResponse<List<Sendero>>> buscarPorTexto(@RequestParam String texto) {
+    public ResponseEntity<ApiResponse<List<SenderoResponse>>> buscarPorTexto(@RequestParam String texto) {
         try {
-            List<Sendero> senderos = senderoService.buscarPorTexto(texto);
-            return ResponseEntity.ok(ApiResponse.success(senderos));
+            List<SenderoResponse> senderosResponse = senderoService.buscarPorTexto(texto);
+            return ResponseEntity.ok(ApiResponse.success(senderosResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error en la búsqueda"));
@@ -139,10 +141,10 @@ public class SenderoController {
      * Endpoint público
      */
     @GetMapping("/ordenados/dificultad")
-    public ResponseEntity<ApiResponse<List<Sendero>>> obtenerSenderosOrdenadosPorDificultad() {
+    public ResponseEntity<ApiResponse<List<SenderoResponse>>> obtenerSenderosOrdenadosPorDificultad() {
         try {
-            List<Sendero> senderos = senderoService.obtenerSenderosOrdenadosPorDificultad();
-            return ResponseEntity.ok(ApiResponse.success(senderos));
+            List<SenderoResponse> senderosResponse = senderoService.obtenerSenderosOrdenadosPorDificultad();
+            return ResponseEntity.ok(ApiResponse.success(senderosResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al obtener senderos ordenados"));
@@ -154,10 +156,10 @@ public class SenderoController {
      * Endpoint público
      */
     @GetMapping("/ordenados/duracion")
-    public ResponseEntity<ApiResponse<List<Sendero>>> obtenerSenderosOrdenadosPorDuracion() {
+    public ResponseEntity<ApiResponse<List<SenderoResponse>>> obtenerSenderosOrdenadosPorDuracion() {
         try {
-            List<Sendero> senderos = senderoService.obtenerSenderosOrdenadosPorDuracion();
-            return ResponseEntity.ok(ApiResponse.success(senderos));
+            List<SenderoResponse> senderosResponse = senderoService.obtenerSenderosOrdenadosPorDuracion();
+            return ResponseEntity.ok(ApiResponse.success(senderosResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al obtener senderos ordenados"));
@@ -169,10 +171,10 @@ public class SenderoController {
      * Endpoint público
      */
     @GetMapping("/ordenados/precio")
-    public ResponseEntity<ApiResponse<List<Sendero>>> obtenerSenderosOrdenadosPorPrecio() {
+    public ResponseEntity<ApiResponse<List<SenderoResponse>>> obtenerSenderosOrdenadosPorPrecio() {
         try {
-            List<Sendero> senderos = senderoService.obtenerSenderosOrdenadosPorPrecio();
-            return ResponseEntity.ok(ApiResponse.success(senderos));
+            List<SenderoResponse> senderosResponse = senderoService.obtenerSenderosOrdenadosPorPrecio();
+            return ResponseEntity.ok(ApiResponse.success(senderosResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al obtener senderos ordenados"));
@@ -187,9 +189,9 @@ public class SenderoController {
      */
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<Sendero>>> obtenerTodosLosSenderos() {
+    public ResponseEntity<ApiResponse<List<SenderoResponse>>> obtenerTodosLosSenderos() {
         try {
-            List<Sendero> senderos = senderoService.obtenerTodosLosSenderos();
+            List<SenderoResponse> senderos = senderoService.obtenerTodosLosSenderos();
             return ResponseEntity.ok(ApiResponse.success(senderos));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -203,11 +205,11 @@ public class SenderoController {
      */
     @PostMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Sendero>> crearSendero(@Valid @RequestBody Sendero sendero) {
+    public ResponseEntity<ApiResponse<SenderoResponse>> crearSendero(@Valid @RequestBody SenderoRequest senderoRequest) {
         try {
-            Sendero nuevoSendero = senderoService.crearSendero(sendero);
+            SenderoResponse response = senderoService.crearSendero(senderoRequest);
             return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(nuevoSendero, "Sendero creado exitosamente"));
+                .body(ApiResponse.success(response, "Sendero creado exitosamente"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(e.getMessage()));
@@ -223,12 +225,12 @@ public class SenderoController {
      */
     @PutMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Sendero>> actualizarSendero(
+    public ResponseEntity<ApiResponse<SenderoResponse>> actualizarSendero(
             @PathVariable UUID id, 
-            @Valid @RequestBody Sendero sendero) {
+            @Valid @RequestBody SenderoRequest senderoRequest) {
         try {
-            Sendero senderoActualizado = senderoService.actualizarSendero(id, sendero);
-            return ResponseEntity.ok(ApiResponse.success(senderoActualizado, "Sendero actualizado exitosamente"));
+            SenderoResponse response = senderoService.actualizarSendero(id, senderoRequest);
+            return ResponseEntity.ok(ApiResponse.success(response, "Sendero actualizado exitosamente"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(e.getMessage()));
@@ -310,4 +312,7 @@ public class SenderoController {
                 .body(ApiResponse.error("Error al contar senderos"));
         }
     }
+
+    // ========== MÉTODOS HELPER ==========
+    // Los métodos de conversión ahora están en el servicio para mejor separación de responsabilidades
 }

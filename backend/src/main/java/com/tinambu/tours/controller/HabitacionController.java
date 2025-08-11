@@ -1,7 +1,8 @@
 package com.tinambu.tours.controller;
 
+import com.tinambu.tours.dto.request.HabitacionRequest;
 import com.tinambu.tours.dto.response.ApiResponse;
-import com.tinambu.tours.entity.habitacion.Habitacion;
+import com.tinambu.tours.dto.response.HabitacionResponse;
 import com.tinambu.tours.service.HabitacionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +32,10 @@ public class HabitacionController {
      * Endpoint público para mostrar opciones de alojamiento
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Habitacion>>> obtenerHabitacionesActivas() {
+    public ResponseEntity<ApiResponse<List<HabitacionResponse>>> obtenerHabitacionesActivas() {
         try {
-            List<Habitacion> habitaciones = habitacionService.obtenerHabitacionesActivas();
-            return ResponseEntity.ok(ApiResponse.success(habitaciones));
+            List<HabitacionResponse> habitacionesResponse = habitacionService.obtenerHabitacionesActivas();
+            return ResponseEntity.ok(ApiResponse.success(habitacionesResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al obtener habitaciones"));
@@ -46,10 +47,10 @@ public class HabitacionController {
      * Endpoint público para ver detalles de una habitación
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Habitacion>> obtenerHabitacionPorId(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<HabitacionResponse>> obtenerHabitacionPorId(@PathVariable UUID id) {
         try {
-            Habitacion habitacion = habitacionService.obtenerHabitacionPorId(id);
-            return ResponseEntity.ok(ApiResponse.success(habitacion));
+            HabitacionResponse response = habitacionService.obtenerHabitacionPorIdPublico(id);
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(e.getMessage()));
@@ -61,14 +62,14 @@ public class HabitacionController {
      * Endpoint público para búsqueda de disponibilidad
      */
     @GetMapping("/disponibles")
-    public ResponseEntity<ApiResponse<List<Habitacion>>> buscarHabitacionesDisponibles(
+    public ResponseEntity<ApiResponse<List<HabitacionResponse>>> buscarHabitacionesDisponibles(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
             @RequestParam Integer numeroPersonas) {
         try {
-            List<Habitacion> habitaciones = habitacionService.buscarHabitacionesDisponibles(
+            List<HabitacionResponse> habitacionesResponse = habitacionService.buscarHabitacionesDisponibles(
                 fechaInicio, fechaFin, numeroPersonas);
-            return ResponseEntity.ok(ApiResponse.success(habitaciones));
+            return ResponseEntity.ok(ApiResponse.success(habitacionesResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error("Error en la búsqueda de disponibilidad"));
@@ -98,10 +99,10 @@ public class HabitacionController {
      * Endpoint público
      */
     @GetMapping("/capacidad/{numeroPersonas}")
-    public ResponseEntity<ApiResponse<List<Habitacion>>> buscarPorCapacidad(@PathVariable Integer numeroPersonas) {
+    public ResponseEntity<ApiResponse<List<HabitacionResponse>>> buscarPorCapacidad(@PathVariable Integer numeroPersonas) {
         try {
-            List<Habitacion> habitaciones = habitacionService.buscarPorCapacidad(numeroPersonas);
-            return ResponseEntity.ok(ApiResponse.success(habitaciones));
+            List<HabitacionResponse> habitacionesResponse = habitacionService.buscarPorCapacidad(numeroPersonas);
+            return ResponseEntity.ok(ApiResponse.success(habitacionesResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al buscar por capacidad"));
@@ -113,12 +114,12 @@ public class HabitacionController {
      * Endpoint público
      */
     @GetMapping("/precio")
-    public ResponseEntity<ApiResponse<List<Habitacion>>> buscarPorRangoPrecio(
+    public ResponseEntity<ApiResponse<List<HabitacionResponse>>> buscarPorRangoPrecio(
             @RequestParam BigDecimal precioMin,
             @RequestParam BigDecimal precioMax) {
         try {
-            List<Habitacion> habitaciones = habitacionService.buscarPorRangoPrecio(precioMin, precioMax);
-            return ResponseEntity.ok(ApiResponse.success(habitaciones));
+            List<HabitacionResponse> habitacionesResponse = habitacionService.buscarPorRangoPrecio(precioMin, precioMax);
+            return ResponseEntity.ok(ApiResponse.success(habitacionesResponse));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al buscar por precio"));
@@ -133,9 +134,9 @@ public class HabitacionController {
      */
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<Habitacion>>> obtenerTodasLasHabitaciones() {
+    public ResponseEntity<ApiResponse<List<HabitacionResponse>>> obtenerTodasLasHabitaciones() {
         try {
-            List<Habitacion> habitaciones = habitacionService.obtenerTodasLasHabitaciones();
+            List<HabitacionResponse> habitaciones = habitacionService.obtenerTodasLasHabitaciones();
             return ResponseEntity.ok(ApiResponse.success(habitaciones));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -158,11 +159,11 @@ public class HabitacionController {
      */
     @PostMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Habitacion>> crearHabitacion(@Valid @RequestBody Habitacion habitacion) {
+    public ResponseEntity<ApiResponse<HabitacionResponse>> crearHabitacion(@Valid @RequestBody HabitacionRequest habitacionRequest) {
         try {
-            Habitacion nuevaHabitacion = habitacionService.crearHabitacion(habitacion);
+            HabitacionResponse response = habitacionService.crearHabitacion(habitacionRequest);
             return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(nuevaHabitacion, "Habitación creada exitosamente"));
+                .body(ApiResponse.success(response, "Habitación creada exitosamente"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(e.getMessage()));
@@ -178,12 +179,12 @@ public class HabitacionController {
      */
     @PutMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Habitacion>> actualizarHabitacion(
+    public ResponseEntity<ApiResponse<HabitacionResponse>> actualizarHabitacion(
             @PathVariable UUID id, 
-            @Valid @RequestBody Habitacion habitacion) {
+            @Valid @RequestBody HabitacionRequest habitacionRequest) {
         try {
-            Habitacion habitacionActualizada = habitacionService.actualizarHabitacion(id, habitacion);
-            return ResponseEntity.ok(ApiResponse.success(habitacionActualizada, "Habitación actualizada exitosamente"));
+            HabitacionResponse response = habitacionService.actualizarHabitacion(id, habitacionRequest);
+            return ResponseEntity.ok(ApiResponse.success(response, "Habitación actualizada exitosamente"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(e.getMessage()));
@@ -199,11 +200,11 @@ public class HabitacionController {
      */
     @PutMapping("/admin/{id}/estado")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Habitacion>> cambiarEstadoHabitacion(
+    public ResponseEntity<ApiResponse<HabitacionResponse>> cambiarEstadoHabitacion(
             @PathVariable UUID id, 
             @RequestParam boolean activa) {
         try {
-            Habitacion habitacion = habitacionService.cambiarEstadoHabitacion(id, activa);
+            HabitacionResponse habitacion = habitacionService.cambiarEstadoHabitacion(id, activa);
             String mensaje = activa ? "Habitación activada exitosamente" : "Habitación desactivada exitosamente";
             return ResponseEntity.ok(ApiResponse.success(habitacion, mensaje));
         } catch (IllegalArgumentException e) {
@@ -256,13 +257,16 @@ public class HabitacionController {
      */
     @GetMapping("/admin/ordenadas-capacidad")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<Habitacion>>> obtenerHabitacionesOrdenadasPorCapacidad() {
+    public ResponseEntity<ApiResponse<List<HabitacionResponse>>> obtenerHabitacionesOrdenadasPorCapacidad() {
         try {
-            List<Habitacion> habitaciones = habitacionService.obtenerHabitacionesOrdenadasPorCapacidad();
+            List<HabitacionResponse> habitaciones = habitacionService.obtenerHabitacionesOrdenadasPorCapacidad();
             return ResponseEntity.ok(ApiResponse.success(habitaciones));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al obtener habitaciones ordenadas"));
         }
     }
+
+    // ========== MÉTODOS HELPER ==========
+    // Los métodos de conversión ahora están en el servicio para mejor separación de responsabilidades
 }

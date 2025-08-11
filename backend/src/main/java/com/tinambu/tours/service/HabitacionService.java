@@ -1,5 +1,7 @@
 package com.tinambu.tours.service;
 
+import com.tinambu.tours.dto.request.HabitacionRequest;
+import com.tinambu.tours.dto.response.HabitacionResponse;
 import com.tinambu.tours.entity.habitacion.Habitacion;
 import com.tinambu.tours.repository.HabitacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -21,54 +24,61 @@ public class HabitacionService {
     /**
      * Crear nueva habitación
      */
-    public Habitacion crearHabitacion(Habitacion habitacion) {
+    public HabitacionResponse crearHabitacion(HabitacionRequest habitacionRequest) {
         // Validar que el número no esté duplicado
-        if (habitacionRepository.existsByNumero(habitacion.getNumero())) {
-            throw new IllegalArgumentException("Ya existe una habitación con el número: " + habitacion.getNumero());
+        if (habitacionRepository.existsByNumero(habitacionRequest.getNumero())) {
+            throw new IllegalArgumentException("Ya existe una habitación con el número: " + habitacionRequest.getNumero());
         }
 
-        return habitacionRepository.save(habitacion);
+        Habitacion habitacion = convertirRequestAEntidad(habitacionRequest);
+        Habitacion habitacionGuardada = habitacionRepository.save(habitacion);
+        return convertirEntidadAResponse(habitacionGuardada);
     }
 
     /**
      * Actualizar habitación existente
      */
-    public Habitacion actualizarHabitacion(UUID id, Habitacion habitacionActualizada) {
+    public HabitacionResponse actualizarHabitacion(UUID id, HabitacionRequest habitacionRequest) {
         Habitacion habitacion = obtenerHabitacionPorId(id);
 
         // Verificar si cambió el número y si ya existe
-        if (!habitacion.getNumero().equals(habitacionActualizada.getNumero()) &&
-            habitacionRepository.existsByNumero(habitacionActualizada.getNumero())) {
-            throw new IllegalArgumentException("Ya existe una habitación con el número: " + habitacionActualizada.getNumero());
+        if (!habitacion.getNumero().equals(habitacionRequest.getNumero()) &&
+            habitacionRepository.existsByNumero(habitacionRequest.getNumero())) {
+            throw new IllegalArgumentException("Ya existe una habitación con el número: " + habitacionRequest.getNumero());
         }
 
         // Actualizar campos
-        habitacion.setNumero(habitacionActualizada.getNumero());
-        habitacion.setNombre(habitacionActualizada.getNombre());
-        habitacion.setDescripcion(habitacionActualizada.getDescripcion());
-        habitacion.setCapacidadMinima(habitacionActualizada.getCapacidadMinima());
-        habitacion.setCapacidadMaxima(habitacionActualizada.getCapacidadMaxima());
-        habitacion.setPrecioPorPersonaNoche(habitacionActualizada.getPrecioPorPersonaNoche());
-        habitacion.setUrlImagen(habitacionActualizada.getUrlImagen());
+        habitacion.setNumero(habitacionRequest.getNumero());
+        habitacion.setNombre(habitacionRequest.getNombre());
+        habitacion.setDescripcion(habitacionRequest.getDescripcion());
+        habitacion.setCapacidadMinima(habitacionRequest.getCapacidadMinima());
+        habitacion.setCapacidadMaxima(habitacionRequest.getCapacidadMaxima());
+        habitacion.setPrecioPorPersonaNoche(habitacionRequest.getPrecioPorPersonaNoche());
+        habitacion.setUrlImagen(habitacionRequest.getUrlImagen());
 
-        return habitacionRepository.save(habitacion);
+        Habitacion habitacionActualizada = habitacionRepository.save(habitacion);
+        return convertirEntidadAResponse(habitacionActualizada);
     }
 
     /**
      * Activar/desactivar habitación
      */
-    public Habitacion cambiarEstadoHabitacion(UUID id, boolean activa) {
+    public HabitacionResponse cambiarEstadoHabitacion(UUID id, boolean activa) {
         Habitacion habitacion = obtenerHabitacionPorId(id);
         habitacion.setActiva(activa);
-        return habitacionRepository.save(habitacion);
+        Habitacion habitacionActualizada = habitacionRepository.save(habitacion);
+        return convertirEntidadAResponse(habitacionActualizada);
     }
 
     /**
      * Buscar habitaciones disponibles
      */
     @Transactional(readOnly = true)
-    public List<Habitacion> buscarHabitacionesDisponibles(LocalDate fechaInicio, LocalDate fechaFin, Integer numeroPersonas) {
-        return habitacionRepository.findHabitacionesDisponibles(fechaInicio, fechaFin, numeroPersonas);
+    public List<HabitacionResponse> buscarHabitacionesDisponibles(LocalDate fechaInicio, LocalDate fechaFin, Integer numeroPersonas) {
+        List<Habitacion> habitaciones = habitacionRepository.findHabitacionesDisponibles(fechaInicio, fechaFin, numeroPersonas);
+        return habitaciones.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -83,19 +93,32 @@ public class HabitacionService {
      * Buscar habitaciones por capacidad
      */
     @Transactional(readOnly = true)
-    public List<Habitacion> buscarPorCapacidad(Integer numeroPersonas) {
-        return habitacionRepository.findByCapacidadPersonas(numeroPersonas);
+    public List<HabitacionResponse> buscarPorCapacidad(Integer numeroPersonas) {
+        List<Habitacion> habitaciones = habitacionRepository.findByCapacidadPersonas(numeroPersonas);
+        return habitaciones.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     /**
      * Buscar habitaciones por rango de precios
      */
     @Transactional(readOnly = true)
-    public List<Habitacion> buscarPorRangoPrecio(BigDecimal precioMin, BigDecimal precioMax) {
-        return habitacionRepository.findByRangoPrecio(precioMin, precioMax);
+    public List<HabitacionResponse> buscarPorRangoPrecio(BigDecimal precioMin, BigDecimal precioMax) {
+        List<Habitacion> habitaciones = habitacionRepository.findByRangoPrecio(precioMin, precioMax);
+        return habitaciones.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     // Métodos de consulta básicos
+    @Transactional(readOnly = true)
+    public HabitacionResponse obtenerHabitacionPorIdPublico(UUID id) {
+        Habitacion habitacion = obtenerHabitacionPorId(id);
+        return convertirEntidadAResponse(habitacion);
+    }
+
+    // Método interno para obtener entidad (usado internamente por el servicio)
     @Transactional(readOnly = true)
     public Habitacion obtenerHabitacionPorId(UUID id) {
         return habitacionRepository.findById(id)
@@ -109,18 +132,27 @@ public class HabitacionService {
     }
 
     @Transactional(readOnly = true)
-    public List<Habitacion> obtenerTodasLasHabitaciones() {
-        return habitacionRepository.findAll();
+    public List<HabitacionResponse> obtenerTodasLasHabitaciones() {
+        List<Habitacion> habitaciones = habitacionRepository.findAll();
+        return habitaciones.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<Habitacion> obtenerHabitacionesActivas() {
-        return habitacionRepository.findByActivaTrue();
+    public List<HabitacionResponse> obtenerHabitacionesActivas() {
+        List<Habitacion> habitaciones = habitacionRepository.findByActivaTrue();
+        return habitaciones.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<Habitacion> obtenerHabitacionesOrdenadasPorCapacidad() {
-        return habitacionRepository.findAllOrderByCapacidad();
+    public List<HabitacionResponse> obtenerHabitacionesOrdenadasPorCapacidad() {
+        List<Habitacion> habitaciones = habitacionRepository.findAllOrderByCapacidad();
+        return habitaciones.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -160,6 +192,40 @@ public class HabitacionService {
 
         return new HabitacionStats(totalHabitaciones, habitacionesActivas, 
                                  capacidadTotalMinima, capacidadTotalMaxima, precioPromedio);
+    }
+
+    // ========== MÉTODOS DE CONVERSIÓN ==========
+
+    /**
+     * Convierte un HabitacionRequest DTO a entidad Habitacion
+     */
+    private Habitacion convertirRequestAEntidad(HabitacionRequest request) {
+        Habitacion habitacion = new Habitacion();
+        habitacion.setNumero(request.getNumero());
+        habitacion.setNombre(request.getNombre());
+        habitacion.setDescripcion(request.getDescripcion());
+        habitacion.setCapacidadMinima(request.getCapacidadMinima());
+        habitacion.setCapacidadMaxima(request.getCapacidadMaxima());
+        habitacion.setPrecioPorPersonaNoche(request.getPrecioPorPersonaNoche());
+        habitacion.setUrlImagen(request.getUrlImagen());
+        return habitacion;
+    }
+
+    /**
+     * Convierte una entidad Habitacion a HabitacionResponse DTO
+     * Excluye información interna como estado activo y fechas de auditoría
+     */
+    private HabitacionResponse convertirEntidadAResponse(Habitacion habitacion) {
+        HabitacionResponse response = new HabitacionResponse();
+        response.setId(habitacion.getId());
+        response.setNumero(habitacion.getNumero());
+        response.setNombre(habitacion.getNombre());
+        response.setDescripcion(habitacion.getDescripcion());
+        response.setCapacidadMinima(habitacion.getCapacidadMinima());
+        response.setCapacidadMaxima(habitacion.getCapacidadMaxima());
+        response.setPrecioPorPersonaNoche(habitacion.getPrecioPorPersonaNoche());
+        response.setUrlImagen(habitacion.getUrlImagen());
+        return response;
     }
 
     // Clase interna para estadísticas

@@ -1,0 +1,25 @@
+<svg width="200" height="160" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="80" r="70" fill="currentColor" opacity="0.1"/>
+  
+  <!-- Cart Body -->
+  <path d="M40 50H160C165.523 50 170 54.477 170 60V100C170 105.523 165.523 110 160 110H40C34.477 110 30 105.523 30 100V60C30 54.477 34.477 50 40 50Z" stroke="currentColor" stroke-width="2" fill="none"/>
+  
+  <!-- Cart Handle -->
+  <path d="M30 60H20C17.7909 60 16 58.2091 16 56V54C16 51.7909 17.7909 50 20 50H25" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Cart Wheels -->
+  <circle cx="50" cy="125" r="8" stroke="currentColor" stroke-width="2" fill="none"/>
+  <circle cx="150" cy="125" r="8" stroke="currentColor" stroke-width="2" fill="none"/>
+  
+  <!-- Empty Lines -->
+  <line x1="50" y1="70" x2="120" y2="70" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+  <line x1="50" y1="80" x2="100" y2="80" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+  <line x1="50" y1="90" x2="110" y2="90" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+  
+  <!-- Sad Face -->
+  <circle cx="140" cy="75" r="2" fill="currentColor" opacity="0.6"/>
+  <circle cx="155" cy="75" r="2" fill="currentColor" opacity="0.6"/>
+  <path d="M135 90C135 90 142 85 147.5 85C153 85 160 90 160 90" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+</svg>
+

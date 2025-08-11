@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Card, { CardBody, CardHeader, CardFooter } from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import EmptyState from '../../components/common/EmptyState';
 import { routes } from '../../utils/routes';
 import './MyBookings.css';
 
@@ -288,25 +289,17 @@ const MyBookings: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="no-bookings">
-              <Card variant="nature" size="lg">
-                <CardBody>
-                  <div className="no-bookings-content">
-                    <div className="no-bookings-icon">📋</div>
-                    <h3 className="no-bookings-title">No tienes reservas</h3>
-                    <p className="no-bookings-description">
-                      Explora nuestras actividades y alojamientos.
-                    </p>
-                    <Button 
-                      variant="primary" 
-                      onClick={() => navigate(routes.activities)}
-                    >
-                      Ver Actividades
-                    </Button>
-                  </div>
-                </CardBody>
-              </Card>
-            </div>
+            <EmptyState
+              illustration="empty-bookings"
+              title="No tienes reservas"
+              description="Explora nuestras actividades y alojamientos para comenzar tu aventura en Tinambú."
+              primaryAction={{
+                label: "Ver Actividades",
+                onClick: () => navigate(routes.activities),
+                variant: "primary"
+              }}
+              className="bookings-empty-state"
+            />
           )}
         </div>
       </section>

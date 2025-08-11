@@ -5,6 +5,7 @@ import AccommodationCard from '../../components/common/AccommodationCard';
 import Button from '../../components/common/Button';
 import Card, { CardBody } from '../../components/common/Card';
 import { routes } from '../../utils/routes';
+import backgroundImage from '../../assets/illustrations/Foto home  conocenos.svg';
 import './Accomodations.css';
 
 interface Accommodation {
@@ -238,7 +239,7 @@ const Accomodations: React.FC = () => {
       <section className="accommodations-hero">
         <div className="hero-background">
           <img 
-            src="/src/assets/illustrations/Foto home  conocenos.svg" 
+            src={backgroundImage} 
             alt="Alojamientos en la naturaleza"
             className="hero-background-image"
           />

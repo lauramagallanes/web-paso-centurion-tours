@@ -11,7 +11,7 @@ export const useHabitacionesDisponibles = () => {
       numeroPersonas: numeroPersonas.toString()
     });
     
-    return execute(`/api/habitaciones/disponibles?${params}`);
+    return execute(`/habitaciones/disponibles?${params}`);
   };
 
   return { data: data || [], loading, error, search };
@@ -20,7 +20,7 @@ export const useHabitacionesDisponibles = () => {
 export const useSenderos = () => {
   const { data, loading, error, execute } = useApi();
 
-  const load = () => execute('/api/senderos');
+  const load = () => execute('/senderos');
 
   return { data: data || [], loading, error, load };
 };
@@ -30,7 +30,7 @@ export const useGuiasDisponibles = () => {
 
   const search = async (fecha: string, turno: string) => {
     const params = new URLSearchParams({ fecha, turno });
-    return execute(`/api/guias/disponibles?${params}`);
+    return execute(`/guias/disponibles?${params}`);
   };
 
   return { data: data || [], loading, error, search };
@@ -39,7 +39,7 @@ export const useGuiasDisponibles = () => {
 export const useDashboardStats = () => {
   const { data, loading, error, execute } = useApi();
 
-  const load = () => execute('/api/admin/dashboard/stats');
+  const load = () => execute('/dashboard/admin/stats');
 
   return { data, loading, error, load };
 };
@@ -47,59 +47,83 @@ export const useDashboardStats = () => {
 export const useReservasAdmin = () => {
   const { data, loading, error, execute } = useApi();
 
-  const loadReservas = () => execute('/api/admin/reservas');
+  const loadReservas = async () => {
+    try {
+      const result = await execute('/reservas/admin');
+      return result;
+    } catch (err) {
+      console.error('Error loading reservas:', err);
+      return null;
+    }
+  };
   
   const confirmarReserva = (id: number, observaciones?: string) => 
-    execute(`/api/admin/reservas/${id}/confirmar`, {
+    execute(`/reservas/admin/${id}/confirmar`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ observacionesAdmin: observaciones })
     });
 
   const cancelarReserva = (id: number, observaciones?: string) => 
-    execute(`/api/admin/reservas/${id}/cancelar`, {
+    execute(`/reservas/admin/${id}/cancelar`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ observacionesAdmin: observaciones })
     });
 
+  const completarReserva = (id: number) => 
+    execute(`/reservas/admin/${id}/completar`, {
+      method: 'PUT'
+    });
+
+  // Asegurar que data sea siempre un array válido
+  const reservas = data?.success ? (data.data || []) : [];
+
   return { 
-    data: data || [], 
+    data: reservas, 
     loading, 
     error, 
     loadReservas,
     confirmarReserva,
-    cancelarReserva
+    cancelarReserva,
+    completarReserva
   };
 };
 
 export const useHabitacionesAdmin = () => {
   const { data, loading, error, execute } = useApi();
 
-  const loadHabitaciones = () => execute('/api/admin/habitaciones');
+  const loadHabitaciones = async () => {
+    try {
+      const result = await execute('/habitaciones/admin');
+      return result;
+    } catch (err) {
+      console.error('Error loading habitaciones:', err);
+      return null;
+    }
+  };
   
   const createHabitacion = (habitacion: any) => 
-    execute('/api/admin/habitaciones', {
+    execute('/habitaciones/admin', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(habitacion)
     });
 
   const updateHabitacion = (id: number, habitacion: any) => 
-    execute(`/api/admin/habitaciones/${id}`, {
+    execute(`/habitaciones/admin/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(habitacion)
     });
 
-  const toggleActive = (id: number) => 
-    execute(`/api/admin/habitaciones/${id}/toggle-active`, { method: 'PUT' });
+  const toggleActive = (id: number, currentState: boolean) => 
+    execute(`/habitaciones/admin/${id}/estado?activa=${!currentState}`, { method: 'PUT' });
 
   const deleteHabitacion = (id: number) => 
-    execute(`/api/admin/habitaciones/${id}`, { method: 'DELETE' });
+    execute(`/habitaciones/admin/${id}`, { method: 'DELETE' });
+
+  // Asegurar que data sea siempre un array válido
+  const habitaciones = data?.success ? (data.data || []) : [];
 
   return { 
-    data: data || [], 
+    data: habitaciones, 
     loading, 
     error, 
     loadHabitaciones,
@@ -113,30 +137,39 @@ export const useHabitacionesAdmin = () => {
 export const useSenderosAdmin = () => {
   const { data, loading, error, execute } = useApi();
 
-  const loadSenderos = () => execute('/api/admin/senderos');
+  const loadSenderos = async () => {
+    try {
+      const result = await execute('/senderos/admin');
+      return result;
+    } catch (err) {
+      console.error('Error loading senderos:', err);
+      return null;
+    }
+  };
   
   const createSendero = (sendero: any) => 
-    execute('/api/admin/senderos', {
+    execute('/senderos/admin', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sendero)
     });
 
   const updateSendero = (id: number, sendero: any) => 
-    execute(`/api/admin/senderos/${id}`, {
+    execute(`/senderos/admin/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sendero)
     });
 
-  const toggleActive = (id: number) => 
-    execute(`/api/admin/senderos/${id}/toggle-active`, { method: 'PUT' });
+  const toggleActive = (id: number, activo: boolean) => 
+    execute(`/senderos/admin/${id}/estado?activo=${activo}`, { method: 'PUT' });
 
   const deleteSendero = (id: number) => 
-    execute(`/api/admin/senderos/${id}`, { method: 'DELETE' });
+    execute(`/senderos/admin/${id}`, { method: 'DELETE' });
+
+  // Asegurar que data sea siempre un array válido
+  const senderos = data?.success ? (data.data || []) : [];
 
   return { 
-    data: data || [], 
+    data: senderos, 
     loading, 
     error, 
     loadSenderos,
@@ -150,30 +183,39 @@ export const useSenderosAdmin = () => {
 export const useGuiasAdmin = () => {
   const { data, loading, error, execute } = useApi();
 
-  const loadGuias = () => execute('/api/admin/guias');
+  const loadGuias = async () => {
+    try {
+      const result = await execute('/guias/admin');
+      return result;
+    } catch (err) {
+      console.error('Error loading guias:', err);
+      return null;
+    }
+  };
   
   const createGuia = (guia: any) => 
-    execute('/api/admin/guias', {
+    execute('/guias/admin', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(guia)
     });
 
   const updateGuia = (id: number, guia: any) => 
-    execute(`/api/admin/guias/${id}`, {
+    execute(`/guias/admin/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(guia)
     });
 
-  const toggleActive = (id: number) => 
-    execute(`/api/admin/guias/${id}/toggle-active`, { method: 'PUT' });
+  const toggleActive = (id: number, activo: boolean) => 
+    execute(`/guias/admin/${id}/estado?activo=${activo}`, { method: 'PUT' });
 
   const deleteGuia = (id: number) => 
-    execute(`/api/admin/guias/${id}`, { method: 'DELETE' });
+    execute(`/guias/admin/${id}`, { method: 'DELETE' });
+
+  // Asegurar que data sea siempre un array válido
+  const guias = data?.success ? (data.data || []) : [];
 
   return { 
-    data: data || [], 
+    data: guias, 
     loading, 
     error, 
     loadGuias,

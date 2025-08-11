@@ -1,26 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge } from 'react-bootstrap';
-import { useApi } from '../../hooks/useApi';
+import { useNavigate } from 'react-router-dom';
+import { useGuiasAdmin } from '../../hooks/useAdminApi';
+import Icon from '../../components/common/Icon';
 
 interface Guia {
-  id?: number;
+  id?: string;
   nombre: string;
   apellido: string;
   email?: string;
-  telefono?: string;
+  biografia?: string;
   anosExperiencia?: number;
   especialidades?: string;
-  biografia?: string;
-  activo: boolean;
   urlFoto?: string;
+  activo: boolean;
   fechaCreacion?: string;
   fechaActualizacion?: string;
 }
 
 const GuideManagement: React.FC = () => {
-  const { data: guias = [], loading, error, execute: loadGuias } = useApi<Guia[]>();
-  const { loading: actionLoading, error: actionError, execute: executeAction } = useApi();
+  const navigate = useNavigate();
+  const { 
+    data: guias = [], 
+    loading, 
+    error, 
+    loadGuias,
+    createGuia,
+    updateGuia,
+    toggleActive,
+    deleteGuia 
+  } = useGuiasAdmin();
   
+  const [actionLoading, setActionLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedGuia, setSelectedGuia] = useState<Guia | null>(null);
@@ -28,18 +39,33 @@ const GuideManagement: React.FC = () => {
     nombre: '',
     apellido: '',
     email: '',
-    telefono: '',
+    biografia: '',
     anosExperiencia: 0,
     especialidades: '',
-    biografia: '',
-    activo: true,
-    urlFoto: ''
+    urlFoto: '',
+    activo: true
   });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
-    loadGuias('/api/admin/guias');
-  }, []);
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    loadGuias();
+  }, [navigate]);
+
+  // Redirigir a login si hay error de autenticación
+  useEffect(() => {
+    if (error && error.includes('401')) {
+      console.log('Error de autenticación detectado, redirigiendo al login...');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      navigate('/login');
+    }
+  }, [error, navigate]);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -51,12 +77,11 @@ const GuideManagement: React.FC = () => {
       nombre: '',
       apellido: '',
       email: '',
-      telefono: '',
+      biografia: '',
       anosExperiencia: 0,
       especialidades: '',
-      biografia: '',
-      activo: true,
-      urlFoto: ''
+      urlFoto: '',
+      activo: true
     });
     setErrors({});
     setSelectedGuia(null);
@@ -93,6 +118,15 @@ const GuideManagement: React.FC = () => {
     }
   };
 
+  const isValidUrl = (string: string) => {
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
 
@@ -120,71 +154,57 @@ const GuideManagement: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const isValidUrl = (string: string) => {
-    try {
-      new URL(string);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
 
+    setActionLoading(true);
     try {
-      const endpoint = modalMode === 'create' 
-        ? '/api/admin/guias'
-        : `/api/admin/guias/${formData.id}`;
-      
-      const method = modalMode === 'create' ? 'POST' : 'PUT';
-
-      await executeAction(endpoint, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+      if (modalMode === 'create') {
+        await createGuia(formData);
+      } else if (modalMode === 'edit' && formData.id) {
+        await updateGuia(parseInt(formData.id), formData);
+      }
 
       // Recargar guías
-      await loadGuias('/api/admin/guias');
+      await loadGuias();
       handleCloseModal();
       
     } catch (error) {
       console.error('Error guardando guía:', error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleToggleActive = async (guia: Guia) => {
+    if (!guia.id) return;
+    
+    setActionLoading(true);
     try {
-      await executeAction(`/api/admin/guias/${guia.id}/toggle-active`, {
-        method: 'PUT'
-      });
-
-      // Recargar guías
-      await loadGuias('/api/admin/guias');
-      
+      await toggleActive(parseInt(guia.id), !guia.activo);
+      await loadGuias();
     } catch (error) {
       console.error('Error cambiando estado:', error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleDelete = async (guia: Guia) => {
-    if (!window.confirm(`¿Estás seguro de que quieres eliminar al guía "${guia.nombre} ${guia.apellido}"?`)) {
+    if (!guia.id || !window.confirm(`¿Estás seguro de que quieres eliminar al guía "${guia.nombre} ${guia.apellido}"?`)) {
       return;
     }
 
+    setActionLoading(true);
     try {
-      await executeAction(`/api/admin/guias/${guia.id}`, {
-        method: 'DELETE'
-      });
-
-      // Recargar guías
-      await loadGuias('/api/admin/guias');
-      
+      await deleteGuia(parseInt(guia.id));
+      await loadGuias();
     } catch (error) {
       console.error('Error eliminando guía:', error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -202,198 +222,172 @@ const GuideManagement: React.FC = () => {
   return (
     <div className="guide-management">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>
-          <i className="fas fa-user-tie me-2"></i>
-          Gestión de Guías
-        </h2>
-        <Button variant="info" onClick={() => handleOpenModal('create')}>
-          <i className="fas fa-plus me-2"></i>
+        <h2>Gestión de Guías</h2>
+        <Button 
+          variant="info" 
+          onClick={() => handleOpenModal('create')}
+          disabled={actionLoading}
+        >
+          <Icon name="plus" size="sm" className="me-2" />
           Nuevo Guía
         </Button>
       </div>
 
       {error && (
         <Alert variant="danger" className="mb-4">
-          <Alert.Heading>Error al cargar guías</Alert.Heading>
           {error}
-        </Alert>
-      )}
-
-      {actionError && (
-        <Alert variant="danger" className="mb-4">
-          <Alert.Heading>Error en la operación</Alert.Heading>
-          {actionError}
         </Alert>
       )}
 
       <Card>
         <Card.Body>
-          {guias.length > 0 ? (
-            <div className="table-responsive">
-              <Table hover>
-                <thead>
-                  <tr>
-                    <th>Foto</th>
-                    <th>Nombre</th>
-                    <th>Contacto</th>
-                    <th>Experiencia</th>
-                    <th>Especialidades</th>
-                    <th>Estado</th>
-                    <th>Registrado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {guias.map((guia) => (
-                    <tr key={guia.id}>
-                      <td>
-                        <div className="guide-photo">
-                          {guia.urlFoto ? (
-                            <img 
-                              src={guia.urlFoto} 
-                              alt={`${guia.nombre} ${guia.apellido}`}
-                              className="rounded-circle"
-                              style={{ width: '50px', height: '50px', objectFit: 'cover' }}
-                            />
-                          ) : (
-                            <div 
-                              className="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white"
-                              style={{ width: '50px', height: '50px' }}
-                            >
-                              <i className="fas fa-user"></i>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <div>
-                          <strong>{guia.nombre} {guia.apellido}</strong>
-                          {guia.biografia && (
-                            <>
-                              <br />
-                              <small className="text-muted">
-                                {guia.biografia.length > 50 
-                                  ? `${guia.biografia.substring(0, 50)}...`
-                                  : guia.biografia
-                                }
-                              </small>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <div>
-                          {guia.email && (
-                            <>
-                              <small className="text-muted">
-                                <i className="fas fa-envelope me-1"></i>
-                                {guia.email}
-                              </small>
-                              <br />
-                            </>
-                          )}
-                          {guia.telefono && (
-                            <small className="text-muted">
-                              <i className="fas fa-phone me-1"></i>
-                              {guia.telefono}
-                            </small>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        {guia.anosExperiencia ? (
-                          <Badge bg="primary">
-                            {guia.anosExperiencia} años
-                          </Badge>
-                        ) : (
-                          <span className="text-muted">N/A</span>
-                        )}
-                      </td>
-                      <td>
-                        {guia.especialidades ? (
-                          <small className="text-success">
-                            <i className="fas fa-leaf me-1"></i>
-                            {guia.especialidades.length > 30 
-                              ? `${guia.especialidades.substring(0, 30)}...`
-                              : guia.especialidades
-                            }
-                          </small>
-                        ) : (
-                          <span className="text-muted">N/A</span>
-                        )}
-                      </td>
-                      <td>
-                        <Badge bg={guia.activo ? 'success' : 'secondary'}>
-                          {guia.activo ? 'Activo' : 'Inactivo'}
-                        </Badge>
-                      </td>
-                      <td>
-                        {formatDate(guia.fechaCreacion)}
-                      </td>
-                      <td>
-                        <div className="btn-group">
-                          <Button
-                            variant="outline-info"
-                            size="sm"
-                            onClick={() => handleOpenModal('view', guia)}
-                            title="Ver detalles"
-                          >
-                            <i className="fas fa-eye"></i>
-                          </Button>
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={() => handleOpenModal('edit', guia)}
-                            title="Editar"
-                          >
-                            <i className="fas fa-edit"></i>
-                          </Button>
-                          <Button
-                            variant={guia.activo ? 'outline-warning' : 'outline-success'}
-                            size="sm"
-                            onClick={() => handleToggleActive(guia)}
-                            disabled={actionLoading}
-                            title={guia.activo ? 'Desactivar' : 'Activar'}
-                          >
-                            <i className={`fas ${guia.activo ? 'fa-pause' : 'fa-play'}`}></i>
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDelete(guia)}
-                            disabled={actionLoading}
-                            title="Eliminar"
-                          >
-                            <i className="fas fa-trash"></i>
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+          {guias.length === 0 ? (
+            <div className="text-center py-5">
+              <Icon name="user" size="lg" className="text-muted mb-3" />
+              <h5 className="text-muted">No hay guías registrados</h5>
+              <p className="text-muted">Comienza agregando tu primer guía</p>
             </div>
           ) : (
-            <div className="text-center text-muted py-5">
-              <i className="fas fa-user-tie fa-3x mb-3"></i>
-              <h5>No hay guías registrados</h5>
-              <p>Comienza agregando tu primer guía</p>
-            </div>
+            <Table responsive hover>
+              <thead className="table-light">
+                <tr>
+                  <th>Nombre</th>
+                  <th>Email</th>
+                  <th>Experiencia</th>
+                  <th>Especialidades</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {guias.map((guia) => (
+                  <tr key={guia.id}>
+                    <td>
+                      <div>
+                        <div className="fw-bold">{guia.nombre} {guia.apellido}</div>
+                        {guia.biografia && (
+                          <small className="text-muted">
+                            {guia.biografia.length > 50 
+                              ? `${guia.biografia.substring(0, 50)}...`
+                              : guia.biografia
+                            }
+                          </small>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      {guia.email && (
+                        <a href={`mailto:${guia.email}`} className="text-decoration-none">
+                          {guia.email}
+                        </a>
+                      )}
+                    </td>
+                    <td>
+                      {guia.anosExperiencia ? `${guia.anosExperiencia} años` : 'N/A'}
+                    </td>
+                    <td>
+                      {guia.especialidades ? (
+                        <div className="d-flex flex-wrap gap-1">
+                          {guia.especialidades.split(',').slice(0, 3).map((esp, index) => (
+                            <Badge key={index} bg="secondary" className="small">
+                              {esp.trim()}
+                            </Badge>
+                          ))}
+                          {guia.especialidades.split(',').length > 3 && (
+                            <Badge bg="outline-secondary" className="small">
+                              +{guia.especialidades.split(',').length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted">Sin especialidades</span>
+                      )}
+                    </td>
+                    <td>
+                      <Badge bg={guia.activo ? 'success' : 'danger'}>
+                        {guia.activo ? 'Activo' : 'Inactivo'}
+                      </Badge>
+                    </td>
+                    <td>
+                      <div className="d-flex gap-1">
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => handleOpenModal('view', guia)}
+                          title="Ver detalles"
+                        >
+                          <Icon name="eye" size="xs" />
+                        </Button>
+                        
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          onClick={() => handleOpenModal('edit', guia)}
+                          title="Editar"
+                        >
+                          <Icon name="edit" size="xs" />
+                        </Button>
+                        
+                        <Button
+                          variant={guia.activo ? 'outline-warning' : 'outline-success'}
+                          size="sm"
+                          onClick={() => handleToggleActive(guia)}
+                          title={guia.activo ? 'Desactivar' : 'Activar'}
+                          disabled={actionLoading}
+                        >
+                          <Icon name={guia.activo ? 'pause' : 'play'} size="xs" />
+                        </Button>
+                        
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => handleDelete(guia)}
+                          title="Eliminar"
+                          disabled={actionLoading}
+                        >
+                          <Icon name="trash" size="xs" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           )}
         </Card.Body>
       </Card>
 
       {/* Modal para crear/editar/ver guía */}
-      <Modal show={showModal} onHide={handleCloseModal} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {modalMode === 'create' && 'Nuevo Guía'}
-            {modalMode === 'edit' && 'Editar Guía'}
-            {modalMode === 'view' && 'Detalles de Guía'}
-          </Modal.Title>
-        </Modal.Header>
-        
+      <Modal 
+        show={showModal} 
+        onHide={handleCloseModal} 
+        size="lg"
+        backdrop="static"
+      >
         <Form onSubmit={handleSubmit}>
+          <Modal.Header closeButton>
+            <Modal.Title>
+              {modalMode === 'create' && (
+                <>
+                  <Icon name="plus" size="sm" className="me-2" />
+                  Nuevo Guía
+                </>
+              )}
+              {modalMode === 'edit' && (
+                <>
+                  <Icon name="edit" size="sm" className="me-2" />
+                  Editar Guía
+                </>
+              )}
+              {modalMode === 'view' && (
+                <>
+                  <Icon name="eye" size="sm" className="me-2" />
+                  Ver Guía
+                </>
+              )}
+            </Modal.Title>
+          </Modal.Header>
+          
           <Modal.Body>
             <Row>
               <Col md={6}>
@@ -401,11 +395,11 @@ const GuideManagement: React.FC = () => {
                   <Form.Label>Nombre *</Form.Label>
                   <Form.Control
                     type="text"
+                    placeholder="Nombre del guía"
                     value={formData.nombre}
                     onChange={(e) => handleInputChange('nombre', e.target.value)}
                     isInvalid={!!errors.nombre}
                     disabled={modalMode === 'view'}
-                    placeholder="Nombre del guía"
                   />
                   <Form.Control.Feedback type="invalid">
                     {errors.nombre}
@@ -418,11 +412,11 @@ const GuideManagement: React.FC = () => {
                   <Form.Label>Apellido *</Form.Label>
                   <Form.Control
                     type="text"
+                    placeholder="Apellido del guía"
                     value={formData.apellido}
                     onChange={(e) => handleInputChange('apellido', e.target.value)}
                     isInvalid={!!errors.apellido}
                     disabled={modalMode === 'view'}
-                    placeholder="Apellido del guía"
                   />
                   <Form.Control.Feedback type="invalid">
                     {errors.apellido}
@@ -431,37 +425,32 @@ const GuideManagement: React.FC = () => {
               </Col>
             </Row>
 
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Email (opcional)</Form.Label>
-                  <Form.Control
-                    type="email"
-                    value={formData.email || ''}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    isInvalid={!!errors.email}
-                    disabled={modalMode === 'view'}
-                    placeholder="email@ejemplo.com"
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.email}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-              
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Teléfono (opcional)</Form.Label>
-                  <Form.Control
-                    type="tel"
-                    value={formData.telefono || ''}
-                    onChange={(e) => handleInputChange('telefono', e.target.value)}
-                    disabled={modalMode === 'view'}
-                    placeholder="+598 99 123 456"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="correo@ejemplo.com"
+                value={formData.email || ''}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                isInvalid={!!errors.email}
+                disabled={modalMode === 'view'}
+              />
+              <Form.Control.Feedback type="invalid">
+                {errors.email}
+              </Form.Control.Feedback>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Biografía</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                placeholder="Breve biografía del guía..."
+                value={formData.biografia || ''}
+                onChange={(e) => handleInputChange('biografia', e.target.value)}
+                disabled={modalMode === 'view'}
+              />
+            </Form.Group>
 
             <Row>
               <Col md={6}>
@@ -471,10 +460,9 @@ const GuideManagement: React.FC = () => {
                     type="number"
                     min="0"
                     value={formData.anosExperiencia || ''}
-                    onChange={(e) => handleInputChange('anosExperiencia', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('anosExperiencia', e.target.value ? parseInt(e.target.value) : undefined)}
                     isInvalid={!!errors.anosExperiencia}
                     disabled={modalMode === 'view'}
-                    placeholder="0"
                   />
                   <Form.Control.Feedback type="invalid">
                     {errors.anosExperiencia}
@@ -484,14 +472,14 @@ const GuideManagement: React.FC = () => {
               
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>URL de Foto (opcional)</Form.Label>
+                  <Form.Label>URL de Foto</Form.Label>
                   <Form.Control
                     type="url"
+                    placeholder="https://ejemplo.com/foto.jpg"
                     value={formData.urlFoto || ''}
                     onChange={(e) => handleInputChange('urlFoto', e.target.value)}
                     isInvalid={!!errors.urlFoto}
                     disabled={modalMode === 'view'}
-                    placeholder="https://ejemplo.com/foto.jpg"
                   />
                   <Form.Control.Feedback type="invalid">
                     {errors.urlFoto}
@@ -504,36 +492,25 @@ const GuideManagement: React.FC = () => {
               <Form.Label>Especialidades</Form.Label>
               <Form.Control
                 type="text"
+                placeholder="Ej: Aves, Mamíferos, Botánica (separadas por comas)"
                 value={formData.especialidades || ''}
                 onChange={(e) => handleInputChange('especialidades', e.target.value)}
                 disabled={modalMode === 'view'}
-                placeholder="Ej: Aves, Mamíferos, Botánica, Fotografía de naturaleza"
               />
               <Form.Text className="text-muted">
-                Separar especialidades con comas
+                Separa múltiples especialidades con comas
               </Form.Text>
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Biografía</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={4}
-                value={formData.biografia || ''}
-                onChange={(e) => handleInputChange('biografia', e.target.value)}
-                disabled={modalMode === 'view'}
-                placeholder="Describe la experiencia, formación y pasión del guía por la naturaleza..."
-              />
-            </Form.Group>
-
-            {modalMode !== 'view' && (
+            {modalMode !== 'create' && (
               <Form.Group className="mb-3">
                 <Form.Check
                   type="checkbox"
-                  id="activo"
-                  label="Guía activo (disponible para excursiones)"
+                  id="activo-checkbox"
+                  label="Guía activo"
                   checked={formData.activo}
                   onChange={(e) => handleInputChange('activo', e.target.checked)}
+                  disabled={modalMode === 'view'}
                 />
               </Form.Group>
             )}
@@ -571,7 +548,7 @@ const GuideManagement: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <i className={`fas ${modalMode === 'create' ? 'fa-plus' : 'fa-save'} me-2`}></i>
+                    <Icon name={modalMode === 'create' ? 'plus' : 'save'} size="sm" className="me-2" />
                     {modalMode === 'create' ? 'Crear Guía' : 'Guardar Cambios'}
                   </>
                 )}

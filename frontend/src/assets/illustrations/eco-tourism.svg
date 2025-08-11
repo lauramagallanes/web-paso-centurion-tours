@@ -1,0 +1,71 @@
+<svg width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="150" cy="100" r="90" fill="currentColor" opacity="0.08"/>
+  
+  <!-- Ground -->
+  <ellipse cx="150" cy="180" rx="120" ry="15" fill="currentColor" opacity="0.15"/>
+  
+  <!-- Trees -->
+  <!-- Tree 1 -->
+  <ellipse cx="80" cy="140" rx="15" ry="25" fill="currentColor" opacity="0.25"/>
+  <rect x="77" y="155" width="6" height="20" fill="currentColor" opacity="0.3"/>
+  
+  <!-- Tree 2 -->
+  <ellipse cx="220" cy="130" rx="18" ry="30" fill="currentColor" opacity="0.25"/>
+  <rect x="216" y="145" width="8" height="25" fill="currentColor" opacity="0.3"/>
+  
+  <!-- Tree 3 -->
+  <ellipse cx="50" cy="150" rx="12" ry="20" fill="currentColor" opacity="0.25"/>
+  <rect x="48" y="160" width="4" height="15" fill="currentColor" opacity="0.3"/>
+  
+  <!-- Person Hiking -->
+  <circle cx="150" cy="120" r="8" fill="currentColor" opacity="0.4"/>
+  <rect x="146" y="128" width="8" height="20" fill="currentColor" opacity="0.4"/>
+  <rect x="144" y="135" width="5" height="15" fill="currentColor" opacity="0.5"/>
+  <rect x="151" y="135" width="5" height="15" fill="currentColor" opacity="0.5"/>
+  <rect x="142" y="148" width="6" height="12" fill="currentColor" opacity="0.5"/>
+  <rect x="152" y="148" width="6" height="12" fill="currentColor" opacity="0.5"/>
+  
+  <!-- Backpack -->
+  <ellipse cx="145" cy="135" rx="4" ry="8" fill="currentColor" opacity="0.6"/>
+  
+  <!-- Walking Stick -->
+  <line x1="165" y1="125" x2="170" y2="160" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  
+  <!-- Path -->
+  <path d="M100 170C120 165 140 170 160 165C180 160 200 165 220 160" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+  
+  <!-- Mountains in Background -->
+  <path d="M0 80L30 60L60 70L90 50L120 60L150 45L180 55L210 40L240 50L270 35L300 45V100H0V80Z" fill="currentColor" opacity="0.15"/>
+  
+  <!-- Butterflies -->
+  <path d="M120 80C118 78 116 80 118 82C116 80 118 78 120 80M124 80C122 78 120 80 122 82C120 80 122 78 124 80" fill="currentColor" opacity="0.3"/>
+  <path d="M180 90C178 88 176 90 178 92C176 90 178 88 180 90M184 90C182 88 180 90 182 92C180 90 182 88 184 90" fill="currentColor" opacity="0.3"/>
+  
+  <!-- Flowers -->
+  <circle cx="70" cy="165" r="2" fill="currentColor" opacity="0.4"/>
+  <circle cx="68" cy="162" r="1" fill="currentColor" opacity="0.5"/>
+  <circle cx="72" cy="162" r="1" fill="currentColor" opacity="0.5"/>
+  <circle cx="68" cy="168" r="1" fill="currentColor" opacity="0.5"/>
+  <circle cx="72" cy="168" r="1" fill="currentColor" opacity="0.5"/>
+  
+  <circle cx="230" cy="160" r="1.5" fill="currentColor" opacity="0.4"/>
+  <circle cx="228.5" cy="158" r="0.7" fill="currentColor" opacity="0.5"/>
+  <circle cx="231.5" cy="158" r="0.7" fill="currentColor" opacity="0.5"/>
+  <circle cx="228.5" cy="162" r="0.7" fill="currentColor" opacity="0.5"/>
+  <circle cx="231.5" cy="162" r="0.7" fill="currentColor" opacity="0.5"/>
+  
+  <!-- Sun -->
+  <circle cx="250" cy="50" r="15" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.4"/>
+  <path d="M250 25V35M250 65V75M225 50H235M265 50H275M232 32L238 38M262 38L268 32M268 68L262 62M238 62L232 68" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.3"/>
+  
+  <!-- Clouds -->
+  <ellipse cx="100" cy="40" rx="15" ry="8" fill="currentColor" opacity="0.2"/>
+  <ellipse cx="110" cy="35" rx="12" ry="6" fill="currentColor" opacity="0.2"/>
+  <ellipse cx="90" cy="35" rx="10" ry="5" fill="currentColor" opacity="0.2"/>
+  
+  <!-- Grass Details -->
+  <path d="M40 175L42 170L44 175M45 173L47 168L49 173M52 175L54 170L56 175" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.3"/>
+  <path d="M240 168L242 163L244 168M245 166L247 161L249 166M252 168L254 163L256 168" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.3"/>
+</svg>
+

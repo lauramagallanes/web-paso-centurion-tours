@@ -144,6 +144,15 @@ public class HabitacionController {
     }
 
     /**
+     * Test endpoint para verificar autenticación
+     */
+    @GetMapping("/admin/test")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> testAuth() {
+        return ResponseEntity.ok(ApiResponse.success("Autenticación exitosa - tienes permisos de administrador"));
+    }
+
+    /**
      * Crear nueva habitación
      * Solo administradores
      */

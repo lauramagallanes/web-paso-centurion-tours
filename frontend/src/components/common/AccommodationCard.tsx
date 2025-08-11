@@ -1,6 +1,8 @@
 import React from 'react';
 import Card, { CardBody, CardFooter, CardImage } from './Card';
 import Button from './Button';
+import FavoriteButton from './FavoriteButton';
+import { useCart } from '../../contexts/CartContext';
 
 export interface AccommodationCardProps {
   id: string;
@@ -36,6 +38,8 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
   onViewDetails,
   className = ''
 }) => {
+  const { addItem } = useCart();
+
   const handleBookClick = () => {
     if (onBook) {
       onBook(id);
@@ -46,6 +50,21 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
     if (onViewDetails) {
       onViewDetails(id);
     }
+  };
+
+  const handleAddToCart = () => {
+    addItem({
+      id,
+      type: 'accommodation',
+      name,
+      description,
+      image,
+      price,
+      currency,
+      checkIn: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default: 1 week from now
+      checkOut: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000), // Default: 1 day stay
+      guests: capacity.min
+    });
   };
 
   const renderStars = (rating: number) => {
@@ -85,6 +104,23 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
           No Disponible
         </div>
       )}
+
+      <FavoriteButton
+        item={{
+          id,
+          type: 'accommodation',
+          name,
+          description,
+          image,
+          price,
+          currency,
+          capacity,
+          amenities,
+          rating
+        }}
+        variant="card"
+        size="sm"
+      />
 
       <CardBody>
         <div className="mb-4">
@@ -158,6 +194,15 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
               onClick={handleViewDetails}
             >
               Ver Detalles
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={handleAddToCart}
+              disabled={!availability}
+              leftIcon="🛒"
+            >
+              Agregar
             </Button>
             <Button 
               variant="primary" 

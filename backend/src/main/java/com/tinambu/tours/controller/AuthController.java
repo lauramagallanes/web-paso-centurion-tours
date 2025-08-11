@@ -19,6 +19,10 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/auth")
@@ -242,6 +246,58 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error("No se pudo obtener información del usuario"));
+        }
+    }
+
+    /**
+     * Debug endpoint para verificar autenticación y roles
+     */
+    @GetMapping("/debug")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> debugAuth(
+            @RequestHeader(value = "Authorization", required = false) String tokenHeader,
+            HttpServletRequest request) {
+        
+        Map<String, Object> debugInfo = new HashMap<>();
+        
+        try {
+            debugInfo.put("hasAuthHeader", tokenHeader != null);
+            debugInfo.put("authHeader", tokenHeader != null ? tokenHeader.substring(0, Math.min(20, tokenHeader.length())) + "..." : null);
+            
+            if (tokenHeader != null && tokenHeader.startsWith("Bearer ")) {
+                String token = tokenHeader.substring(7);
+                debugInfo.put("tokenValid", jwtUtil.isValidToken(token));
+                
+                if (jwtUtil.isValidToken(token)) {
+                    String username = jwtUtil.extractUsername(token);
+                    List<String> roles = jwtUtil.extractRoles(token);
+                    
+                    debugInfo.put("username", username);
+                    debugInfo.put("roles", roles);
+                    debugInfo.put("hasAdminRole", roles.contains("ROLE_ADMIN"));
+                    
+                    // Verificar usuario en base de datos
+                    try {
+                        Usuario usuario = usuarioService.obtenerUsuarioPorEmail(username);
+                        debugInfo.put("userExists", true);
+                        debugInfo.put("userType", usuario.getTipo().name());
+                        debugInfo.put("userActive", usuario.getActivo());
+                    } catch (Exception e) {
+                        debugInfo.put("userExists", false);
+                        debugInfo.put("userError", e.getMessage());
+                    }
+                }
+            }
+            
+            // Información del request
+            debugInfo.put("requestURI", request.getRequestURI());
+            debugInfo.put("method", request.getMethod());
+            
+            return ResponseEntity.ok(ApiResponse.success(debugInfo));
+            
+        } catch (Exception e) {
+            debugInfo.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error en debug: " + e.getMessage()));
         }
     }
 

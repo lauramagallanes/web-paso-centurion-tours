@@ -5,6 +5,7 @@ import ActivityCard from '../../components/common/ActivityCard';
 import Button from '../../components/common/Button';
 import Card, { CardBody } from '../../components/common/Card';
 import { routes } from '../../utils/routes';
+import backgroundImage from '../../assets/illustrations/Foto home  conocenos.svg';
 import './Activities.css';
 
 interface Activity {
@@ -282,7 +283,7 @@ const Activities: React.FC = () => {
       <section className="activities-hero">
         <div className="hero-background">
           <img 
-            src="/src/assets/illustrations/Foto home  conocenos.svg" 
+            src={backgroundImage} 
             alt="Actividades en la naturaleza"
             className="hero-background-image"
           />

@@ -1,0 +1,232 @@
+/* Breadcrumbs Demo Page Styles */
+.breadcrumbs-demo-page {
+  min-height: 100vh;
+  padding: var(--space-6) 0;
+  background: var(--color-background);
+}
+
+.demo-header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.page-title {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+  line-height: var(--leading-tight);
+}
+
+.page-description {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: var(--leading-relaxed);
+}
+
+.demo-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.demo-card {
+  width: 100%;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.section-description {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-6);
+}
+
+/* Breadcrumb Examples */
+.breadcrumb-example {
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-4);
+  margin: var(--space-4) 0;
+}
+
+.separators-examples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.separator-example h4 {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2) 0;
+}
+
+/* Navigation Links */
+.navigation-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.nav-link {
+  text-decoration: none;
+}
+
+/* Info Section */
+.info-card {
+  background: var(--color-accent-50);
+  border-color: var(--color-accent-200);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.info-item {
+  background: var(--color-surface);
+  padding: var(--space-4);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.info-item h4 {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.info-item p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .breadcrumbs-demo-page {
+    padding: var(--space-4) 0;
+  }
+
+  .page-title {
+    font-size: var(--text-2xl);
+  }
+
+  .page-description {
+    font-size: var(--text-base);
+  }
+
+  .section-title {
+    font-size: var(--text-lg);
+  }
+
+  .navigation-links {
+    justify-content: center;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .breadcrumbs-demo-page {
+    padding: var(--space-3) 0;
+  }
+
+  .page-title {
+    font-size: var(--text-xl);
+  }
+
+  .page-description {
+    font-size: var(--text-sm);
+  }
+
+  .breadcrumb-example {
+    padding: var(--space-3);
+  }
+
+  .navigation-links {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .info-item {
+    padding: var(--space-3);
+  }
+}
+
+/* Dark Theme */
+[data-theme="dark"] .breadcrumb-example {
+  background: var(--color-neutral-800);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .info-card {
+  background: var(--color-accent-900);
+  border-color: var(--color-accent-700);
+}
+
+[data-theme="dark"] .info-item {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+/* Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.demo-card {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.demo-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.demo-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.demo-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.demo-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.demo-card:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+.demo-card:nth-child(6) {
+  animation-delay: 0.6s;
+}
+

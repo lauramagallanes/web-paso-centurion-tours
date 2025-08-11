@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { routes } from '../../utils/routes';
 import { useTheme } from '../../contexts/ThemeContext';
+import Logo from './Logo';
 import './Footer.css';
 
 const Footer: React.FC = () => {
@@ -98,17 +99,12 @@ const Footer: React.FC = () => {
         <div className="footer-main">
           {/* Brand Section */}
           <div className="footer-brand">
-            <div className="footer-logo">
-              <img 
-                src="/src/assets/images/logo/logo_white.svg" 
-                alt="Tinambú Logo" 
-                className="footer-logo-img"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-              <h3 className="footer-brand-name">Tinambú</h3>
-            </div>
+            <Logo 
+              variant="full" 
+              size="lg" 
+              color="light"
+              className="footer-logo"
+            />
             <p className="footer-brand-tagline">
               Paso Centurión Tours
             </p>

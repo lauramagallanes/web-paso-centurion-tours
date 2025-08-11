@@ -1,0 +1,42 @@
+<svg width="200" height="160" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="80" r="70" fill="currentColor" opacity="0.1"/>
+  
+  <!-- Calendar -->
+  <rect x="60" y="40" width="80" height="90" rx="8" stroke="currentColor" stroke-width="2" fill="none"/>
+  
+  <!-- Calendar Header -->
+  <rect x="60" y="40" width="80" height="20" rx="8" fill="currentColor" opacity="0.1"/>
+  <line x1="60" y1="60" x2="140" y2="60" stroke="currentColor" stroke-width="1"/>
+  
+  <!-- Calendar Rings -->
+  <rect x="75" y="30" width="4" height="15" rx="2" fill="currentColor" opacity="0.6"/>
+  <rect x="121" y="30" width="4" height="15" rx="2" fill="currentColor" opacity="0.6"/>
+  
+  <!-- Calendar Grid -->
+  <line x1="75" y1="70" x2="125" y2="70" stroke="currentColor" stroke-width="0.5" opacity="0.3"/>
+  <line x1="75" y1="80" x2="125" y2="80" stroke="currentColor" stroke-width="0.5" opacity="0.3"/>
+  <line x1="75" y1="90" x2="125" y2="90" stroke="currentColor" stroke-width="0.5" opacity="0.3"/>
+  <line x1="75" y1="100" x2="125" y2="100" stroke="currentColor" stroke-width="0.5" opacity="0.3"/>
+  <line x1="75" y1="110" x2="125" y2="110" stroke="currentColor" stroke-width="0.5" opacity="0.3"/>
+  
+  <line x1="85" y1="60" x2="85" y2="120" stroke="currentColor" stroke-width="0.5" opacity="0.3"/>
+  <line x1="100" y1="60" x2="100" y2="120" stroke="currentColor" stroke-width="0.5" opacity="0.3"/>
+  <line x1="115" y1="60" x2="115" y2="120" stroke="currentColor" stroke-width="0.5" opacity="0.3"/>
+  
+  <!-- Empty Calendar Days -->
+  <circle cx="80" cy="75" r="2" fill="currentColor" opacity="0.3"/>
+  <circle cx="95" cy="75" r="2" fill="currentColor" opacity="0.3"/>
+  <circle cx="110" cy="85" r="2" fill="currentColor" opacity="0.3"/>
+  <circle cx="125" cy="95" r="2" fill="currentColor" opacity="0.3"/>
+  
+  <!-- Question Mark -->
+  <circle cx="160" cy="50" r="15" stroke="currentColor" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M155 45C155 45 157 42 160 42C163 42 165 44 165 47C165 50 163 52 160 52V55" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <circle cx="160" cy="58" r="1" fill="currentColor" opacity="0.6"/>
+  
+  <!-- Flying Papers -->
+  <path d="M30 30L45 25L40 40L25 35Z" stroke="currentColor" stroke-width="1" fill="currentColor" opacity="0.2"/>
+  <path d="M170 120L180 115L175 130L165 125Z" stroke="currentColor" stroke-width="1" fill="currentColor" opacity="0.2"/>
+</svg>
+

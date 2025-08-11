@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeroSlider, { HeroSlide } from '../../components/common/HeroSlider';
 import Card, { CardBody, CardImage } from '../../components/common/Card';
@@ -6,10 +6,20 @@ import ActivityCard from '../../components/common/ActivityCard';
 import AccommodationCard from '../../components/common/AccommodationCard';
 import Button from '../../components/common/Button';
 import { routes } from '../../utils/routes';
+import backgroundImage from '../../assets/illustrations/Foto home  conocenos.svg';
+import mapaImage from '../../assets/illustrations/mapa.svg';
 import './Home.css';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const ctaRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    // Apply background image to CTA section
+    if (ctaRef.current) {
+      ctaRef.current.style.setProperty('--mapa-background', `url(${mapaImage})`);
+    }
+  }, []);
 
   // Hero slider data
   const heroSlides: HeroSlide[] = [
@@ -178,7 +188,7 @@ const Home: React.FC = () => {
             </div>
             <div className="welcome-image">
               <img 
-                src="/src/assets/illustrations/Foto home  conocenos.svg" 
+                src={backgroundImage} 
                 alt="Naturaleza de Paso Centurión"
                 className="welcome-img"
               />
@@ -300,7 +310,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* Call to Action */}
-      <section className="home-cta">
+      <section className="home-cta" ref={ctaRef}>
         <div className="container">
           <div className="cta-content">
             <h2 className="cta-title">¿Listo para tu Próxima Aventura?</h2>

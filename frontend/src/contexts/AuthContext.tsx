@@ -137,29 +137,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const user = JSON.parse(storedUser);
           
-          // Validar token con el backend
-          const response = await fetch('/api/auth/validate', {
-            headers: {
-              'Authorization': `Bearer ${storedAccessToken}`,
+          // Solo restaurar el estado sin validar inmediatamente
+          // La validación se hará cuando sea necesario
+          dispatch({
+            type: 'LOGIN_SUCCESS',
+            payload: {
+              user,
+              accessToken: storedAccessToken,
+              refreshToken: localStorage.getItem('refreshToken') || '',
             },
           });
-
-          if (response.ok) {
-            dispatch({
-              type: 'LOGIN_SUCCESS',
-              payload: {
-                user,
-                accessToken: storedAccessToken,
-                refreshToken: localStorage.getItem('refreshToken') || '',
-              },
-            });
-          } else {
-            // Token inválido, intentar refresh
-            const refreshed = await refreshToken();
-            if (!refreshed) {
-              logout();
-            }
-          }
         } catch (error) {
           console.error('Error al inicializar autenticación:', error);
           logout();

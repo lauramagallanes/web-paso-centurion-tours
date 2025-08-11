@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import Icon from './Icon';
 
 const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -32,7 +33,7 @@ const ThemeToggle: React.FC = () => {
         e.currentTarget.style.borderColor = 'var(--color-border)';
       }}
     >
-      {theme === 'light' ? '🌙' : '☀️'}
+      <Icon name={theme === 'light' ? 'moon' : 'sun'} size="sm" />
       {theme === 'light' ? 'Dark' : 'Light'} Mode
     </button>
   );

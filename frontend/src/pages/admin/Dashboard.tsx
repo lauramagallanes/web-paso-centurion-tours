@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Badge, Alert, Spinner } from 'react-bootstrap';
+import { Card, Row, Col, Badge, Alert, Spinner, Table, Button } from 'react-bootstrap';
 import { useApi } from '../../hooks/useApi';
+import { useDashboardStats } from '../../hooks/useAdminApi';
+import Icon from '../../components/common/Icon';
 
 interface DashboardStats {
   totalReservas: number;
@@ -9,13 +11,13 @@ interface DashboardStats {
   reservasCanceladas: number;
   habitacionesDisponibles: number;
   senderosMasPopulares: Array<{
-    id: number;
+    id: string;
     nombre: string;
     totalReservas: number;
   }>;
   ingresosMensuales: number;
   reservasRecientes: Array<{
-    id: number;
+    id: string;
     tipoReserva: string;
     nombreContacto: string;
     fechaCreacion: string;
@@ -26,17 +28,32 @@ interface DashboardStats {
 
 const Dashboard: React.FC = () => {
   const { data: stats, loading, error, execute: loadStats } = useApi<DashboardStats>();
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadStats('/api/admin/dashboard/stats');
+    loadDashboardData();
   }, []);
 
-  const formatPrice = (price: number) => {
+  const loadDashboardData = async () => {
+    try {
+      await loadStats('/api/dashboard/admin/stats');
+    } catch (err) {
+      console.error('Error loading dashboard stats:', err);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadDashboardData();
+    setRefreshing(false);
+  };
+
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-UY', {
       style: 'currency',
       currency: 'UYU',
       minimumFractionDigits: 0
-    }).format(price);
+    }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
@@ -50,245 +67,298 @@ const Dashboard: React.FC = () => {
   };
 
   const getEstadoBadge = (estado: string) => {
-    switch (estado) {
-      case 'PENDIENTE':
-        return <Badge bg="warning">Pendiente</Badge>;
+    switch (estado.toUpperCase()) {
       case 'CONFIRMADA':
         return <Badge bg="success">Confirmada</Badge>;
+      case 'PENDIENTE':
+        return <Badge bg="warning">Pendiente</Badge>;
       case 'CANCELADA':
         return <Badge bg="danger">Cancelada</Badge>;
-      case 'COMPLETADA':
-        return <Badge bg="info">Completada</Badge>;
       default:
         return <Badge bg="secondary">{estado}</Badge>;
     }
   };
 
-  const getTipoReservaBadge = (tipo: string) => {
-    return tipo === 'ALOJAMIENTO' ? (
-      <Badge bg="primary">
-        <i className="fas fa-bed me-1"></i>
-        Alojamiento
-      </Badge>
-    ) : (
-      <Badge bg="success">
-        <i className="fas fa-hiking me-1"></i>
-        Sendero
-      </Badge>
-    );
-  };
-
-  if (loading) {
+  if (loading && !stats) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
         <div className="text-center">
           <Spinner animation="border" variant="primary" />
-          <p className="mt-3">Cargando estadísticas...</p>
+          <p className="mt-3">Cargando dashboard...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <Alert variant="danger">
-        <Alert.Heading>Error al cargar el dashboard</Alert.Heading>
-        {error}
-      </Alert>
-    );
-  }
-
   return (
-    <div className="admin-dashboard">
+    <div className="dashboard">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>
-          <i className="fas fa-tachometer-alt me-2"></i>
-          Dashboard Administrativo
-        </h2>
-        <small className="text-muted">
-          Última actualización: {new Date().toLocaleTimeString()}
-        </small>
+        <div>
+          <h2>
+            <Icon name="home" size="md" className="me-2" />
+            Dashboard Administrativo
+          </h2>
+          <p className="text-muted mb-0">Resumen de la actividad del sistema</p>
+        </div>
+        <Button 
+          variant="outline-primary" 
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          {refreshing ? (
+            <>
+              <Spinner animation="border" size="sm" className="me-2" />
+              Actualizando...
+            </>
+          ) : (
+            <>
+              <Icon name="refresh" size="sm" className="me-2" />
+              Actualizar
+            </>
+          )}
+        </Button>
       </div>
 
-      {/* Estadísticas principales */}
-      <Row className="mb-4">
-        <Col md={3} className="mb-3">
-          <Card className="stat-card h-100">
-            <Card.Body className="text-center">
-              <div className="stat-icon text-primary mb-2">
-                <i className="fas fa-calendar-check fa-2x"></i>
-              </div>
-              <h3 className="text-primary">{stats?.totalReservas || 0}</h3>
-              <p className="text-muted mb-0">Total Reservas</p>
-            </Card.Body>
-          </Card>
-        </Col>
+      {error && (
+        <Alert variant="danger" className="mb-4">
+          <Alert.Heading>Error al cargar el dashboard</Alert.Heading>
+          {error}
+        </Alert>
+      )}
 
-        <Col md={3} className="mb-3">
-          <Card className="stat-card h-100">
-            <Card.Body className="text-center">
-              <div className="stat-icon text-warning mb-2">
-                <i className="fas fa-clock fa-2x"></i>
-              </div>
-              <h3 className="text-warning">{stats?.reservasPendientes || 0}</h3>
-              <p className="text-muted mb-0">Pendientes</p>
-            </Card.Body>
-          </Card>
-        </Col>
+      {stats && (
+        <>
+          {/* Métricas principales */}
+          <Row className="mb-4">
+            <Col md={3}>
+              <Card className="text-center h-100">
+                <Card.Body>
+                  <div className="display-4 text-primary mb-2">
+                    {stats.totalReservas || 0}
+                  </div>
+                  <h6 className="card-title text-muted">Total Reservas</h6>
+                  <small className="text-muted">Todas las reservas</small>
+                </Card.Body>
+              </Card>
+            </Col>
+            
+            <Col md={3}>
+              <Card className="text-center h-100">
+                <Card.Body>
+                  <div className="display-4 text-warning mb-2">
+                    {stats.reservasPendientes || 0}
+                  </div>
+                  <h6 className="card-title text-muted">Pendientes</h6>
+                  <small className="text-muted">Requieren atención</small>
+                </Card.Body>
+              </Card>
+            </Col>
+            
+            <Col md={3}>
+              <Card className="text-center h-100">
+                <Card.Body>
+                  <div className="display-4 text-success mb-2">
+                    {stats.reservasConfirmadas || 0}
+                  </div>
+                  <h6 className="card-title text-muted">Confirmadas</h6>
+                  <small className="text-muted">Listas para ejecutar</small>
+                </Card.Body>
+              </Card>
+            </Col>
+            
+            <Col md={3}>
+              <Card className="text-center h-100">
+                <Card.Body>
+                  <div className="display-4 text-info mb-2">
+                    {formatCurrency(stats.ingresosMensuales || 0)}
+                  </div>
+                  <h6 className="card-title text-muted">Ingresos Mes</h6>
+                  <small className="text-muted">Mes actual</small>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
 
-        <Col md={3} className="mb-3">
-          <Card className="stat-card h-100">
-            <Card.Body className="text-center">
-              <div className="stat-icon text-success mb-2">
-                <i className="fas fa-check-circle fa-2x"></i>
-              </div>
-              <h3 className="text-success">{stats?.reservasConfirmadas || 0}</h3>
-              <p className="text-muted mb-0">Confirmadas</p>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={3} className="mb-3">
-          <Card className="stat-card h-100">
-            <Card.Body className="text-center">
-              <div className="stat-icon text-info mb-2">
-                <i className="fas fa-dollar-sign fa-2x"></i>
-              </div>
-              <h3 className="text-info">{stats?.ingresosMensuales ? formatPrice(stats.ingresosMensuales) : '$0'}</h3>
-              <p className="text-muted mb-0">Ingresos del Mes</p>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row>
-        {/* Reservas recientes */}
-        <Col lg={8} className="mb-4">
-          <Card>
-            <Card.Header>
-              <h5 className="mb-0">
-                <i className="fas fa-list me-2"></i>
-                Reservas Recientes
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              {stats?.reservasRecientes && stats.reservasRecientes.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Cliente</th>
-                        <th>Tipo</th>
-                        <th>Fecha</th>
-                        <th>Estado</th>
-                        <th>Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stats.reservasRecientes.map((reserva) => (
-                        <tr key={reserva.id}>
-                          <td>#{reserva.id}</td>
-                          <td>{reserva.nombreContacto}</td>
-                          <td>{getTipoReservaBadge(reserva.tipoReserva)}</td>
-                          <td>{formatDate(reserva.fechaCreacion)}</td>
-                          <td>{getEstadoBadge(reserva.estado)}</td>
-                          <td className="fw-bold">{formatPrice(reserva.total)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center text-muted py-4">
-                  <i className="fas fa-inbox fa-3x mb-3"></i>
-                  <p>No hay reservas recientes</p>
-                </div>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-
-        {/* Senderos más populares */}
-        <Col lg={4} className="mb-4">
-          <Card>
-            <Card.Header>
-              <h5 className="mb-0">
-                <i className="fas fa-star me-2"></i>
-                Senderos Populares
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              {stats?.senderosMasPopulares && stats.senderosMasPopulares.length > 0 ? (
-                <div>
-                  {stats.senderosMasPopulares.map((sendero, index) => (
-                    <div key={sendero.id} className="d-flex align-items-center mb-3">
-                      <div className="me-3">
-                        <Badge bg="primary" pill>#{index + 1}</Badge>
-                      </div>
-                      <div className="flex-grow-1">
-                        <h6 className="mb-0">{sendero.nombre}</h6>
-                        <small className="text-muted">{sendero.totalReservas} reservas</small>
-                      </div>
+          <Row>
+            {/* Senderos más populares */}
+            <Col md={6}>
+              <Card className="mb-4">
+                <Card.Header className="d-flex justify-content-between align-items-center">
+                  <h5 className="mb-0">
+                    <Icon name="hiking" size="sm" className="me-2" />
+                    Senderos Más Populares
+                  </h5>
+                </Card.Header>
+                <Card.Body>
+                  {stats.senderosMasPopulares && stats.senderosMasPopulares.length > 0 ? (
+                    <div className="table-responsive">
+                      <Table size="sm">
+                        <thead>
+                          <tr>
+                            <th>Sendero</th>
+                            <th className="text-center">Reservas</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stats.senderosMasPopulares.map((sendero, index) => (
+                            <tr key={sendero.id}>
+                              <td>
+                                <div className="d-flex align-items-center">
+                                  <Badge bg="primary" className="me-2">#{index + 1}</Badge>
+                                  {sendero.nombre}
+                                </div>
+                              </td>
+                              <td className="text-center">
+                                <Badge bg="info">{sendero.totalReservas}</Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-muted py-4">
-                  <i className="fas fa-hiking fa-2x mb-3"></i>
-                  <p>Sin datos de senderos</p>
-                </div>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+                  ) : (
+                    <div className="text-center text-muted py-3">
+                      <Icon name="hiking" size="lg" className="mb-2" />
+                      <p>No hay datos de senderos aún</p>
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
 
-      {/* Acciones rápidas */}
-      <Row>
-        <Col md={12}>
-          <Card>
-            <Card.Header>
-              <h5 className="mb-0">
-                <i className="fas fa-bolt me-2"></i>
-                Acciones Rápidas
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              <Row>
-                <Col md={3} className="mb-2">
-                  <div className="quick-action-card p-3 text-center border rounded h-100">
-                    <i className="fas fa-plus-circle fa-2x text-primary mb-2"></i>
-                    <h6>Nueva Habitación</h6>
-                    <small className="text-muted">Agregar alojamiento</small>
+            {/* Reservas recientes */}
+            <Col md={6}>
+              <Card className="mb-4">
+                <Card.Header className="d-flex justify-content-between align-items-center">
+                  <h5 className="mb-0">
+                    <Icon name="calendar" size="sm" className="me-2" />
+                    Reservas Recientes
+                  </h5>
+                  <Button variant="outline-primary" size="sm" href="/admin/reservations">
+                    Ver todas
+                  </Button>
+                </Card.Header>
+                <Card.Body>
+                  {stats.reservasRecientes && stats.reservasRecientes.length > 0 ? (
+                    <div className="table-responsive">
+                      <Table size="sm">
+                        <thead>
+                          <tr>
+                            <th>Cliente</th>
+                            <th>Tipo</th>
+                            <th>Estado</th>
+                            <th>Fecha</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stats.reservasRecientes.slice(0, 5).map((reserva) => (
+                            <tr key={reserva.id}>
+                              <td>
+                                <div>
+                                  <strong>{reserva.nombreContacto}</strong>
+                                  <br />
+                                  <small className="text-muted">
+                                    {formatCurrency(reserva.total)}
+                                  </small>
+                                </div>
+                              </td>
+                              <td>
+                                <Badge bg="secondary" className="text-wrap">
+                                  {reserva.tipoReserva}
+                                </Badge>
+                              </td>
+                              <td>
+                                {getEstadoBadge(reserva.estado)}
+                              </td>
+                              <td>
+                                <small>{formatDate(reserva.fechaCreacion)}</small>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted py-3">
+                      <Icon name="calendar" size="lg" className="mb-2" />
+                      <p>No hay reservas recientes</p>
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Acciones rápidas */}
+          <Row>
+            <Col md={12}>
+              <Card>
+                <Card.Header>
+                  <h5 className="mb-0">
+                    <Icon name="search" size="sm" className="me-2" />
+                    Acciones Rápidas
+                  </h5>
+                </Card.Header>
+                <Card.Body>
+                  <Row>
+                    <Col md={3}>
+                      <div className="d-grid">
+                        <Button variant="success" href="/admin/trails">
+                          <Icon name="hiking" size="sm" className="me-2" />
+                          Gestionar Senderos
+                        </Button>
+                      </div>
+                    </Col>
+                    <Col md={3}>
+                      <div className="d-grid">
+                        <Button variant="info" href="/admin/rooms">
+                          <Icon name="bed" size="sm" className="me-2" />
+                          Gestionar Alojamientos
+                        </Button>
+                      </div>
+                    </Col>
+                    <Col md={3}>
+                      <div className="d-grid">
+                        <Button variant="warning" href="/admin/reservations">
+                          <Icon name="calendar" size="sm" className="me-2" />
+                          Ver Reservas
+                        </Button>
+                      </div>
+                    </Col>
+                    <Col md={3}>
+                      <div className="d-grid">
+                        <Button variant="secondary" href="/admin/guides">
+                          <Icon name="user" size="sm" className="me-2" />
+                          Gestionar Guías
+                        </Button>
+                      </div>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Alertas y notificaciones */}
+          {stats.reservasPendientes > 0 && (
+            <Row className="mt-4">
+              <Col md={12}>
+                <Alert variant="warning" className="d-flex align-items-center">
+                  <Icon name="calendar" size="md" className="me-3" />
+                  <div>
+                    <strong>Atención requerida:</strong> Tienes {stats.reservasPendientes} reserva(s) pendiente(s) de confirmación.
+                    <div className="mt-2">
+                      <Button variant="outline-warning" size="sm" href="/admin/reservations?filter=pending">
+                        Revisar reservas pendientes
+                      </Button>
+                    </div>
                   </div>
-                </Col>
-                <Col md={3} className="mb-2">
-                  <div className="quick-action-card p-3 text-center border rounded h-100">
-                    <i className="fas fa-route fa-2x text-success mb-2"></i>
-                    <h6>Nuevo Sendero</h6>
-                    <small className="text-muted">Crear excursión</small>
-                  </div>
-                </Col>
-                <Col md={3} className="mb-2">
-                  <div className="quick-action-card p-3 text-center border rounded h-100">
-                    <i className="fas fa-user-tie fa-2x text-info mb-2"></i>
-                    <h6>Nuevo Guía</h6>
-                    <small className="text-muted">Registrar guía</small>
-                  </div>
-                </Col>
-                <Col md={3} className="mb-2">
-                  <div className="quick-action-card p-3 text-center border rounded h-100">
-                    <i className="fas fa-file-export fa-2x text-warning mb-2"></i>
-                    <h6>Exportar Datos</h6>
-                    <small className="text-muted">Reportes Excel</small>
-                  </div>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+                </Alert>
+              </Col>
+            </Row>
+          )}
+        </>
+      )}
     </div>
   );
 };

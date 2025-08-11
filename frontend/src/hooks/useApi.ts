@@ -12,7 +12,7 @@ export function useApi<T = any>() {
     setError(null);
 
     try {
-      const response = await fetch(`${apiService.baseURL}${endpoint}`, {
+      const response = await fetch(`${apiService.apiBaseURL}${endpoint}`, {
         ...options,
         headers: {
           'Content-Type': 'application/json',

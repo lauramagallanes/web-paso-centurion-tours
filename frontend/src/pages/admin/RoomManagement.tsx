@@ -1,43 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge } from 'react-bootstrap';
-import { useApi } from '../../hooks/useApi';
+import { useNavigate } from 'react-router-dom';
+import { useHabitacionesAdmin } from '../../hooks/useAdminApi';
+import Icon from '../../components/common/Icon';
 
 interface Habitacion {
-  id?: number;
+  id?: string;
   numero: string;
   nombre: string;
   descripcion?: string;
-  capacidadMinima: number;
+  capacidadMinima?: number;
   capacidadMaxima: number;
   precioPorPersonaNoche: number;
-  activa: boolean;
   urlImagen?: string;
+  activa: boolean;
   fechaCreacion?: string;
   fechaActualizacion?: string;
 }
 
 const RoomManagement: React.FC = () => {
-  const { data: habitaciones = [], loading, error, execute: loadHabitaciones } = useApi<Habitacion[]>();
-  const { loading: actionLoading, error: actionError, execute: executeAction } = useApi();
+  const navigate = useNavigate();
+  const { 
+    data: habitaciones = [], 
+    loading, 
+    error, 
+    loadHabitaciones,
+    createHabitacion,
+    updateHabitacion,
+    toggleActive,
+    deleteHabitacion 
+  } = useHabitacionesAdmin();
   
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedHabitacion, setSelectedHabitacion] = useState<Habitacion | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [formData, setFormData] = useState<Habitacion>({
     numero: '',
     nombre: '',
     descripcion: '',
     capacidadMinima: 1,
     capacidadMaxima: 2,
-    precioPorPersonaNoche: 0,
-    activa: true,
-    urlImagen: ''
+    precioPorPersonaNoche: 1500,
+    urlImagen: '',
+    activa: true
   });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
-    loadHabitaciones('/api/admin/habitaciones');
-  }, []);
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    loadHabitaciones();
+  }, [navigate]);
+
+  // Redirigir a login si hay error de autenticación
+  useEffect(() => {
+    if (error && error.includes('401')) {
+      console.log('Error de autenticación detectado, redirigiendo al login...');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      navigate('/login');
+    }
+  }, [error, navigate]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-UY', {
@@ -59,9 +87,9 @@ const RoomManagement: React.FC = () => {
       descripcion: '',
       capacidadMinima: 1,
       capacidadMaxima: 2,
-      precioPorPersonaNoche: 0,
-      activa: true,
-      urlImagen: ''
+      precioPorPersonaNoche: 1500,
+      urlImagen: '',
+      activa: true
     });
     setErrors({});
     setSelectedHabitacion(null);
@@ -109,11 +137,15 @@ const RoomManagement: React.FC = () => {
       newErrors.nombre = 'Nombre es obligatorio';
     }
 
-    if (formData.capacidadMinima < 1) {
+    if (formData.capacidadMaxima < 1) {
+      newErrors.capacidadMaxima = 'Capacidad máxima debe ser al menos 1';
+    }
+
+    if (formData.capacidadMinima && formData.capacidadMinima < 1) {
       newErrors.capacidadMinima = 'Capacidad mínima debe ser al menos 1';
     }
 
-    if (formData.capacidadMaxima < formData.capacidadMinima) {
+    if (formData.capacidadMinima && formData.capacidadMaxima < formData.capacidadMinima) {
       newErrors.capacidadMaxima = 'Capacidad máxima debe ser mayor o igual a la mínima';
     }
 
@@ -121,21 +153,8 @@ const RoomManagement: React.FC = () => {
       newErrors.precioPorPersonaNoche = 'Precio debe ser mayor a 0';
     }
 
-    if (formData.urlImagen && !isValidUrl(formData.urlImagen)) {
-      newErrors.urlImagen = 'URL de imagen no válida';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const isValidUrl = (string: string) => {
-    try {
-      new URL(string);
-      return true;
-    } catch (_) {
-      return false;
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,57 +162,52 @@ const RoomManagement: React.FC = () => {
     
     if (!validateForm()) return;
 
+    setActionLoading(true);
     try {
-      const endpoint = modalMode === 'create' 
-        ? '/api/admin/habitaciones'
-        : `/api/admin/habitaciones/${formData.id}`;
-      
-      const method = modalMode === 'create' ? 'POST' : 'PUT';
-
-      await executeAction(endpoint, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+      if (modalMode === 'create') {
+        await createHabitacion(formData);
+      } else if (modalMode === 'edit' && formData.id) {
+        await updateHabitacion(parseInt(formData.id), formData);
+      }
 
       // Recargar habitaciones
-      await loadHabitaciones('/api/admin/habitaciones');
+      await loadHabitaciones();
       handleCloseModal();
       
     } catch (error) {
       console.error('Error guardando habitación:', error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleToggleActive = async (habitacion: Habitacion) => {
+    if (!habitacion.id) return;
+    
+    setActionLoading(true);
     try {
-      await executeAction(`/api/admin/habitaciones/${habitacion.id}/toggle-active`, {
-        method: 'PUT'
-      });
-
-      // Recargar habitaciones
-      await loadHabitaciones('/api/admin/habitaciones');
-      
+      await toggleActive(parseInt(habitacion.id));
+      await loadHabitaciones();
     } catch (error) {
       console.error('Error cambiando estado:', error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleDelete = async (habitacion: Habitacion) => {
-    if (!window.confirm(`¿Estás seguro de que quieres eliminar la habitación ${habitacion.numero}?`)) {
+    if (!habitacion.id || !window.confirm(`¿Estás seguro de que quieres eliminar la habitación "${habitacion.nombre}"?`)) {
       return;
     }
 
+    setActionLoading(true);
     try {
-      await executeAction(`/api/admin/habitaciones/${habitacion.id}`, {
-        method: 'DELETE'
-      });
-
-      // Recargar habitaciones
-      await loadHabitaciones('/api/admin/habitaciones');
-      
+      await deleteHabitacion(parseInt(habitacion.id));
+      await loadHabitaciones();
     } catch (error) {
       console.error('Error eliminando habitación:', error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -211,148 +225,156 @@ const RoomManagement: React.FC = () => {
   return (
     <div className="room-management">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>
-          <i className="fas fa-bed me-2"></i>
-          Gestión de Habitaciones
-        </h2>
-        <Button variant="primary" onClick={() => handleOpenModal('create')}>
-          <i className="fas fa-plus me-2"></i>
+        <h2>Gestión de Habitaciones</h2>
+        <Button 
+          variant="success" 
+          onClick={() => handleOpenModal('create')}
+          disabled={actionLoading}
+        >
+          <Icon name="plus" size="sm" className="me-2" />
           Nueva Habitación
         </Button>
       </div>
 
       {error && (
         <Alert variant="danger" className="mb-4">
-          <Alert.Heading>Error al cargar habitaciones</Alert.Heading>
           {error}
-        </Alert>
-      )}
-
-      {actionError && (
-        <Alert variant="danger" className="mb-4">
-          <Alert.Heading>Error en la operación</Alert.Heading>
-          {actionError}
         </Alert>
       )}
 
       <Card>
         <Card.Body>
-          {habitaciones.length > 0 ? (
-            <div className="table-responsive">
-              <Table hover>
-                <thead>
-                  <tr>
-                    <th>Número</th>
-                    <th>Nombre</th>
-                    <th>Capacidad</th>
-                    <th>Precio/Persona/Noche</th>
-                    <th>Estado</th>
-                    <th>Creada</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {habitaciones.map((habitacion) => (
-                    <tr key={habitacion.id}>
-                      <td>
-                        <strong>{habitacion.numero}</strong>
-                      </td>
-                      <td>
-                        <div>
-                          <strong>{habitacion.nombre}</strong>
-                          {habitacion.descripcion && (
-                            <>
-                              <br />
-                              <small className="text-muted">
-                                {habitacion.descripcion.length > 50 
-                                  ? `${habitacion.descripcion.substring(0, 50)}...`
-                                  : habitacion.descripcion
-                                }
-                              </small>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <Badge bg="info">
-                          {habitacion.capacidadMinima}-{habitacion.capacidadMaxima} personas
-                        </Badge>
-                      </td>
-                      <td className="fw-bold">
-                        {formatPrice(habitacion.precioPorPersonaNoche)}
-                      </td>
-                      <td>
-                        <Badge bg={habitacion.activa ? 'success' : 'secondary'}>
-                          {habitacion.activa ? 'Activa' : 'Inactiva'}
-                        </Badge>
-                      </td>
-                      <td>
-                        {formatDate(habitacion.fechaCreacion)}
-                      </td>
-                      <td>
-                        <div className="btn-group">
-                          <Button
-                            variant="outline-info"
-                            size="sm"
-                            onClick={() => handleOpenModal('view', habitacion)}
-                            title="Ver detalles"
-                          >
-                            <i className="fas fa-eye"></i>
-                          </Button>
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={() => handleOpenModal('edit', habitacion)}
-                            title="Editar"
-                          >
-                            <i className="fas fa-edit"></i>
-                          </Button>
-                          <Button
-                            variant={habitacion.activa ? 'outline-warning' : 'outline-success'}
-                            size="sm"
-                            onClick={() => handleToggleActive(habitacion)}
-                            disabled={actionLoading}
-                            title={habitacion.activa ? 'Desactivar' : 'Activar'}
-                          >
-                            <i className={`fas ${habitacion.activa ? 'fa-pause' : 'fa-play'}`}></i>
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDelete(habitacion)}
-                            disabled={actionLoading}
-                            title="Eliminar"
-                          >
-                            <i className="fas fa-trash"></i>
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+          {habitaciones.length === 0 ? (
+            <div className="text-center py-5">
+              <Icon name="bed" size="lg" className="text-muted mb-3" />
+              <h5 className="text-muted">No hay habitaciones registradas</h5>
+              <p className="text-muted">Crea la primera habitación para empezar</p>
             </div>
           ) : (
-            <div className="text-center text-muted py-5">
-              <i className="fas fa-bed fa-3x mb-3"></i>
-              <h5>No hay habitaciones registradas</h5>
-              <p>Comienza agregando tu primera habitación</p>
-            </div>
+            <Table responsive hover>
+              <thead className="table-light">
+                <tr>
+                  <th>Número</th>
+                  <th>Nombre</th>
+                  <th>Capacidad</th>
+                  <th>Precio por Persona/Noche</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {habitaciones.map((habitacion) => (
+                  <tr key={habitacion.id}>
+                    <td>
+                      <strong>{habitacion.numero}</strong>
+                    </td>
+                    <td>
+                      <div>
+                        <div className="fw-bold">{habitacion.nombre}</div>
+                        {habitacion.descripcion && (
+                          <small className="text-muted">
+                            {habitacion.descripcion.length > 50 
+                              ? `${habitacion.descripcion.substring(0, 50)}...`
+                              : habitacion.descripcion
+                            }
+                          </small>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      {habitacion.capacidadMinima && habitacion.capacidadMinima !== habitacion.capacidadMaxima
+                        ? `${habitacion.capacidadMinima}-${habitacion.capacidadMaxima}`
+                        : habitacion.capacidadMaxima
+                      } personas
+                    </td>
+                    <td className="fw-bold">
+                      {formatPrice(habitacion.precioPorPersonaNoche)}
+                    </td>
+                    <td>
+                      <Badge bg={habitacion.activa ? 'success' : 'danger'}>
+                        {habitacion.activa ? 'Activa' : 'Inactiva'}
+                      </Badge>
+                    </td>
+                    <td>
+                      <div className="d-flex gap-1">
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => handleOpenModal('view', habitacion)}
+                          title="Ver detalles"
+                        >
+                          <Icon name="eye" size="xs" />
+                        </Button>
+                        
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          onClick={() => handleOpenModal('edit', habitacion)}
+                          title="Editar"
+                        >
+                          <Icon name="edit" size="xs" />
+                        </Button>
+                        
+                        <Button
+                          variant={habitacion.activa ? 'outline-warning' : 'outline-success'}
+                          size="sm"
+                          onClick={() => handleToggleActive(habitacion)}
+                          title={habitacion.activa ? 'Desactivar' : 'Activar'}
+                          disabled={actionLoading}
+                        >
+                          <Icon name={habitacion.activa ? 'pause' : 'play'} size="xs" />
+                        </Button>
+                        
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => handleDelete(habitacion)}
+                          title="Eliminar"
+                          disabled={actionLoading}
+                        >
+                          <Icon name="trash" size="xs" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           )}
         </Card.Body>
       </Card>
 
       {/* Modal para crear/editar/ver habitación */}
-      <Modal show={showModal} onHide={handleCloseModal} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {modalMode === 'create' && 'Nueva Habitación'}
-            {modalMode === 'edit' && 'Editar Habitación'}
-            {modalMode === 'view' && 'Detalles de Habitación'}
-          </Modal.Title>
-        </Modal.Header>
-        
+      <Modal 
+        show={showModal} 
+        onHide={handleCloseModal} 
+        size="lg"
+        backdrop="static"
+      >
         <Form onSubmit={handleSubmit}>
+          <Modal.Header closeButton>
+            <Modal.Title>
+              {modalMode === 'create' && (
+                <>
+                  <Icon name="plus" size="sm" className="me-2" />
+                  Nueva Habitación
+                </>
+              )}
+              {modalMode === 'edit' && (
+                <>
+                  <Icon name="edit" size="sm" className="me-2" />
+                  Editar Habitación
+                </>
+              )}
+              {modalMode === 'view' && (
+                <>
+                  <Icon name="eye" size="sm" className="me-2" />
+                  Ver Habitación
+                </>
+              )}
+            </Modal.Title>
+          </Modal.Header>
+          
           <Modal.Body>
             <Row>
               <Col md={6}>
@@ -360,11 +382,11 @@ const RoomManagement: React.FC = () => {
                   <Form.Label>Número de Habitación *</Form.Label>
                   <Form.Control
                     type="text"
+                    placeholder="Ej: 101, A1, Suite1"
                     value={formData.numero}
                     onChange={(e) => handleInputChange('numero', e.target.value)}
                     isInvalid={!!errors.numero}
                     disabled={modalMode === 'view'}
-                    placeholder="Ej: 101, A1, etc."
                   />
                   <Form.Control.Feedback type="invalid">
                     {errors.numero}
@@ -377,11 +399,11 @@ const RoomManagement: React.FC = () => {
                   <Form.Label>Nombre *</Form.Label>
                   <Form.Control
                     type="text"
+                    placeholder="Nombre descriptivo de la habitación"
                     value={formData.nombre}
                     onChange={(e) => handleInputChange('nombre', e.target.value)}
                     isInvalid={!!errors.nombre}
                     disabled={modalMode === 'view'}
-                    placeholder="Ej: Habitación Doble, Suite, etc."
                   />
                   <Form.Control.Feedback type="invalid">
                     {errors.nombre}
@@ -390,15 +412,27 @@ const RoomManagement: React.FC = () => {
               </Col>
             </Row>
 
+            <Form.Group className="mb-3">
+              <Form.Label>Descripción</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                placeholder="Descripción detallada de la habitación"
+                value={formData.descripcion || ''}
+                onChange={(e) => handleInputChange('descripcion', e.target.value)}
+                disabled={modalMode === 'view'}
+              />
+            </Form.Group>
+
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Capacidad Mínima *</Form.Label>
+                  <Form.Label>Capacidad Mínima</Form.Label>
                   <Form.Control
                     type="number"
                     min="1"
-                    value={formData.capacidadMinima}
-                    onChange={(e) => handleInputChange('capacidadMinima', parseInt(e.target.value))}
+                    value={formData.capacidadMinima || ''}
+                    onChange={(e) => handleInputChange('capacidadMinima', e.target.value ? parseInt(e.target.value) : undefined)}
                     isInvalid={!!errors.capacidadMinima}
                     disabled={modalMode === 'view'}
                   />
@@ -415,7 +449,7 @@ const RoomManagement: React.FC = () => {
                     type="number"
                     min="1"
                     value={formData.capacidadMaxima}
-                    onChange={(e) => handleInputChange('capacidadMaxima', parseInt(e.target.value))}
+                    onChange={(e) => handleInputChange('capacidadMaxima', e.target.value ? parseInt(e.target.value) : 1)}
                     isInvalid={!!errors.capacidadMaxima}
                     disabled={modalMode === 'view'}
                   />
@@ -426,61 +460,48 @@ const RoomManagement: React.FC = () => {
               </Col>
             </Row>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Precio por Persona por Noche (UYU) *</Form.Label>
-              <Form.Control
-                type="number"
-                min="0"
-                step="100"
-                value={formData.precioPorPersonaNoche}
-                onChange={(e) => handleInputChange('precioPorPersonaNoche', parseFloat(e.target.value))}
-                isInvalid={!!errors.precioPorPersonaNoche}
-                disabled={modalMode === 'view'}
-                placeholder="Ej: 2500"
-              />
-              <Form.Control.Feedback type="invalid">
-                {errors.precioPorPersonaNoche}
-              </Form.Control.Feedback>
-              <Form.Text className="text-muted">
-                Precio en pesos uruguayos por persona por noche
-              </Form.Text>
-            </Form.Group>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Precio por Persona/Noche (UYU) *</Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={formData.precioPorPersonaNoche}
+                    onChange={(e) => handleInputChange('precioPorPersonaNoche', e.target.value ? parseFloat(e.target.value) : 0)}
+                    isInvalid={!!errors.precioPorPersonaNoche}
+                    disabled={modalMode === 'view'}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.precioPorPersonaNoche}
+                  </Form.Control.Feedback>
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>URL de Imagen</Form.Label>
+                  <Form.Control
+                    type="url"
+                    placeholder="https://ejemplo.com/imagen.jpg"
+                    value={formData.urlImagen || ''}
+                    onChange={(e) => handleInputChange('urlImagen', e.target.value)}
+                    disabled={modalMode === 'view'}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
 
-            <Form.Group className="mb-3">
-              <Form.Label>URL de Imagen (opcional)</Form.Label>
-              <Form.Control
-                type="url"
-                value={formData.urlImagen || ''}
-                onChange={(e) => handleInputChange('urlImagen', e.target.value)}
-                isInvalid={!!errors.urlImagen}
-                disabled={modalMode === 'view'}
-                placeholder="https://ejemplo.com/imagen.jpg"
-              />
-              <Form.Control.Feedback type="invalid">
-                {errors.urlImagen}
-              </Form.Control.Feedback>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Descripción (opcional)</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                value={formData.descripcion || ''}
-                onChange={(e) => handleInputChange('descripcion', e.target.value)}
-                disabled={modalMode === 'view'}
-                placeholder="Describe las características de la habitación..."
-              />
-            </Form.Group>
-
-            {modalMode !== 'view' && (
+            {modalMode !== 'create' && (
               <Form.Group className="mb-3">
                 <Form.Check
                   type="checkbox"
-                  id="activa"
-                  label="Habitación activa (disponible para reservas)"
+                  id="activa-checkbox"
+                  label="Habitación activa"
                   checked={formData.activa}
                   onChange={(e) => handleInputChange('activa', e.target.checked)}
+                  disabled={modalMode === 'view'}
                 />
               </Form.Group>
             )}
@@ -507,7 +528,7 @@ const RoomManagement: React.FC = () => {
             
             {modalMode !== 'view' && (
               <Button 
-                variant="primary" 
+                variant="success" 
                 type="submit"
                 disabled={actionLoading}
               >
@@ -518,7 +539,7 @@ const RoomManagement: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <i className={`fas ${modalMode === 'create' ? 'fa-plus' : 'fa-save'} me-2`}></i>
+                    <Icon name={modalMode === 'create' ? 'plus' : 'save'} size="sm" className="me-2" />
                     {modalMode === 'create' ? 'Crear Habitación' : 'Guardar Cambios'}
                   </>
                 )}

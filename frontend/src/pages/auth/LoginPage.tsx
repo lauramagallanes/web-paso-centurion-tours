@@ -7,6 +7,8 @@ import Card, { CardBody, CardHeader } from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import { routes } from '../../utils/routes';
+import logoBlack from '../../assets/images/logo/logo_black.svg';
+import backgroundImage from '../../assets/illustrations/Foto home  conocenos.svg';
 import './LoginPage.css';
 
 const LoginPage: React.FC = () => {
@@ -38,7 +40,7 @@ const LoginPage: React.FC = () => {
         <div className="auth-background">
           <div className="auth-background-overlay" />
           <img 
-            src="/src/assets/illustrations/Foto home  conocenos.svg" 
+            src={backgroundImage} 
             alt="Naturaleza de Paso Centurión"
             className="auth-background-image"
           />
@@ -54,7 +56,7 @@ const LoginPage: React.FC = () => {
                 <div className="auth-welcome-content">
                   <Link to={routes.home} className="auth-logo">
                     <img 
-                      src="/src/assets/images/logo/logo_black.svg" 
+                      src={logoBlack} 
                       alt="Tinambú Logo"
                       className="auth-logo-img"
                       onError={(e) => {

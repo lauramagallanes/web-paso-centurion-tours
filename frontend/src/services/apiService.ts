@@ -3,7 +3,8 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+    // En producción (Docker), usar el proxy de nginx. En desarrollo, usar URL directa
+    this.baseURL = process.env.REACT_APP_API_URL || '/api';
   }
 
   // Método privado para obtener headers con autenticación

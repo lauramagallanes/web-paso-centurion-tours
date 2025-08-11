@@ -6,6 +6,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import LoginForm from '../forms/LoginForm';
 import SignupForm from '../forms/SignupForm';
 import ThemeToggle from './ThemeToggle';
+import CartButton from './CartButton';
+import Logo from './Logo';
 import './MainNavbar.css';
 
 const MainNavbar: React.FC = () => {
@@ -50,19 +52,15 @@ const MainNavbar: React.FC = () => {
         <div className="navbar-container">
           {/* Logo/Brand */}
           <div className="navbar-brand">
-            <Link to={routes.home} className="brand-link" onClick={closeMobileMenu}>
-              <img 
-                src="/src/assets/images/logo/logo_white.svg" 
-                alt="Tinambú Logo" 
-                className="brand-logo"
-                onError={(e) => {
-                  // Fallback if logo doesn't load
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling!.textContent = 'Tinambú';
-                }}
-              />
-              <span className="brand-text">Tinambú</span>
-            </Link>
+            <Logo 
+              variant="full" 
+              size="md" 
+              color="auto"
+              as="a"
+              href={routes.home}
+              onClick={closeMobileMenu}
+              className="navbar-logo"
+            />
           </div>
 
           {/* Desktop Navigation */}
@@ -82,6 +80,7 @@ const MainNavbar: React.FC = () => {
 
           {/* Desktop Actions */}
           <div className="navbar-actions desktop-actions">
+            <CartButton />
             <ThemeToggle />
             
             {state.isAuthenticated ? (

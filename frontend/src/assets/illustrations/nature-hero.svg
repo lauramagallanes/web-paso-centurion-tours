@@ -1,0 +1,54 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sky Gradient Background -->
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:currentColor;stop-opacity:0.1"/>
+      <stop offset="100%" style="stop-color:currentColor;stop-opacity:0.05"/>
+    </linearGradient>
+    <linearGradient id="mountainGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:currentColor;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:currentColor;stop-opacity:0.15"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Sky -->
+  <rect width="400" height="300" fill="url(#skyGradient)"/>
+  
+  <!-- Mountains Background -->
+  <path d="M0 150L50 100L100 120L150 80L200 90L250 70L300 85L350 60L400 75V300H0V150Z" fill="url(#mountainGradient)"/>
+  
+  <!-- Mountains Foreground -->
+  <path d="M0 180L60 130L120 150L180 110L240 125L300 105L360 120L400 110V300H0V180Z" fill="currentColor" opacity="0.2"/>
+  
+  <!-- Trees -->
+  <!-- Tree 1 -->
+  <ellipse cx="80" cy="200" rx="25" ry="35" fill="currentColor" opacity="0.25"/>
+  <rect x="77" y="220" width="6" height="25" fill="currentColor" opacity="0.3"/>
+  
+  <!-- Tree 2 -->
+  <ellipse cx="320" cy="180" rx="30" ry="40" fill="currentColor" opacity="0.25"/>
+  <rect x="316" y="205" width="8" height="30" fill="currentColor" opacity="0.3"/>
+  
+  <!-- Tree 3 -->
+  <ellipse cx="150" cy="210" rx="20" ry="30" fill="currentColor" opacity="0.25"/>
+  <rect x="148" y="225" width="4" height="20" fill="currentColor" opacity="0.3"/>
+  
+  <!-- Birds -->
+  <path d="M100 60C98 58 96 58 94 60M106 60C108 58 110 58 112 60" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+  <path d="M250 80C248 78 246 78 244 80M256 80C258 78 260 78 262 80" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+  <path d="M180 50C178 48 176 48 174 50M186 50C188 48 190 48 192 50" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+  
+  <!-- Sun/Moon -->
+  <circle cx="320" cy="70" r="25" stroke="currentColor" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M320 35V45M320 95V105M285 70H295M345 70H355M298 48L305 55M335 55L342 48M342 92L335 85M305 85L298 92" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+  
+  <!-- Grass -->
+  <path d="M0 240C50 235 100 245 150 240C200 235 250 245 300 240C350 235 375 240 400 240V300H0V240Z" fill="currentColor" opacity="0.15"/>
+  
+  <!-- Small Details -->
+  <circle cx="50" cy="250" r="2" fill="currentColor" opacity="0.3"/>
+  <circle cx="120" cy="255" r="1.5" fill="currentColor" opacity="0.3"/>
+  <circle cx="280" cy="248" r="2.5" fill="currentColor" opacity="0.3"/>
+  <circle cx="350" cy="252" r="1" fill="currentColor" opacity="0.3"/>
+</svg>
+

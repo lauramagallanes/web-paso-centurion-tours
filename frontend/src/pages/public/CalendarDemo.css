@@ -1,0 +1,217 @@
+/* Calendar Demo Page */
+.calendar-demo-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--color-background) 0%, var(--color-surface-variant) 100%);
+  padding: var(--space-8) 0;
+}
+
+.demo-header {
+  text-align: center;
+  margin-bottom: var(--space-12);
+}
+
+.page-title {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-4) 0;
+}
+
+.page-description {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-6) 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: var(--leading-relaxed);
+}
+
+/* Demo Grid */
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--space-8);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.demo-section {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: var(--space-6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.demo-section.full-width {
+  grid-column: 1 / -1;
+}
+
+.section-title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.section-description {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-6) 0;
+  line-height: var(--leading-relaxed);
+}
+
+/* Component Showcase */
+.component-showcase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.range-picker-examples {
+  width: 100%;
+  max-width: 400px;
+}
+
+.mt-4 {
+  margin-top: var(--space-4);
+}
+
+/* Selection Info */
+.selection-info {
+  background-color: var(--color-success-bg);
+  border: 1px solid var(--color-success);
+  border-radius: 8px;
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  text-align: center;
+  max-width: 300px;
+}
+
+.range-details {
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.range-details div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+/* Features Grid */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.feature-card {
+  background-color: var(--color-surface-variant);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: var(--space-4);
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: var(--space-3);
+}
+
+.feature-card h3 {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.feature-card p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: var(--leading-relaxed);
+}
+
+/* Dark Theme */
+[data-theme="dark"] .calendar-demo-page {
+  background: linear-gradient(135deg, var(--color-background) 0%, var(--color-neutral-800) 100%);
+}
+
+[data-theme="dark"] .demo-section {
+  background-color: var(--color-primary);
+  border-color: var(--color-neutral-700);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .selection-info {
+  background-color: rgba(170, 190, 80, 0.2);
+  border-color: var(--color-success);
+}
+
+[data-theme="dark"] .feature-card {
+  background-color: var(--color-neutral-800);
+  border-color: var(--color-neutral-700);
+}
+
+[data-theme="dark"] .feature-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .demo-grid {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+  }
+  
+  .features-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .calendar-demo-page {
+    padding: var(--space-4) 0;
+  }
+  
+  .page-title {
+    font-size: var(--text-2xl);
+  }
+  
+  .demo-grid {
+    gap: var(--space-4);
+  }
+  
+  .demo-section {
+    padding: var(--space-4);
+  }
+  
+  .component-showcase {
+    gap: var(--space-4);
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  
+  .feature-card {
+    padding: var(--space-3);
+  }
+}
+

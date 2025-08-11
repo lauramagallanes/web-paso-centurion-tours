@@ -36,8 +36,23 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    /**
+     * Bean del filtro JWT
+     */
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter();
+    }
+
+    /**
+     * Deshabilitar el registro automático del filtro JWT
+     */
+    @Bean
+    public org.springframework.boot.web.servlet.FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration(JwtAuthenticationFilter filter) {
+        org.springframework.boot.web.servlet.FilterRegistrationBean<JwtAuthenticationFilter> registration = new org.springframework.boot.web.servlet.FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
 
     /**
      * Configuración principal de seguridad
@@ -62,11 +77,27 @@ public class SecurityConfig {
             // Configurar autorización de requests
             .authorizeHttpRequests(authz -> authz
                 // Endpoints completamente públicos (sin prefijo /api porque ya estamos en el contexto)
-                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/auth/login").permitAll()
+                .requestMatchers("/auth/signup").permitAll()
+                .requestMatchers("/auth/refresh").permitAll()
+                // Endpoints de auth que requieren autenticación
+                .requestMatchers("/auth/validate").authenticated()
+                .requestMatchers("/auth/debug").authenticated()
                 .requestMatchers("/health").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 
-                // Endpoints públicos de consulta (solo GET)
+                // Endpoints administrativos PRIMERO (más específicos)
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/habitaciones/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/habitaciones/admin").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/habitaciones/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/habitaciones/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/habitaciones/admin").hasRole("ADMIN")
+                .requestMatchers("/*/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/reservas/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/**").hasRole("ADMIN")
+                
+                // Endpoints públicos de consulta (solo GET) - DESPUÉS
                 .requestMatchers(HttpMethod.GET, "/habitaciones/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/senderos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/guias/**").permitAll()
@@ -78,11 +109,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/reservas/codigo/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/reservas/email/**").permitAll()
                 
-                // Endpoints administrativos - requieren autenticación y rol ADMIN
-                .requestMatchers("/*/admin/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/reservas/admin/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/**").hasRole("ADMIN")
-                
                 // Cualquier otro endpoint requiere autenticación
                 .anyRequest().authenticated())
             
@@ -90,7 +116,7 @@ public class SecurityConfig {
             .authenticationProvider(daoAuthenticationProvider())
             
             // Agregar filtro JWT antes del filtro de autenticación por username/password
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

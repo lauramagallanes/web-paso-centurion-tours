@@ -1,6 +1,8 @@
 import React from 'react';
 import Card, { CardBody, CardFooter, CardImage } from './Card';
 import Button from './Button';
+import FavoriteButton from './FavoriteButton';
+import { useCart } from '../../contexts/CartContext';
 
 export interface ActivityCardProps {
   id: string;
@@ -31,10 +33,27 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   onBook,
   className = ''
 }) => {
+  const { addItem } = useCart();
+
   const handleBookClick = () => {
     if (onBook) {
       onBook(id);
     }
+  };
+
+  const handleAddToCart = () => {
+    addItem({
+      id,
+      type: 'activity',
+      name,
+      description,
+      image,
+      price,
+      currency,
+      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default: 1 week from now
+      participants: 1,
+      duration
+    });
   };
 
   const getDifficultyColor = (level: string) => {
@@ -69,6 +88,24 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       >
         {difficulty}
       </div>
+
+      <FavoriteButton
+        item={{
+          id,
+          type: 'activity',
+          name,
+          description,
+          image,
+          price,
+          currency,
+          difficulty,
+          duration,
+          maxParticipants,
+          includes
+        }}
+        variant="card"
+        size="sm"
+      />
 
       <CardBody>
         <div className="mb-4">
@@ -124,14 +161,24 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             </span>
           </div>
           
-          <Button 
-            variant="primary" 
-            size="sm"
-            onClick={handleBookClick}
-            leftIcon="📅"
-          >
-            Reservar
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={handleAddToCart}
+              leftIcon="🛒"
+            >
+              Agregar
+            </Button>
+            <Button 
+              variant="primary" 
+              size="sm"
+              onClick={handleBookClick}
+              leftIcon="📅"
+            >
+              Reservar
+            </Button>
+          </div>
         </div>
       </CardFooter>
     </Card>

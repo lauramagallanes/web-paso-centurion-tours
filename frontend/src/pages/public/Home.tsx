@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeroSlider, { HeroSlide } from '../../components/common/HeroSlider';
-import Card, { CardBody, CardImage } from '../../components/common/Card';
+
 import ActivityCard from '../../components/common/ActivityCard';
 import AccommodationCard from '../../components/common/AccommodationCard';
 import Button from '../../components/common/Button';
@@ -24,34 +24,96 @@ const Home: React.FC = () => {
   // Hero slider data
   const heroSlides: HeroSlide[] = [
     {
-      id: 'nature-experience',
-      image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2071&q=80',
-      title: 'Descubre la Magia de Paso Centurión',
-      subtitle: '🌿 Ecoturismo Auténtico',
-      description: 'Sumérgete en la biodiversidad única del Uruguay. Más de 200 especies de aves, senderos naturales y la hospitalidad más cálida te esperan en este paraíso ecológico.',
-      ctaText: 'Comenzar Aventura',
-      ctaAction: () => navigate(routes.activities),
-      overlay: 'gradient'
+      id: 'tinambu',
+      type: 'tinambu',
+      image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      title: 'Tinambú',
+      description: 'Ecolodge familiar en Paso Centurión. Aventura, descanso y naturaleza en un entorno protegido, con senderismo guiado, observación de aves y alojamiento sustentable, avalado por organismos ambientales y turísticos.',
+      ctaText: 'Conocenos',
+      ctaAction: () => navigate(routes.about),
+      overlay: 'dark',
+      certifications: [
+        { icon: '🌿', name: 'Certificación Ambiental' },
+        { icon: '🌿', name: 'Turismo Sustentable' }
+      ]
     },
     {
       id: 'birdwatching',
+      type: 'birds',
       image: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2126&q=80',
-      title: 'Observación de Aves de Clase Mundial',
-      subtitle: '🦅 280+ Especies Registradas',
-      description: 'Acompañados por ornitólogos expertos, descubre especies únicas en su hábitat natural. Equipos profesionales incluidos y experiencias para todos los niveles.',
-      ctaText: 'Explorar Avifauna',
+      title: 'Avistamiento de aves',
+      description: 'Más de 200 especies en hábitats diversos. Observación guiada para amantes de las aves, la fotografía y la biodiversidad.',
+      ctaText: 'Descubre',
       ctaAction: () => navigate(routes.activities),
-      overlay: 'gradient'
+      overlay: 'dark',
+      gallery: [
+        'https://images.unsplash.com/photo-1444927714506-8492d94b5ba0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+        'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+        'https://images.unsplash.com/photo-1552728089-57bdde30beb3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80'
+      ]
+    },
+    {
+      id: 'hiking',
+      type: 'hiking',
+      image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
+      title: 'Senderismo guiado',
+      description: 'Tenemos 7 Senderos para que escojas, caminatas guiadas por naturaleza virgen. Explora bosques, quebradas y miradores junto a nuestros guías locales. Observa la flora, fauna y aves únicas en Uruguay.',
+      ctaText: 'Reserva ahora',
+      ctaAction: () => navigate(routes.book),
+      overlay: 'dark'
     },
     {
       id: 'accommodation',
+      type: 'accommodation',
       image: 'https://images.unsplash.com/photo-1464822759844-d150baec7494?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-      title: 'Alojamiento Sustentable Premium',
-      subtitle: '🏡 Confort en la Naturaleza',
-      description: 'Cabañas ecológicas y habitaciones diseñadas en armonía con el entorno. Construcción sustentable, comodidades modernas y vistas espectaculares.',
-      ctaText: 'Reservar Estadía',
+      title: 'Alojamiento',
+      description: 'Dos habitaciones en bioconstrucción con todo el confort, inmersas en naturaleza. Ideal para descansar, reconectar y observar aves.',
+      ctaText: 'Reserva ahora',
       ctaAction: () => navigate(routes.accomodations),
-      overlay: 'gradient'
+      overlay: 'dark',
+      gallery: [
+        'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80'
+      ]
+    },
+    {
+      id: 'birdwatching',
+      type: 'birds',
+      image: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2126&q=80',
+      title: 'Avistamiento de aves',
+      description: 'Más de 200 especies en hábitats diversos. Observación guiada para amantes de las aves, la fotografía y la biodiversidad.',
+      ctaText: 'Descubre',
+      ctaAction: () => navigate(routes.activities),
+      overlay: 'dark',
+      gallery: [
+        'https://images.unsplash.com/photo-1444927714506-8492d94b5ba0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+        'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+        'https://images.unsplash.com/photo-1552728089-57bdde30beb3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80'
+      ]
+    },
+    {
+      id: 'hiking',
+      type: 'hiking',
+      image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
+      title: 'Senderismo guiado',
+      description: 'Tenemos 7 Senderos para que escojas, caminatas guiadas por naturaleza virgen. Explora bosques, quebradas y miradores junto a nuestros guías locales. Observa la flora, fauna y aves únicas en Uruguay.',
+      ctaText: 'Reserva ahora',
+      ctaAction: () => navigate(routes.book),
+      overlay: 'dark'
+    },
+    {
+      id: 'accommodation',
+      type: 'accommodation',
+      image: 'https://images.unsplash.com/photo-1464822759844-d150baec7494?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      title: 'Alojamiento',
+      description: 'Dos habitaciones en bioconstrucción con todo el confort, inmersas en naturaleza. Ideal para descansar, reconectar y observar aves.',
+      ctaText: 'Reserva ahora',
+      ctaAction: () => navigate(routes.accomodations),
+      overlay: 'dark',
+      gallery: [
+        'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80'
+      ]
     }
   ];
 
@@ -165,33 +227,55 @@ const Home: React.FC = () => {
         <div className="container">
           <div className="welcome-content">
             <div className="welcome-text">
-              <h2 className="section-title">Bienvenidos a Tinambú</h2>
+              <div className="welcome-badge">
+                <span className="badge-icon">🍃</span>
+                <span className="badge-text">Explora, descansa y desconecta en un solo lugar</span>
+              </div>
+              <h2 className="welcome-title">Bienvenidos a Tinambú</h2>
               <p className="welcome-description">
-                En el corazón de Paso Centurión, te invitamos a descubrir una experiencia única de 
-                ecoturismo. Nuestra pasión por la naturaleza y la hospitalidad uruguaya se combinan 
-                para ofrecerte momentos inolvidables en contacto directo con la biodiversidad local.
+                Sumérgete en el corazón de Paso Centurión, donde cada sendero cuenta una historia 
+                y cada especie de ave te invita a descubrir la biodiversidad única del Uruguay. 
+                Nuestra pasión por la naturaleza se convierte en experiencias auténticas que 
+                conectan tu alma con la tierra.
               </p>
-              <div className="welcome-stats">
-                <div className="stat-item">
-                  <span className="stat-number">200+</span>
-                  <span className="stat-label">Especies de Aves</span>
+              <div className="welcome-features">
+                <div className="feature-item">
+                  <span className="feature-icon">🦅</span>
+                  <div className="feature-content">
+                    <h4>Observación de Aves</h4>
+                    <p>Más de 200 especies registradas</p>
+                  </div>
                 </div>
-                <div className="stat-item">
-                  <span className="stat-number">15</span>
-                  <span className="stat-label">Años de Experiencia</span>
+                <div className="feature-item">
+                  <span className="feature-icon">🏡</span>
+                  <div className="feature-content">
+                    <h4>Alojamiento Rural</h4>
+                    <p>Cabañas sustentables en la naturaleza</p>
+                  </div>
                 </div>
-                <div className="stat-item">
-                  <span className="stat-number">1000+</span>
-                  <span className="stat-label">Visitantes Satisfechos</span>
+                <div className="feature-item">
+                  <span className="feature-icon">🥾</span>
+                  <div className="feature-content">
+                    <h4>Senderismo Guiado</h4>
+                    <p>Recorridos con guías especializados</p>
+                  </div>
                 </div>
               </div>
             </div>
             <div className="welcome-image">
-              <img 
-                src={backgroundImage} 
-                alt="Naturaleza de Paso Centurión"
-                className="welcome-img"
-              />
+              <div className="image-container">
+                <img 
+                  src={backgroundImage} 
+                  alt="Naturaleza de Paso Centurión"
+                  className="welcome-img"
+                />
+                <div className="image-overlay">
+                  <div className="overlay-content">
+                    <span className="overlay-text">Paso Centurión, Cerro Largo</span>
+                    <span className="overlay-subtext">Uruguay</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -256,55 +340,108 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Why Choose Us */}
-      <section className="home-features">
+      {/* Team Section */}
+      <section className="home-team">
         <div className="container">
-          <h2 className="section-title text-center">¿Por Qué Elegir Tinambú?</h2>
+          <div className="section-header">
+            <h2 className="section-title">Lo que opinan de nosotros</h2>
+            <p className="section-subtitle">
+              Conocé a nuestro equipo y las experiencias de quienes ya nos visitaron
+            </p>
+          </div>
           
-          <div className="features-grid">
-            <Card variant="nature" size="md" className="feature-card">
-              <CardBody>
-                <div className="feature-icon">🌿</div>
-                <h3 className="feature-title">Turismo Sostenible</h3>
-                <p className="feature-description">
-                  Comprometidos con la conservación del medio ambiente y el desarrollo 
-                  responsable del turismo rural.
+          <div className="team-grid">
+            <div className="team-member">
+              <div className="member-avatar">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face" alt="Guía especializado" />
+              </div>
+              <div className="member-info">
+                <h4 className="member-name">Carlos Mendoza</h4>
+                <p className="member-role">Guía Ornitólogo</p>
+                <p className="member-description">
+                  &ldquo;Cada salida es una aventura nueva. Ver la emoción en los ojos de los visitantes 
+                  cuando descubren una especie por primera vez es lo que me motiva cada día.&rdquo;
                 </p>
-              </CardBody>
-            </Card>
-
-            <Card variant="nature" size="md" className="feature-card">
-              <CardBody>
-                <div className="feature-icon">👨‍🏫</div>
-                <h3 className="feature-title">Guías Especializados</h3>
-                <p className="feature-description">
-                  Nuestros guías locales son expertos en ornitología y conocen cada 
-                  rincón de la región como la palma de su mano.
+              </div>
+            </div>
+            
+            <div className="team-member">
+              <div className="member-avatar">
+                <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face" alt="Especialista en ecoturismo" />
+              </div>
+              <div className="member-info">
+                <h4 className="member-name">Ana Rodríguez</h4>
+                <p className="member-role">Especialista en Ecoturismo</p>
+                <p className="member-description">
+                  &ldquo;Trabajamos para que cada huésped viva una experiencia auténtica, 
+                  respetando siempre nuestro entorno natural.&rdquo;
                 </p>
-              </CardBody>
-            </Card>
-
-            <Card variant="nature" size="md" className="feature-card">
-              <CardBody>
-                <div className="feature-icon">🏠</div>
-                <h3 className="feature-title">Hospitalidad Auténtica</h3>
-                <p className="feature-description">
-                  Experimentá la calidez de la hospitalidad uruguaya en un ambiente 
-                  familiar y acogedor.
+              </div>
+            </div>
+            
+            <div className="team-member">
+              <div className="member-avatar">
+                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face" alt="Coordinador de actividades" />
+              </div>
+              <div className="member-info">
+                <h4 className="member-name">Diego Silva</h4>
+                <p className="member-role">Coordinador de Actividades</p>
+                <p className="member-description">
+                  &ldquo;La naturaleza de Paso Centurión es nuestro mayor tesoro. 
+                  Cada actividad está diseñada para conectarte profundamente con ella.&rdquo;
                 </p>
-              </CardBody>
-            </Card>
-
-            <Card variant="nature" size="md" className="feature-card">
-              <CardBody>
-                <div className="feature-icon">📍</div>
-                <h3 className="feature-title">Ubicación Privilegiada</h3>
-                <p className="feature-description">
-                  Paso Centurión ofrece una biodiversidad única, siendo punto de encuentro 
-                  de diferentes ecosistemas.
+              </div>
+            </div>
+            
+            <div className="team-member">
+              <div className="member-avatar">
+                <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face" alt="Especialista en alojamiento" />
+              </div>
+              <div className="member-info">
+                <h4 className="member-name">María González</h4>
+                <p className="member-role">Especialista en Alojamiento</p>
+                <p className="member-description">
+                  &ldquo;Nuestras cabañas son un refugio perfecto donde el confort se encuentra 
+                  con la sostenibilidad y la belleza natural.&rdquo;
                 </p>
-              </CardBody>
-            </Card>
+              </div>
+            </div>
+            
+            <div className="team-member">
+              <div className="member-avatar">
+                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face" alt="Guía de senderismo" />
+              </div>
+              <div className="member-info">
+                <h4 className="member-name">Roberto Fernández</h4>
+                <p className="member-role">Guía de Senderismo</p>
+                <p className="member-description">
+                  &ldquo;Cada sendero tiene su propia magia. Mi trabajo es ayudarte a descubrir 
+                  los secretos que la naturaleza guarda en cada rincón.&rdquo;
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="testimonials-section">
+            <h3 className="testimonials-title">Reseñas de Google y Facebook</h3>
+            <div className="social-proof">
+              <div className="rating-item">
+                <div className="rating-platform">
+                  <span className="platform-icon">📘</span>
+                  <span className="platform-name">Facebook</span>
+                </div>
+                <div className="rating-stars">⭐⭐⭐⭐⭐</div>
+                <div className="rating-score">4.8/5</div>
+              </div>
+              <div className="rating-item">
+                <div className="rating-platform">
+                  <span className="platform-icon">🔍</span>
+                  <span className="platform-name">Google</span>
+                </div>
+                <div className="rating-stars">⭐⭐⭐⭐⭐</div>
+                <div className="rating-score">4.9/5</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

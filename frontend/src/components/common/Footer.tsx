@@ -106,33 +106,12 @@ const Footer: React.FC = () => {
               className="footer-logo"
             />
             <p className="footer-brand-tagline">
-              Paso Centurión Tours
+              Tinambú
             </p>
             <p className="footer-description">
               Descubre la belleza natural de Uruguay a través de experiencias únicas de 
               ecoturismo, observación de aves y senderismo guiado en un entorno pristino.
             </p>
-            
-            {/* Social Links */}
-            <div className="footer-social">
-              <h4 className="footer-social-title">Síguenos</h4>
-              <div className="social-links">
-                {socialLinks.map((social) => (
-                  <a
-                    key={social.name}
-                    href={social.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="social-link"
-                    aria-label={`Visitar nuestro ${social.name}`}
-                    title={social.name}
-                  >
-                    <span className="social-icon">{social.icon}</span>
-                    <span className="social-name">{social.name}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Links Sections */}
@@ -181,24 +160,28 @@ const Footer: React.FC = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
 
-            {/* Newsletter Signup */}
-            <div className="footer-newsletter">
-              <h5 className="newsletter-title">Mantente Informado</h5>
-              <p className="newsletter-description">
-                Recibe noticias sobre nuevas actividades y ofertas especiales
-              </p>
-              <form className="newsletter-form" onSubmit={(e) => e.preventDefault()}>
-                <input 
-                  type="email" 
-                  placeholder="Tu email" 
-                  className="newsletter-input"
-                  aria-label="Email para newsletter"
-                />
-                <button type="submit" className="newsletter-button">
-                  Suscribirse
-                </button>
-              </form>
+        {/* Social Links Section */}
+        <div className="footer-social-section">
+          <div className="social-container">
+            <h4 className="social-title">Síguenos en nuestras redes</h4>
+            <div className="social-links">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="social-link"
+                  aria-label={`Visitar nuestro ${social.name}`}
+                  title={social.name}
+                >
+                  <span className="social-icon">{social.icon}</span>
+                  <span className="social-name">{social.name}</span>
+                </a>
+              ))}
             </div>
           </div>
         </div>
@@ -222,11 +205,6 @@ const Footer: React.FC = () => {
               <Link to="/accessibility" className="footer-bottom-link">
                 Accesibilidad
               </Link>
-            </div>
-
-            <div className="footer-certifications">
-              <span className="certification-badge">🌿 Turismo Sostenible</span>
-              <span className="certification-badge">🦅 Ecoturismo Certificado</span>
             </div>
           </div>
         </div>

@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import Button from './Button';
 import './HeroSlider.css';
+import './HeroSliderNew.css';
 
 export interface HeroSlide {
   id: string;
   image: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   description: string;
   ctaText: string;
   ctaAction: () => void;
   overlay?: 'light' | 'dark' | 'gradient';
+  type?: 'default' | 'tinambu' | 'birds' | 'hiking' | 'accommodation';
+  gallery?: string[];
+  certifications?: { icon: string; name: string }[];
+  features?: string[];
 }
 
 export interface HeroSliderProps {
@@ -83,29 +88,140 @@ const HeroSlider: React.FC<HeroSliderProps> = ({
                 <div className="hero-content">
                   <div className="container">
                     <div className="hero-content-inner">
-                      <div className="hero-text">
-                        {slide.subtitle && (
-                          <p className="hero-subtitle fade-in-up">
-                            {slide.subtitle}
-                          </p>
-                        )}
-                        <h1 className="hero-title fade-in-up delay-1">
-                          {slide.title}
-                        </h1>
-                        <p className="hero-description fade-in-up delay-2">
-                          {slide.description}
-                        </p>
-                        <div className="hero-cta fade-in-up delay-3">
-                          <Button 
-                            variant="primary" 
-                            size="lg"
-                            onClick={slide.ctaAction}
-                            className="hero-cta-button"
-                          >
-                            {slide.ctaText}
-                          </Button>
+                      {slide.type === 'tinambu' && (
+                        <div className="hero-tinambu-layout">
+                          <div className="tinambu-image">
+                            <img src={slide.image} alt="Cabaña Tinambú" />
+                          </div>
+                          <div className="tinambu-content">
+                            <h1 className="hero-title fade-in-up">{slide.title}</h1>
+                            <p className="hero-description fade-in-up delay-1">{slide.description}</p>
+                            {slide.certifications && (
+                              <div className="tinambu-certifications fade-in-up delay-2">
+                                {slide.certifications.map((cert, i) => (
+                                  <div key={i} className="certification-badge">
+                                    <span className="cert-icon">{cert.icon}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="hero-cta fade-in-up delay-3">
+                              <Button 
+                                variant="outline" 
+                                size="lg"
+                                onClick={slide.ctaAction}
+                                className="hero-cta-button"
+                              >
+                                {slide.ctaText}
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      
+                      {slide.type === 'birds' && (
+                        <div className="hero-birds-layout">
+                          <div className="birds-content">
+                            <h1 className="hero-title fade-in-up">{slide.title}</h1>
+                            <p className="hero-description fade-in-up delay-1">{slide.description}</p>
+                            <div className="hero-cta fade-in-up delay-2">
+                              <Button 
+                                variant="outline" 
+                                size="lg"
+                                onClick={slide.ctaAction}
+                                className="hero-cta-button"
+                              >
+                                {slide.ctaText}
+                              </Button>
+                            </div>
+                          </div>
+                          {slide.gallery && (
+                            <div className="birds-gallery fade-in-up delay-1">
+                              {slide.gallery.map((img, i) => (
+                                <div key={i} className="gallery-item">
+                                  <img src={img} alt={`Ave ${i + 1}`} />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {slide.type === 'hiking' && (
+                        <div className="hero-hiking-layout">
+                          <div className="hiking-content">
+                            <h1 className="hero-title fade-in-up">{slide.title}</h1>
+                            <p className="hero-description fade-in-up delay-1">{slide.description}</p>
+                            <div className="hero-cta fade-in-up delay-2">
+                              <Button 
+                                variant="primary" 
+                                size="lg"
+                                onClick={slide.ctaAction}
+                                className="hero-cta-button"
+                              >
+                                {slide.ctaText}
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="hiking-image fade-in-up delay-1">
+                            <img src={slide.image} alt="Senderos" />
+                          </div>
+                        </div>
+                      )}
+                      
+                      {slide.type === 'accommodation' && (
+                        <div className="hero-accommodation-layout">
+                          <div className="accommodation-content">
+                            <h1 className="hero-title fade-in-up">{slide.title}</h1>
+                            <p className="hero-description fade-in-up delay-1">{slide.description}</p>
+                            <div className="hero-cta fade-in-up delay-2">
+                              <Button 
+                                variant="primary" 
+                                size="lg"
+                                onClick={slide.ctaAction}
+                                className="hero-cta-button"
+                              >
+                                {slide.ctaText}
+                              </Button>
+                            </div>
+                          </div>
+                          {slide.gallery && (
+                            <div className="accommodation-gallery fade-in-up delay-1">
+                              {slide.gallery.map((img, i) => (
+                                <div key={i} className="gallery-item">
+                                  <img src={img} alt={`Alojamiento ${i + 1}`} />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {!slide.type || slide.type === 'default' && (
+                        <div className="hero-text">
+                          {slide.subtitle && (
+                            <p className="hero-subtitle fade-in-up">
+                              {slide.subtitle}
+                            </p>
+                          )}
+                          <h1 className="hero-title fade-in-up delay-1">
+                            {slide.title}
+                          </h1>
+                          <p className="hero-description fade-in-up delay-2">
+                            {slide.description}
+                          </p>
+                          <div className="hero-cta fade-in-up delay-3">
+                            <Button 
+                              variant="primary" 
+                              size="lg"
+                              onClick={slide.ctaAction}
+                              className="hero-cta-button"
+                            >
+                              {slide.ctaText}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

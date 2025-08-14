@@ -17,6 +17,7 @@ const MainNavbar: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   const handleLoginSuccess = () => {
     setShowLoginModal(false);
@@ -38,13 +39,15 @@ const MainNavbar: React.FC = () => {
     return location.pathname === route;
   };
 
-  const navLinks = [
-    { path: routes.home, label: 'Principal', icon: '🏠' },
-    { path: routes.about, label: 'Sobre Nosotros', icon: '🌿' },
-    { path: routes.accomodations, label: 'Alojamiento', icon: '🏡' },
-    { path: routes.activities, label: 'Actividades', icon: '🦅' },
-    { path: routes.book, label: 'Reservar', icon: '📅' },
-  ];
+  const handleDropdownToggle = (dropdownName: string) => {
+    setActiveDropdown(activeDropdown === dropdownName ? null : dropdownName);
+  };
+
+  const closeDropdowns = () => {
+    setActiveDropdown(null);
+  };
+
+
 
   return (
     <>
@@ -64,24 +67,130 @@ const MainNavbar: React.FC = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="navbar-nav desktop-nav">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`nav-link ${isActiveRoute(link.path) ? 'active' : ''}`}
-                onClick={closeMobileMenu}
+          <div className="navbar-nav desktop-nav" onClick={closeDropdowns}>
+            <Link
+              to={routes.home}
+              className={`nav-link ${isActiveRoute(routes.home) ? 'active' : ''}`}
+              onClick={closeMobileMenu}
+            >
+              <span className="nav-label">Inicio</span>
+            </Link>
+            
+            <div className="nav-dropdown">
+              <button
+                className={`nav-link dropdown-toggle ${activeDropdown === 'alojamiento' ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDropdownToggle('alojamiento');
+                }}
+                onMouseEnter={() => setActiveDropdown('alojamiento')}
               >
-                <span className="nav-icon">{link.icon}</span>
-                <span className="nav-label">{link.label}</span>
-              </Link>
-            ))}
+                <span className="nav-label">Alojamiento</span>
+                <span className={`dropdown-arrow ${activeDropdown === 'alojamiento' ? 'open' : ''}`}>
+                  ▼
+                </span>
+              </button>
+              
+              {activeDropdown === 'alojamiento' && (
+                <div 
+                  className="dropdown-menu"
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <Link to={routes.accomodations} className="dropdown-item" onClick={closeDropdowns}>
+                    Ver Alojamientos
+                  </Link>
+                  <Link to={routes.accomodations + '?type=cabanas'} className="dropdown-item" onClick={closeDropdowns}>
+                    Cabañas Ecológicas
+                  </Link>
+                  <Link to={routes.accomodations + '?type=habitaciones'} className="dropdown-item" onClick={closeDropdowns}>
+                    Habitaciones Premium
+                  </Link>
+                  <Link to={routes.book + '?service=accommodation'} className="dropdown-item" onClick={closeDropdowns}>
+                    Reservar Alojamiento
+                  </Link>
+                </div>
+              )}
+            </div>
+            
+            <div className="nav-dropdown">
+              <button
+                className={`nav-link dropdown-toggle ${activeDropdown === 'senderismo' ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDropdownToggle('senderismo');
+                }}
+                onMouseEnter={() => setActiveDropdown('senderismo')}
+              >
+                <span className="nav-label">Senderismo</span>
+                <span className={`dropdown-arrow ${activeDropdown === 'senderismo' ? 'open' : ''}`}>
+                  ▼
+                </span>
+              </button>
+              
+              {activeDropdown === 'senderismo' && (
+                <div 
+                  className="dropdown-menu"
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <Link to={routes.activities} className="dropdown-item" onClick={closeDropdowns}>
+                    Todos los Senderos
+                  </Link>
+                  <Link to={routes.activities + '?difficulty=easy'} className="dropdown-item" onClick={closeDropdowns}>
+                    Senderos Fáciles
+                  </Link>
+                  <Link to={routes.activities + '?difficulty=moderate'} className="dropdown-item" onClick={closeDropdowns}>
+                    Senderos Moderados
+                  </Link>
+                  <Link to={routes.activities + '?type=birdwatching'} className="dropdown-item" onClick={closeDropdowns}>
+                    Observación de Aves
+                  </Link>
+                  <Link to={routes.book + '?service=hiking'} className="dropdown-item" onClick={closeDropdowns}>
+                    Reservar Tour
+                  </Link>
+                </div>
+              )}
+            </div>
+            
+            <div className="nav-dropdown">
+              <button
+                className={`nav-link dropdown-toggle ${activeDropdown === 'nosotros' ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDropdownToggle('nosotros');
+                }}
+                onMouseEnter={() => setActiveDropdown('nosotros')}
+              >
+                <span className="nav-label">Nosotros</span>
+                <span className={`dropdown-arrow ${activeDropdown === 'nosotros' ? 'open' : ''}`}>
+                  ▼
+                </span>
+              </button>
+              
+              {activeDropdown === 'nosotros' && (
+                <div 
+                  className="dropdown-menu"
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <Link to={routes.about} className="dropdown-item" onClick={closeDropdowns}>
+                    Sobre Nosotros
+                  </Link>
+                  <Link to={routes.about + '#team'} className="dropdown-item" onClick={closeDropdowns}>
+                    Nuestro Equipo
+                  </Link>
+                  <Link to={routes.about + '#gallery'} className="dropdown-item" onClick={closeDropdowns}>
+                    Galería
+                  </Link>
+                  <Link to={routes.about + '#contact'} className="dropdown-item" onClick={closeDropdowns}>
+                    Contacto
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Desktop Actions */}
           <div className="navbar-actions desktop-actions">
             <CartButton />
-            <ThemeToggle />
             
             {state.isAuthenticated ? (
               <div className="user-menu">
@@ -145,17 +254,41 @@ const MainNavbar: React.FC = () => {
         <div className={`mobile-nav ${isMobileMenuOpen ? 'open' : ''}`}>
           <div className="mobile-nav-content">
             <div className="mobile-nav-links">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className={`mobile-nav-link ${isActiveRoute(link.path) ? 'active' : ''}`}
-                  onClick={closeMobileMenu}
-                >
-                  <span className="nav-icon">{link.icon}</span>
-                  <span className="nav-label">{link.label}</span>
-                </Link>
-              ))}
+              <Link
+                to={routes.home}
+                className={`mobile-nav-link ${isActiveRoute(routes.home) ? 'active' : ''}`}
+                onClick={closeMobileMenu}
+              >
+                <span className="nav-icon">🏠</span>
+                <span className="nav-label">Inicio</span>
+              </Link>
+              
+              <Link
+                to={routes.accomodations}
+                className={`mobile-nav-link ${isActiveRoute(routes.accomodations) ? 'active' : ''}`}
+                onClick={closeMobileMenu}
+              >
+                <span className="nav-icon">🏨</span>
+                <span className="nav-label">Alojamiento</span>
+              </Link>
+              
+              <Link
+                to={routes.activities}
+                className={`mobile-nav-link ${isActiveRoute(routes.activities) ? 'active' : ''}`}
+                onClick={closeMobileMenu}
+              >
+                <span className="nav-icon">🥾</span>
+                <span className="nav-label">Senderismo</span>
+              </Link>
+              
+              <Link
+                to={routes.about}
+                className={`mobile-nav-link ${isActiveRoute(routes.about) ? 'active' : ''}`}
+                onClick={closeMobileMenu}
+              >
+                <span className="nav-icon">ℹ️</span>
+                <span className="nav-label">Nosotros</span>
+              </Link>
               
               {state.isAuthenticated && (
                 <>

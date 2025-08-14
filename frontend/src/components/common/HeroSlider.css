@@ -84,11 +84,13 @@
 
 .hero-content-inner {
   width: 100%;
-  max-width: 800px;
+  max-width: 1200px;
 }
 
 .hero-text {
-  text-align: left;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .hero-subtitle {

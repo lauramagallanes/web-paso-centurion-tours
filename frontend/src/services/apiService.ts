@@ -3,8 +3,10 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    // En producción (Docker), usar el proxy de nginx. En desarrollo, usar URL directa
-    this.baseURL = process.env.REACT_APP_API_URL || '/api';
+    // HARDCODEADO: URL fija para AWS Lambda - SIN condicionales
+    this.baseURL = 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com';
+    console.log('🔥 API Service HARDCODED: Usando AWS Lambda URL:', this.baseURL);
+    console.log('🔥 Hostname actual:', typeof window !== 'undefined' ? window.location.hostname : 'server');
   }
 
   // Método privado para obtener headers con autenticación

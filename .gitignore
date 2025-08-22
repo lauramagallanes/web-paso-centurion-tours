@@ -57,4 +57,10 @@ logs/
 
 # Build artifacts
 build/
-out/
+out/# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json

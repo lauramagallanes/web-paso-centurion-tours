@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import apiService from '../services/apiService';
 
 // Tipos para el estado de autenticación
 export interface Usuario {
@@ -161,29 +162,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'LOGIN_START' });
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const data = await apiService.login(email, password);
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (data.status === 'success') {
         dispatch({
           type: 'LOGIN_SUCCESS',
           payload: {
-            user: data.data.usuario,
-            accessToken: data.data.accessToken,
-            refreshToken: data.data.refreshToken,
+            user: {
+              id: data.user.id.toString(),
+              email: data.user.email,
+              nombreCompleto: data.user.name,
+              tipo: data.user.role === 'ADMIN' ? 'ADMIN' : 'VISITANTE',
+              activo: true,
+              fechaCreacion: new Date().toISOString(),
+            },
+            accessToken: data.token,
+            refreshToken: data.token, // Mock usa el mismo token
           },
         });
       } else {
         dispatch({
           type: 'LOGIN_FAILURE',
-          payload: data.error || 'Error al iniciar sesión',
+          payload: data.message || 'Error al iniciar sesión',
         });
       }
     } catch (error) {
@@ -198,17 +198,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'LOGIN_START' });
 
     try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, nombreCompleto }),
-      });
+      const data = await apiService.signup(email, password, nombreCompleto);
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (data.status === 'success') {
         // Después del registro exitoso, hacer login automático
         await login(email, password);
       } else {
@@ -237,21 +229,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${storedRefreshToken}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      // Para el mock, simplemente validamos que el token exista
+      // En producción real, esto haría una llamada al endpoint de refresh
+      if (storedRefreshToken.includes('mock-signature')) {
+        // Token mock válido, renovamos con el mismo
         dispatch({
           type: 'REFRESH_TOKEN_SUCCESS',
           payload: {
-            accessToken: data.data.accessToken,
-            refreshToken: data.data.refreshToken,
+            accessToken: storedRefreshToken,
+            refreshToken: storedRefreshToken,
           },
         });
         return true;

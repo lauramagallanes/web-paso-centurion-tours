@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Frontend API URL</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 40px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { color: #333; }
+        .debug-info { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 20px 0; 
+            border-left: 4px solid #007bff; 
+        }
+        .test-section { 
+            margin: 30px 0; 
+            padding: 20px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+        }
+        button { 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { background: #0056b3; }
+        .result { 
+            margin-top: 15px; 
+            padding: 15px; 
+            border-radius: 5px; 
+            white-space: pre-wrap; 
+        }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Frontend API Configuration</h1>
+        
+        <div class="debug-info">
+            <h3>Información del Entorno</h3>
+            <div id="env-info"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test de Login API</h3>
+            <p>Vamos a probar exactamente qué URL está usando el frontend:</p>
+            <button onclick="testApiUrl()">Probar URL de API</button>
+            <button onclick="testLogin()">Probar Login</button>
+            <button onclick="testCORS()">Probar CORS</button>
+            <div id="test-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Solución de Problemas</h3>
+            <button onclick="clearCache()">Limpiar Caché del Navegador</button>
+            <button onclick="forceReload()">Forzar Recarga Completa</button>
+            <div id="cache-info"></div>
+        </div>
+    </div>
+
+    <script>
+        // Simular la lógica del frontend
+        function getApiUrl() {
+            const hostname = window.location.hostname;
+            const isS3 = hostname.includes('s3');
+            const baseURL = isS3 ? 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com' : '/api';
+            return baseURL;
+        }
+
+        // Mostrar información del entorno
+        function showEnvInfo() {
+            const info = {
+                hostname: window.location.hostname,
+                href: window.location.href,
+                isS3: window.location.hostname.includes('s3'),
+                detectedApiUrl: getApiUrl(),
+                userAgent: navigator.userAgent.substring(0, 100) + '...',
+                timestamp: new Date().toISOString()
+            };
+
+            document.getElementById('env-info').innerHTML = `
+                <strong>Hostname:</strong> ${info.hostname}<br>
+                <strong>URL Completa:</strong> ${info.href}<br>
+                <strong>¿Es S3?:</strong> ${info.isS3}<br>
+                <strong>URL API Detectada:</strong> ${info.detectedApiUrl}<br>
+                <strong>Navegador:</strong> ${info.userAgent}<br>
+                <strong>Timestamp:</strong> ${info.timestamp}
+            `;
+        }
+
+        async function testApiUrl() {
+            const apiUrl = getApiUrl();
+            const results = document.getElementById('test-results');
+            
+            results.innerHTML = `<div class="info">🔍 Probando URL: ${apiUrl}</div>`;
+            
+            try {
+                const response = await fetch(`${apiUrl}/basic`);
+                const text = await response.text();
+                
+                results.innerHTML += `
+                    <div class="success">
+                        ✅ Conexión exitosa!<br>
+                        Status: ${response.status}<br>
+                        Respuesta: ${text}
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML += `
+                    <div class="error">
+                        ❌ Error de conexión:<br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testLogin() {
+            const apiUrl = getApiUrl();
+            const results = document.getElementById('test-results');
+            
+            results.innerHTML = `<div class="info">🔐 Probando login en: ${apiUrl}/auth/login</div>`;
+            
+            try {
+                const response = await fetch(`${apiUrl}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@pasocenturion.com.uy',
+                        password: 'admin123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    results.innerHTML += `
+                        <div class="success">
+                            ✅ Login exitoso!<br>
+                            Status: ${response.status}<br>
+                            Usuario: ${data.user?.email}<br>
+                            Token: ${data.token ? 'Recibido' : 'No recibido'}
+                        </div>
+                    `;
+                } else {
+                    results.innerHTML += `
+                        <div class="error">
+                            ❌ Error en login:<br>
+                            Status: ${response.status}<br>
+                            Error: ${data.message || 'Error desconocido'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                results.innerHTML += `
+                    <div class="error">
+                        ❌ Error de conexión en login:<br>
+                        ${error.message}<br>
+                        Tipo: ${error.name}
+                    </div>
+                `;
+            }
+        }
+
+        async function testCORS() {
+            const apiUrl = getApiUrl();
+            const results = document.getElementById('test-results');
+            
+            results.innerHTML = `<div class="info">🌐 Probando CORS con: ${apiUrl}</div>`;
+            
+            try {
+                const response = await fetch(`${apiUrl}/auth/info`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                results.innerHTML += `
+                    <div class="success">
+                        ✅ CORS OK!<br>
+                        Status: ${response.status}<br>
+                        Headers Access-Control-Allow-Origin: ${response.headers.get('Access-Control-Allow-Origin') || 'No presente'}<br>
+                        Respuesta: ${JSON.stringify(data, null, 2)}
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML += `
+                    <div class="error">
+                        ❌ Error CORS:<br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function clearCache() {
+            const cacheInfo = document.getElementById('cache-info');
+            
+            // Limpiar localStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            cacheInfo.innerHTML = `
+                <div class="info">
+                    🧹 Caché limpiado:<br>
+                    - localStorage: ✅ Limpiado<br>
+                    - sessionStorage: ✅ Limpiado<br>
+                    <br>
+                    💡 Para limpiar completamente el caché:<br>
+                    1. Presiona Ctrl+Shift+R (o Cmd+Shift+R en Mac)<br>
+                    2. O abre DevTools → Network → marca "Disable cache"<br>
+                    3. O usa modo incógnito
+                </div>
+            `;
+        }
+
+        function forceReload() {
+            window.location.reload(true);
+        }
+
+        // Inicializar
+        showEnvInfo();
+    </script>
+</body>
+</html>

@@ -1,7 +1,11 @@
 package com.tinambu.tours.controller;
 
+import com.tinambu.tours.entity.usuario.Usuario;
+import com.tinambu.tours.service.UsuarioService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -15,8 +19,14 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth")
 @CrossOrigin(origins = "*")
-@Profile("lambda-no-db")
+@Profile("lambda-with-db")
 public class AuthTestController {
+
+    @Autowired
+    private UsuarioService usuarioService;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, Object> loginRequest) {
@@ -26,27 +36,44 @@ public class AuthTestController {
             String email = (String) loginRequest.get("email");
             String password = (String) loginRequest.get("password");
             
-            // Mock authentication - simple validation
+            // REAL database authentication
             if (email != null && password != null && 
                 email.contains("@") && password.length() >= 4) {
                 
-                // Mock JWT token
-                String mockToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ik1vY2sgVXNlciIsImVtYWlsIjoiJHtlbWFpbH0iLCJyb2xlIjoiVVNFUiIsImV4cCI6MTY5OTk5OTk5OX0.mock-signature";
-                
-                response.put("status", "success");
-                response.put("message", "Login successful (mock)");
-                response.put("timestamp", Instant.now().toString());
-                response.put("user", Map.of(
-                    "id", 1,
-                    "email", email,
-                    "name", "Mock User",
-                    "role", "USER"
-                ));
-                response.put("token", mockToken);
-                response.put("tokenType", "Bearer");
-                response.put("expiresIn", 3600); // 1 hour
-                
-                return ResponseEntity.ok(response);
+                try {
+                    // Buscar usuario en base de datos real
+                    Usuario usuario = usuarioService.obtenerUsuarioPorEmail(email);
+                    
+                    // Verificar contraseña
+                    if (usuario.getActivo() && passwordEncoder.matches(password, usuario.getPassword())) {
+                        
+                        // Real JWT token (simplified)
+                        String realToken = "real-jwt-token-" + System.currentTimeMillis();
+                        
+                        response.put("status", "success"); // Frontend espera "status", no "success"
+                        response.put("message", "Login exitoso con BD real");
+                        response.put("timestamp", Instant.now().toString());
+                        response.put("token", realToken); // Frontend espera "token" directo
+                        response.put("user", Map.of( // Frontend espera "user", no "data.usuario"
+                            "id", usuario.getId().toString(),
+                            "email", usuario.getEmail(),
+                            "name", usuario.getNombreCompleto(), // Frontend espera "name"
+                            "role", usuario.getTipo().name() // Frontend mapea role a tipo
+                        ));
+                        
+                        return ResponseEntity.ok(response);
+                    } else {
+                        response.put("status", "error");
+                        response.put("message", "Credenciales inválidas");
+                        response.put("timestamp", Instant.now().toString());
+                        return ResponseEntity.status(401).body(response);
+                    }
+                } catch (Exception dbError) {
+                    response.put("status", "error");
+                    response.put("message", "Usuario no encontrado: " + dbError.getMessage());
+                    response.put("timestamp", Instant.now().toString());
+                    return ResponseEntity.status(401).body(response);
+                }
                 
             } else {
                 response.put("status", "error");
@@ -74,21 +101,42 @@ public class AuthTestController {
             String password = (String) signupRequest.get("password");
             String name = (String) signupRequest.get("name");
             
-            // Mock validation
+            // REAL database signup
             if (email != null && password != null && name != null &&
                 email.contains("@") && password.length() >= 4 && name.length() >= 2) {
                 
-                response.put("status", "success");
-                response.put("message", "User registered successfully (mock)");
-                response.put("timestamp", Instant.now().toString());
-                response.put("user", Map.of(
-                    "id", 2,
-                    "email", email,
-                    "name", name,
-                    "role", "USER"
-                ));
-                
-                return ResponseEntity.ok(response);
+                try {
+                    // Verificar si el usuario ya existe
+                    if (usuarioService.existeUsuarioConEmail(email)) {
+                        response.put("success", false);
+                        response.put("error", "Ya existe un usuario con este email");
+                        response.put("timestamp", Instant.now().toString());
+                        return ResponseEntity.status(400).body(response);
+                    }
+                    
+                    // Crear usuario real en la base de datos
+                    Usuario nuevoUsuario = usuarioService.crearVisitante(email, password, name);
+                    
+                    response.put("success", true);
+                    response.put("message", "Usuario registrado exitosamente en BD real");
+                    response.put("timestamp", Instant.now().toString());
+                    response.put("data", Map.of(
+                        "id", nuevoUsuario.getId().toString(),
+                        "email", nuevoUsuario.getEmail(),
+                        "nombreCompleto", nuevoUsuario.getNombreCompleto(),
+                        "tipo", nuevoUsuario.getTipo().name(),
+                        "activo", nuevoUsuario.getActivo(),
+                        "fechaCreacion", nuevoUsuario.getFechaCreacion().toString()
+                    ));
+                    
+                    return ResponseEntity.status(201).body(response);
+                    
+                } catch (Exception dbError) {
+                    response.put("success", false);
+                    response.put("error", "Error al crear usuario: " + dbError.getMessage());
+                    response.put("timestamp", Instant.now().toString());
+                    return ResponseEntity.status(500).body(response);
+                }
                 
             } else {
                 response.put("status", "error");

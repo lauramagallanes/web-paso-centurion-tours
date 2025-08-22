@@ -33,29 +33,35 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
     }
 
     private static String determineProfile() {
-        // Check if database environment variables are available
-        String dbHost = System.getenv("DB_HOST");
-        String dbUser = System.getenv("DB_USER");
-        String dbName = System.getenv("DB_NAME");
+        // Primero, verificar si ya hay un perfil configurado en SPRING_PROFILES_ACTIVE
+        String activeProfile = System.getenv("SPRING_PROFILES_ACTIVE");
+        if (activeProfile != null && !activeProfile.isEmpty()) {
+            System.out.println("Using explicit profile from SPRING_PROFILES_ACTIVE: " + activeProfile);
+            return activeProfile;
+        }
         
-        String ssmDbPassword = System.getenv("SSM_DB_PASSWORD");
+        // Si no hay perfil explícito, determinar automáticamente
+        String dbHost = System.getenv("DB_HOST");
+        String dbUser = System.getenv("DB_USERNAME"); // Corregido: DB_USERNAME en lugar de DB_USER
+        String dbName = System.getenv("DB_NAME");
+        String jwtSecretParam = System.getenv("JWT_SECRET_PARAM");
 
         if (dbHost != null && !dbHost.isEmpty() &&
             dbUser != null && !dbUser.isEmpty() &&
             dbName != null && !dbName.isEmpty() &&
-            ssmDbPassword != null && !ssmDbPassword.isEmpty()) {
-            System.out.println("Database environment variables found, attempting database connection");
+            jwtSecretParam != null && !jwtSecretParam.isEmpty()) {
+            System.out.println("Database environment variables found, using lambda-with-db profile");
             System.out.println("DB_HOST: " + dbHost);
-            System.out.println("DB_USER: " + dbUser);
+            System.out.println("DB_USERNAME: " + dbUser);
             System.out.println("DB_NAME: " + dbName);
-            System.out.println("SSM_DB_PASSWORD: " + ssmDbPassword);
+            System.out.println("JWT_SECRET_PARAM: " + jwtSecretParam);
             return "lambda-with-db";
         } else {
-            System.out.println("Database connection not available, using no-db profile");
+            System.out.println("Database connection not available, using lambda-no-db profile");
             System.out.println("DB_HOST: " + (dbHost != null ? "present" : "missing"));
-            System.out.println("DB_USER: " + (dbUser != null ? "present" : "missing"));
+            System.out.println("DB_USERNAME: " + (dbUser != null ? "present" : "missing"));
             System.out.println("DB_NAME: " + (dbName != null ? "present" : "missing"));
-            System.out.println("SSM_DB_PASSWORD: " + (ssmDbPassword != null ? "present" : "missing"));
+            System.out.println("JWT_SECRET_PARAM: " + (jwtSecretParam != null ? "present" : "missing"));
             return "lambda-no-db";
         }
     }
@@ -67,10 +73,17 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
             SpringApplication app = new SpringApplication(TinambuToursApplication.class);
             app.setWebApplicationType(WebApplicationType.NONE);
             
-            // Try to use database profile, fallback to no-db if fails
+            // Determine and configure profile
             String profile = determineProfile();
-            app.setAdditionalProfiles(profile);
-            System.out.println("Using Spring profile: " + profile);
+            
+            // Solo configurar perfil adicional si no hay SPRING_PROFILES_ACTIVE configurado
+            String activeProfile = System.getenv("SPRING_PROFILES_ACTIVE");
+            if (activeProfile == null || activeProfile.isEmpty()) {
+                app.setAdditionalProfiles(profile);
+                System.out.println("Setting additional profile: " + profile);
+            } else {
+                System.out.println("Using profile from environment: " + activeProfile);
+            }
             
             System.out.println("Starting Spring Boot application context...");
             applicationContext = app.run();

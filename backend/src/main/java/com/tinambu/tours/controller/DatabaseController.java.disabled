@@ -1,0 +1,94 @@
+package com.tinambu.tours.controller;
+
+import com.tinambu.tours.repository.GuiaRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Database connectivity test controller
+ */
+@RestController
+@RequestMapping("/database")
+public class DatabaseController {
+
+    @Autowired(required = false)
+    private DataSource dataSource;
+
+    @Autowired(required = false)
+    private GuiaRepository guiaRepository;
+
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Object>> databaseStatus() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", Instant.now().toString());
+        
+        try {
+            if (dataSource == null) {
+                response.put("status", "no_datasource");
+                response.put("message", "DataSource not configured");
+                return ResponseEntity.ok(response);
+            }
+
+            // Test database connection
+            try (Connection connection = dataSource.getConnection()) {
+                response.put("status", "connected");
+                response.put("database_url", connection.getMetaData().getURL());
+                response.put("database_user", connection.getMetaData().getUserName());
+                response.put("database_product", connection.getMetaData().getDatabaseProductName());
+                response.put("database_version", connection.getMetaData().getDatabaseProductVersion());
+            }
+
+            // Test repository if available
+            if (guiaRepository != null) {
+                long guiaCount = guiaRepository.count();
+                response.put("guia_count", guiaCount);
+                response.put("repository_status", "available");
+            } else {
+                response.put("repository_status", "not_available");
+            }
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("error", e.getMessage());
+            response.put("error_class", e.getClass().getSimpleName());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<Map<String, Object>> testConnection() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", Instant.now().toString());
+
+        try {
+            if (guiaRepository == null) {
+                response.put("status", "repository_unavailable");
+                response.put("message", "GuiaRepository not available");
+                return ResponseEntity.ok(response);
+            }
+
+            // Simple count query
+            long count = guiaRepository.count();
+            response.put("status", "success");
+            response.put("total_guias", count);
+            response.put("message", "Database connection successful");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("error", e.getMessage());
+            response.put("error_class", e.getClass().getSimpleName());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+}

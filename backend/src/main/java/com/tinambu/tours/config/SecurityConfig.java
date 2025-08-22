@@ -5,6 +5,7 @@ import com.tinambu.tours.security.JwtAuthenticationFilter;
 import com.tinambu.tours.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,6 +29,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
+@Profile("lambda-with-db")
 public class SecurityConfig {
 
     @Autowired
@@ -84,6 +86,11 @@ public class SecurityConfig {
                 .requestMatchers("/auth/validate").authenticated()
                 .requestMatchers("/auth/debug").authenticated()
                 .requestMatchers("/health").permitAll()
+                .requestMatchers("/health/**").permitAll()
+                .requestMatchers("/test").permitAll()
+                .requestMatchers("/ping").permitAll()
+                .requestMatchers("/basic").permitAll()
+                .requestMatchers("/simple").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 
                 // Endpoints administrativos PRIMERO (más específicos)
@@ -133,7 +140,9 @@ public class SecurityConfig {
             "http://localhost:*",
             "https://localhost:*",
             "http://127.0.0.1:*",
-            "https://127.0.0.1:*"
+            "https://127.0.0.1:*",
+            "https://*.s3.*.amazonaws.com",
+            "https://tinambu-frontend-dev.s3.us-east-1.amazonaws.com"
         ));
         
         // Métodos HTTP permitidos

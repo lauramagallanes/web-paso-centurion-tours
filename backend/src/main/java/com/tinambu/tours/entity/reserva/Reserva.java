@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "reservas", schema = "reservas")
+@Table(name = "reservas")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "tipo_reserva", discriminatorType = DiscriminatorType.STRING)
 public abstract class Reserva {

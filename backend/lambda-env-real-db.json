@@ -1,0 +1,11 @@
+{
+  "Variables": {
+    "SPRING_PROFILES_ACTIVE": "lambda-with-db",
+    "DB_HOST": "tinambu-db-dev.cwd08asyq2vx.us-east-1.rds.amazonaws.com",
+    "DB_PORT": "5432", 
+    "DB_NAME": "tinambu_tours",
+    "DB_USERNAME": "tinambu_admin",
+    "DB_PASSWORD": "IS3(P5i->n3-w#Qs",
+    "JWT_SECRET": "your-super-secret-jwt-key-here-must-be-at-least-256-bits-long-for-security-in-production-lambda"
+  }
+}

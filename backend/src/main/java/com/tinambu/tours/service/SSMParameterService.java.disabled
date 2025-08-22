@@ -1,0 +1,38 @@
+package com.tinambu.tours.service;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+/**
+ * Service to retrieve parameters from AWS Systems Manager Parameter Store
+ */
+@Service
+public class SSMParameterService {
+
+    private static final Logger logger = LoggerFactory.getLogger(SSMParameterService.class);
+
+    public String getParameter(String parameterName) {
+        try {
+            // For now, return null to indicate parameter not available
+            // This will be implemented when we add AWS SDK
+            logger.info("Parameter {} requested but SSM client not yet implemented", parameterName);
+            return null;
+        } catch (Exception e) {
+            logger.error("Error retrieving parameter {}: {}", parameterName, e.getMessage());
+            return null;
+        }
+    }
+
+    public String getSecureParameter(String parameterName) {
+        try {
+            // For now, return null to indicate parameter not available
+            // This will be implemented when we add AWS SDK
+            logger.info("Secure parameter {} requested but SSM client not yet implemented", parameterName);
+            return null;
+        } catch (Exception e) {
+            logger.error("Error retrieving secure parameter {}: {}", parameterName, e.getMessage());
+            return null;
+        }
+    }
+}

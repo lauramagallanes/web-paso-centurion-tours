@@ -1,0 +1,1 @@
+{"statusCode": 200, "body": "{\"message\": \"Base de datos inicializada exitosamente\", \"users_count\": 1, \"senderos_count\": 3, \"admin_credentials\": {\"email\": \"admin@pasocenturion.com.uy\", \"password\": \"admin123\"}}"}

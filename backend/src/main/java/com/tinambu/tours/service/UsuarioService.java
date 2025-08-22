@@ -144,7 +144,7 @@ public class UsuarioService implements UserDetailsService {
 
     @Transactional(readOnly = true)
     public List<Usuario> obtenerAdministradores() {
-        return usuarioRepository.findAdministradoresActivos();
+        return usuarioRepository.findByTipoAndActivoTrueOrderByFechaCreacion(TipoUsuario.ADMIN);
     }
 
     @Transactional(readOnly = true)

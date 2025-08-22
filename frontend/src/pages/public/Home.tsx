@@ -26,9 +26,9 @@ const Home: React.FC = () => {
     {
       id: 'tinambu',
       type: 'tinambu',
-      image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/1737064268866.jpg',
       title: 'Tinambú',
-      description: 'Ecolodge familiar en Paso Centurión. Aventura, descanso y naturaleza en un entorno protegido, con senderismo guiado, observación de aves y alojamiento sustentable, avalado por organismos ambientales y turísticos.',
+      description: 'Alojamiento familiar en Paso Centurión. Aventura, descanso y naturaleza en un entorno protegido, con senderismo guiado, observación de aves y alojamiento sustentable, avalado por organismos ambientales y turísticos.',
       ctaText: 'Conocenos',
       ctaAction: () => navigate(routes.about),
       overlay: 'dark',
@@ -40,22 +40,22 @@ const Home: React.FC = () => {
     {
       id: 'birdwatching',
       type: 'birds',
-      image: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2126&q=80',
+      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN4949+(2).jpg',
       title: 'Avistamiento de aves',
       description: 'Más de 200 especies en hábitats diversos. Observación guiada para amantes de las aves, la fotografía y la biodiversidad.',
       ctaText: 'Descubre',
       ctaAction: () => navigate(routes.activities),
       overlay: 'dark',
       gallery: [
-        'https://images.unsplash.com/photo-1444927714506-8492d94b5ba0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1552728089-57bdde30beb3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80'
+        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN2227.JPG',
+        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN2401.jpg',
+        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN6884.JPG'
       ]
     },
     {
       id: 'hiking',
       type: 'hiking',
-      image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
+      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN0810.JPG',
       title: 'Senderismo guiado',
       description: 'Tenemos 7 Senderos para que escojas, caminatas guiadas por naturaleza virgen. Explora bosques, quebradas y miradores junto a nuestros guías locales. Observa la flora, fauna y aves únicas en Uruguay.',
       ctaText: 'Reserva ahora',
@@ -65,36 +65,36 @@ const Home: React.FC = () => {
     {
       id: 'accommodation',
       type: 'accommodation',
-      image: 'https://images.unsplash.com/photo-1464822759844-d150baec7494?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/1737064268866.jpg',
       title: 'Alojamiento',
       description: 'Dos habitaciones en bioconstrucción con todo el confort, inmersas en naturaleza. Ideal para descansar, reconectar y observar aves.',
       ctaText: 'Reserva ahora',
       ctaAction: () => navigate(routes.accomodations),
       overlay: 'dark',
       gallery: [
-        'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80'
+        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN7425.JPG',
+        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/1737064268783.jpg'
       ]
     },
     {
       id: 'birdwatching',
       type: 'birds',
-      image: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2126&q=80',
+      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN5964.JPG',
       title: 'Avistamiento de aves',
       description: 'Más de 200 especies en hábitats diversos. Observación guiada para amantes de las aves, la fotografía y la biodiversidad.',
       ctaText: 'Descubre',
       ctaAction: () => navigate(routes.activities),
       overlay: 'dark',
       gallery: [
-        'https://images.unsplash.com/photo-1444927714506-8492d94b5ba0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1552728089-57bdde30beb3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80'
+        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN1985.JPG',
+        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN4993.JPG',
+        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN5172.JPG'
       ]
     },
     {
       id: 'hiking',
       type: 'hiking',
-      image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
+      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN0683.JPG',
       title: 'Senderismo guiado',
       description: 'Tenemos 7 Senderos para que escojas, caminatas guiadas por naturaleza virgen. Explora bosques, quebradas y miradores junto a nuestros guías locales. Observa la flora, fauna y aves únicas en Uruguay.',
       ctaText: 'Reserva ahora',
@@ -104,15 +104,15 @@ const Home: React.FC = () => {
     {
       id: 'accommodation',
       type: 'accommodation',
-      image: 'https://images.unsplash.com/photo-1464822759844-d150baec7494?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/1737064268866.jpg',
       title: 'Alojamiento',
       description: 'Dos habitaciones en bioconstrucción con todo el confort, inmersas en naturaleza. Ideal para descansar, reconectar y observar aves.',
       ctaText: 'Reserva ahora',
       ctaAction: () => navigate(routes.accomodations),
       overlay: 'dark',
       gallery: [
-        'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80'
+        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN0710.JPG',
+        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/1737064268800.jpg'
       ]
     }
   ];

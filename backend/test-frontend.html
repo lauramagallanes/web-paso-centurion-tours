@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Tinambu Tours - API Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .endpoint {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .method.GET { background: #28a745; }
+        .method.POST { background: #007bff; }
+        .method.PUT { background: #ffc107; color: #333; }
+        .method.DELETE { background: #dc3545; }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .result.loading {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        
+        .status-indicator.unknown { background: #6c757d; }
+        .status-indicator.success { background: #28a745; }
+        .status-indicator.error { background: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Tinambu Tours - API Tester</h1>
+            <p>Prueba los endpoints de la API de forma interactiva</p>
+        </div>
+
+        <div class="grid">
+            <!-- Basic Endpoints -->
+            <div class="card">
+                <h3>📋 Endpoints Básicos</h3>
+                
+                <div class="endpoint">
+                    <span class="method GET">GET</span>
+                    <code>/basic</code>
+                    <span class="status-indicator unknown" id="status-basic"></span>
+                    <br>
+                    <button class="btn" onclick="testEndpoint('GET', '/basic', null, 'result-basic')">Probar</button>
+                    <div class="result" id="result-basic" style="display:none;"></div>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method GET">GET</span>
+                    <code>/simple</code>
+                    <span class="status-indicator unknown" id="status-simple"></span>
+                    <br>
+                    <button class="btn" onclick="testEndpoint('GET', '/simple', null, 'result-simple')">Probar</button>
+                    <div class="result" id="result-simple" style="display:none;"></div>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method GET">GET</span>
+                    <code>/ping</code>
+                    <span class="status-indicator unknown" id="status-ping"></span>
+                    <br>
+                    <button class="btn" onclick="testEndpoint('GET', '/ping', null, 'result-ping')">Probar</button>
+                    <div class="result" id="result-ping" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- Auth Endpoints -->
+            <div class="card">
+                <h3>🔐 Endpoints de Autenticación</h3>
+                
+                <div class="endpoint">
+                    <span class="method GET">GET</span>
+                    <code>/auth/info</code>
+                    <span class="status-indicator unknown" id="status-auth-info"></span>
+                    <br>
+                    <button class="btn" onclick="testEndpoint('GET', '/auth/info', null, 'result-auth-info')">Probar</button>
+                    <div class="result" id="result-auth-info" style="display:none;"></div>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method POST">POST</span>
+                    <code>/auth/login</code>
+                    <span class="status-indicator unknown" id="status-auth-login"></span>
+                    <br>
+                    <div class="form-group">
+                        <label>JSON Body:</label>
+                        <textarea id="login-body">{"email":"test@example.com","password":"test123"}</textarea>
+                    </div>
+                    <button class="btn" onclick="testEndpoint('POST', '/auth/login', document.getElementById('login-body').value, 'result-auth-login')">Probar Login</button>
+                    <div class="result" id="result-auth-login" style="display:none;"></div>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method POST">POST</span>
+                    <code>/auth/signup</code>
+                    <span class="status-indicator unknown" id="status-auth-signup"></span>
+                    <br>
+                    <div class="form-group">
+                        <label>JSON Body:</label>
+                        <textarea id="signup-body">{"email":"newuser@example.com","password":"newpass123","name":"New User"}</textarea>
+                    </div>
+                    <button class="btn" onclick="testEndpoint('POST', '/auth/signup', document.getElementById('signup-body').value, 'result-auth-signup')">Probar Signup</button>
+                    <div class="result" id="result-auth-signup" style="display:none;"></div>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method GET">GET</span>
+                    <code>/auth/validate</code>
+                    <span class="status-indicator unknown" id="status-auth-validate"></span>
+                    <br>
+                    <div class="form-group">
+                        <label>Authorization Header:</label>
+                        <input type="text" id="auth-token" value="Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.mock-signature" />
+                    </div>
+                    <button class="btn" onclick="testAuthValidate()">Probar Validate</button>
+                    <div class="result" id="result-auth-validate" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- Database Endpoints -->
+            <div class="card">
+                <h3>🗄️ Endpoints de Base de Datos</h3>
+                <p style="margin-bottom: 15px; color: #666; font-size: 0.9rem;">
+                    Estos endpoints deberían fallar en el profile <code>lambda-no-db</code>
+                </p>
+                
+                <div class="endpoint">
+                    <span class="method GET">GET</span>
+                    <code>/database/info</code>
+                    <span class="status-indicator unknown" id="status-db-info"></span>
+                    <br>
+                    <button class="btn" onclick="testEndpoint('GET', '/database/info', null, 'result-db-info')">Probar</button>
+                    <div class="result" id="result-db-info" style="display:none;"></div>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method GET">GET</span>
+                    <code>/database/test</code>
+                    <span class="status-indicator unknown" id="status-db-test"></span>
+                    <br>
+                    <button class="btn" onclick="testEndpoint('GET', '/database/test', null, 'result-db-test')">Probar</button>
+                    <div class="result" id="result-db-test" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🔄 Acciones Masivas</h3>
+            <button class="btn" onclick="testAllBasicEndpoints()" style="margin-right: 10px;">Probar Todos los Básicos</button>
+            <button class="btn" onclick="testAllAuthEndpoints()" style="margin-right: 10px;">Probar Todos los Auth</button>
+            <button class="btn" onclick="clearAllResults()">Limpiar Resultados</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com';
+
+        async function testEndpoint(method, path, body, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            const statusId = 'status-' + path.replace(/[\/]/g, '-').replace(/^-/, '');
+            const statusIndicator = document.getElementById(statusId);
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Cargando...';
+            
+            if (statusIndicator) {
+                statusIndicator.className = 'status-indicator unknown';
+            }
+
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+
+                if (body) {
+                    options.body = body;
+                }
+
+                const response = await fetch(API_BASE + path, options);
+                const responseText = await response.text();
+                
+                let formattedResponse;
+                try {
+                    const jsonResponse = JSON.parse(responseText);
+                    formattedResponse = JSON.stringify(jsonResponse, null, 2);
+                } catch {
+                    formattedResponse = responseText;
+                }
+
+                resultDiv.className = response.ok ? 'result success' : 'result error';
+                resultDiv.textContent = `Status: ${response.status} ${response.statusText}\n\n${formattedResponse}`;
+                
+                if (statusIndicator) {
+                    statusIndicator.className = response.ok ? 'status-indicator success' : 'status-indicator error';
+                }
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Error: ${error.message}`;
+                
+                if (statusIndicator) {
+                    statusIndicator.className = 'status-indicator error';
+                }
+            }
+        }
+
+        async function testAuthValidate() {
+            const token = document.getElementById('auth-token').value;
+            const resultDiv = document.getElementById('result-auth-validate');
+            const statusIndicator = document.getElementById('status-auth-validate');
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Cargando...';
+            statusIndicator.className = 'status-indicator unknown';
+
+            try {
+                const response = await fetch(API_BASE + '/auth/validate', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const responseText = await response.text();
+                let formattedResponse;
+                try {
+                    const jsonResponse = JSON.parse(responseText);
+                    formattedResponse = JSON.stringify(jsonResponse, null, 2);
+                } catch {
+                    formattedResponse = responseText;
+                }
+
+                resultDiv.className = response.ok ? 'result success' : 'result error';
+                resultDiv.textContent = `Status: ${response.status} ${response.statusText}\n\n${formattedResponse}`;
+                statusIndicator.className = response.ok ? 'status-indicator success' : 'status-indicator error';
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Error: ${error.message}`;
+                statusIndicator.className = 'status-indicator error';
+            }
+        }
+
+        async function testAllBasicEndpoints() {
+            await testEndpoint('GET', '/basic', null, 'result-basic');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testEndpoint('GET', '/simple', null, 'result-simple');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testEndpoint('GET', '/ping', null, 'result-ping');
+        }
+
+        async function testAllAuthEndpoints() {
+            await testEndpoint('GET', '/auth/info', null, 'result-auth-info');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testEndpoint('POST', '/auth/login', document.getElementById('login-body').value, 'result-auth-login');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testEndpoint('POST', '/auth/signup', document.getElementById('signup-body').value, 'result-auth-signup');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testAuthValidate();
+        }
+
+        function clearAllResults() {
+            const results = document.querySelectorAll('.result');
+            results.forEach(result => {
+                result.style.display = 'none';
+                result.textContent = '';
+            });
+            
+            const indicators = document.querySelectorAll('.status-indicator');
+            indicators.forEach(indicator => {
+                indicator.className = 'status-indicator unknown';
+            });
+        }
+
+        // Auto-test básicos al cargar la página
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testAllBasicEndpoints();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
+

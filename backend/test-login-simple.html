@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login Simple - Tinambu</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 40px; 
+            background: #f0f0f0; 
+        }
+        .container { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        }
+        h1 { color: #333; text-align: center; }
+        .form-group { margin: 20px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="email"], input[type="password"] { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            width: 100%; 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            margin: 10px 0; 
+        }
+        button:hover { background: #218838; }
+        .debug { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 20px 0; 
+            border-left: 4px solid #007bff; 
+        }
+        .result { 
+            margin-top: 20px; 
+            padding: 15px; 
+            border-radius: 5px; 
+            white-space: pre-wrap; 
+        }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Test Login Simple</h1>
+        
+        <div class="debug">
+            <h3>Información de Debug</h3>
+            <div id="debug-info">Cargando...</div>
+        </div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" value="admin@pasocenturion.com.uy" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" value="admin123" required>
+            </div>
+            
+            <button type="submit">🚀 Hacer Login</button>
+            <button type="button" onclick="testApi()">🧪 Test API Básica</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // URL HARDCODEADA de la API
+        const API_URL = 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com';
+        
+        // Mostrar información de debug
+        function showDebugInfo() {
+            const info = {
+                hostname: window.location.hostname,
+                href: window.location.href,
+                apiUrl: API_URL,
+                userAgent: navigator.userAgent.substring(0, 80) + '...',
+                timestamp: new Date().toLocaleString()
+            };
+
+            document.getElementById('debug-info').innerHTML = `
+                <strong>Hostname:</strong> ${info.hostname}<br>
+                <strong>URL:</strong> ${info.href}<br>
+                <strong>API URL:</strong> ${info.apiUrl}<br>
+                <strong>Navegador:</strong> ${info.userAgent}<br>
+                <strong>Timestamp:</strong> ${info.timestamp}
+            `;
+        }
+
+        // Test API básica
+        async function testApi() {
+            const result = document.getElementById('result');
+            result.innerHTML = `<div class="info">🔍 Probando API básica: ${API_URL}/basic</div>`;
+            
+            try {
+                const response = await fetch(`${API_URL}/basic`);
+                const text = await response.text();
+                
+                result.innerHTML += `
+                    <div class="success">
+                        ✅ API básica funciona!<br>
+                        Status: ${response.status}<br>
+                        Respuesta: ${text}
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML += `
+                    <div class="error">
+                        ❌ Error en API básica:<br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Manejar login
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const result = document.getElementById('result');
+            
+            result.innerHTML = `<div class="info">🔐 Intentando login: ${API_URL}/auth/login</div>`;
+            
+            try {
+                console.log('🔥 Haciendo POST a:', `${API_URL}/auth/login`);
+                console.log('🔥 Datos:', { email, password });
+                
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                console.log('🔥 Response status:', response.status);
+                console.log('🔥 Response headers:', [...response.headers.entries()]);
+                
+                const data = await response.json();
+                console.log('🔥 Response data:', data);
+                
+                if (response.ok) {
+                    result.innerHTML += `
+                        <div class="success">
+                            ✅ ¡LOGIN EXITOSO!<br>
+                            Status: ${response.status}<br>
+                            Usuario: ${data.user?.email}<br>
+                            Token: ${data.token ? 'Recibido ✅' : 'No recibido ❌'}<br>
+                            Mensaje: ${data.message}
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML += `
+                        <div class="error">
+                            ❌ Error en login:<br>
+                            Status: ${response.status}<br>
+                            Error: ${data.message || JSON.stringify(data)}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('🔥 Error completo:', error);
+                result.innerHTML += `
+                    <div class="error">
+                        ❌ Error de conexión:<br>
+                        ${error.message}<br>
+                        Tipo: ${error.name}<br>
+                        <br>
+                        <strong>Posibles causas:</strong><br>
+                        - Problema de CORS<br>
+                        - API no disponible<br>
+                        - URL incorrecta
+                    </div>
+                `;
+            }
+        });
+
+        // Inicializar
+        showDebugInfo();
+    </script>
+</body>
+</html>

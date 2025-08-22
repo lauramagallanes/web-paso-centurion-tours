@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Tinambu Tours - API Tester (CORS Fixed)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .cors-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .cors-warning h4 {
+            margin-bottom: 10px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .endpoint {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .method.GET { background: #28a745; }
+        .method.POST { background: #007bff; }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .curl-command {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+        
+        .copy-btn {
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Tinambu Tours - API Tester</h1>
+            <p>Versión con comandos curl para evitar problemas CORS</p>
+        </div>
+
+        <div class="cors-warning">
+            <h4>⚠️ Problema CORS Detectado</h4>
+            <p>Los navegadores bloquean requests desde <code>file://</code> a <code>https://</code>. 
+            Usa los comandos curl que se muestran abajo para probar los endpoints desde terminal.</p>
+        </div>
+
+        <div class="grid">
+            <!-- Basic Endpoints -->
+            <div class="card">
+                <h3>📋 Endpoints Básicos</h3>
+                <p style="margin-bottom: 15px; color: #666;">Estos deberían funcionar:</p>
+                
+                <div class="endpoint">
+                    <span class="method GET">GET</span>
+                    <code>/basic</code>
+                    <br>
+                    <button class="btn" onclick="showCurl('GET', '/basic')">Ver comando curl</button>
+                    <button class="btn" onclick="testWithProxy('GET', '/basic', null, 'result-basic')">Probar (puede fallar por CORS)</button>
+                    <div class="curl-command" id="curl-basic" style="display:none;"></div>
+                    <div class="result" id="result-basic" style="display:none;"></div>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method GET">GET</span>
+                    <code>/simple</code>
+                    <br>
+                    <button class="btn" onclick="showCurl('GET', '/simple')">Ver comando curl</button>
+                    <button class="btn" onclick="testWithProxy('GET', '/simple', null, 'result-simple')">Probar (puede fallar por CORS)</button>
+                    <div class="curl-command" id="curl-simple" style="display:none;"></div>
+                    <div class="result" id="result-simple" style="display:none;"></div>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method GET">GET</span>
+                    <code>/ping</code>
+                    <br>
+                    <button class="btn" onclick="showCurl('GET', '/ping')">Ver comando curl</button>
+                    <button class="btn" onclick="testWithProxy('GET', '/ping', null, 'result-ping')">Probar (puede fallar por CORS)</button>
+                    <div class="curl-command" id="curl-ping" style="display:none;"></div>
+                    <div class="result" id="result-ping" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- Auth Endpoints -->
+            <div class="card">
+                <h3>🔐 Endpoints de Autenticación</h3>
+                <p style="margin-bottom: 15px; color: #666;">Estos fallarán hasta que subas el JAR:</p>
+                
+                <div class="endpoint">
+                    <span class="method GET">GET</span>
+                    <code>/auth/info</code>
+                    <br>
+                    <button class="btn" onclick="showCurl('GET', '/auth/info')">Ver comando curl</button>
+                    <div class="curl-command" id="curl-auth-info" style="display:none;"></div>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method POST">POST</span>
+                    <code>/auth/login</code>
+                    <br>
+                    <button class="btn" onclick="showCurl('POST', '/auth/login', '{\"email\":\"test@example.com\",\"password\":\"test123\"}')">Ver comando curl</button>
+                    <div class="curl-command" id="curl-auth-login" style="display:none;"></div>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method POST">POST</span>
+                    <code>/auth/signup</code>
+                    <br>
+                    <button class="btn" onclick="showCurl('POST', '/auth/signup', '{\"email\":\"newuser@example.com\",\"password\":\"newpass123\",\"name\":\"New User\"}')">Ver comando curl</button>
+                    <div class="curl-command" id="curl-auth-signup" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- Terminal Commands -->
+            <div class="card">
+                <h3>💻 Comandos de Terminal</h3>
+                <p style="margin-bottom: 15px; color: #666;">Copia y pega estos comandos en tu terminal:</p>
+                
+                <div class="endpoint">
+                    <strong>Probar todos los endpoints básicos:</strong>
+                    <div class="curl-command">
+                        ./test-endpoints.sh
+                        <button class="copy-btn" onclick="copyToClipboard('./test-endpoints.sh')">Copiar</button>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <strong>Probar endpoint específico:</strong>
+                    <div class="curl-command">
+                        curl -X GET "https://53dmek6dqk.execute-api.us-east-1.amazonaws.com/basic"
+                        <button class="copy-btn" onclick="copyToClipboard('curl -X GET \"https://53dmek6dqk.execute-api.us-east-1.amazonaws.com/basic\"')">Copiar</button>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <strong>Ver logs de Lambda:</strong>
+                    <div class="curl-command">
+                        aws logs describe-log-streams --log-group-name "/aws/lambda/tinambu-tours-backend-dev" --order-by LastEventTime --descending --max-items 1
+                        <button class="copy-btn" onclick="copyToClipboard('aws logs describe-log-streams --log-group-name \"/aws/lambda/tinambu-tours-backend-dev\" --order-by LastEventTime --descending --max-items 1')">Copiar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🔧 Próximos Pasos</h3>
+            <ol style="margin-left: 20px; line-height: 1.6;">
+                <li><strong>Subir JAR actualizado:</strong> Usar <code>MANUAL_UPLOAD_GUIDE.md</code></li>
+                <li><strong>Probar endpoints:</strong> Usar comandos curl mostrados arriba</li>
+                <li><strong>Aplicar Terraform:</strong> Para agregar rutas de autenticación</li>
+                <li><strong>Arreglar frontend S3:</strong> Problema 403 Forbidden</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com';
+
+        function showCurl(method, path, body = null) {
+            const curlId = 'curl-' + path.replace(/[\/]/g, '-').replace(/^-/, '').replace(/-/g, '-');
+            const curlDiv = document.getElementById(curlId);
+            
+            let curlCommand = `curl -X ${method} "${API_BASE}${path}"`;
+            
+            if (body) {
+                curlCommand += ` -H "Content-Type: application/json" -d '${body}'`;
+            }
+            
+            curlDiv.innerHTML = curlCommand + 
+                `<button class="copy-btn" onclick="copyToClipboard('${curlCommand.replace(/'/g, '\\\'')}')" style="margin-left: 10px;">Copiar</button>`;
+            curlDiv.style.display = 'block';
+        }
+
+        async function testWithProxy(method, path, body, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result error';
+            resultDiv.textContent = 'CORS Error: No se puede hacer request desde file:// a https://\n\nUsa el comando curl mostrado arriba en tu terminal.';
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('¡Comando copiado al portapapeles!');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('¡Comando copiado al portapapeles!');
+            });
+        }
+
+        // Auto-show first curl command
+        window.addEventListener('load', () => {
+            showCurl('GET', '/basic');
+        });
+    </script>
+</body>
+</html>
+

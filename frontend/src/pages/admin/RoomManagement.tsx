@@ -224,19 +224,41 @@ const RoomManagement: React.FC = () => {
   }
 
   // If backend not available, continue with empty habitaciones array
+  const isBackendUnavailable = error && (
+    typeof error === 'string' ? 
+      (error.includes('Failed to fetch') || error.includes('404') || error.includes('Not Found')) :
+      (error.message?.includes('Failed to fetch') || error.message?.includes('404') || error.message?.includes('Not Found'))
+  );
 
   return (
     <div className="room-management">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Gestión de Habitaciones</h2>
-        <Button 
-          variant="success" 
-          onClick={() => handleOpenModal('create')}
-          disabled={actionLoading}
-        >
-          <Icon name="plus" size="sm" className="me-2" />
-          Nueva Habitación
-        </Button>
+        {isBackendUnavailable ? (
+          <div className="d-flex align-items-center">
+            <small className="text-muted me-3">
+              <Icon name="info" size="sm" className="me-1" />
+              Sistema en modo de solo lectura
+            </small>
+            <Button 
+              variant="outline-secondary" 
+              disabled
+              title="La creación de habitaciones estará disponible cuando el backend esté funcionando"
+            >
+              <Icon name="plus" size="sm" className="me-2" />
+              Nueva Habitación
+            </Button>
+          </div>
+        ) : (
+          <Button 
+            variant="success" 
+            onClick={() => handleOpenModal('create')}
+            disabled={actionLoading}
+          >
+            <Icon name="plus" size="sm" className="me-2" />
+            Nueva Habitación
+          </Button>
+        )}
       </div>
 
 

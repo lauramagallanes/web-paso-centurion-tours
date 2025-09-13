@@ -47,3 +47,4 @@ export const cleanupErrorHandlers = (): void => {
   // Por ahora, esto es principalmente para documentación
   console.log('🧹 Error handlers cleanup requested');
 };
+

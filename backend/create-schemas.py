@@ -66,3 +66,4 @@ if __name__ == "__main__":
     print("=== CREADOR DE ESQUEMAS POSTGRESQL ===")
     success = create_schemas()
     sys.exit(0 if success else 1)
+

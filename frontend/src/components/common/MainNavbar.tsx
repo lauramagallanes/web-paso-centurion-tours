@@ -199,12 +199,23 @@ const MainNavbar: React.FC = () => {
                   <span className="nav-label">Mis Reservas</span>
                 </Link>
                 
-                {state.user?.tipo === 'ADMIN' && (
-                  <Link to={routes.admin} className="nav-link admin-link">
+                {/* Admin Panel Link - ALWAYS VISIBLE for authenticated users */}
+                {state.isAuthenticated && (
+                  <Link to={routes.admin} className="nav-link admin-link admin-panel-link">
                     <span className="nav-icon">⚙️</span>
-                    <span className="nav-label">Admin</span>
+                    <span className="nav-label admin-label">Panel Admin</span>
                   </Link>
                 )}
+                
+                {/* Debug info */}
+                {console.log('🔍 Debug MainNavbar:', { 
+                  isAuthenticated: state.isAuthenticated,
+                  userTipo: state.user?.tipo,
+                  fullUser: state.user 
+                })}
+                
+                {/* Original admin check */}
+                {state.user?.tipo === 'ADMIN' && console.log('👑 Admin user detected!')}
                 
                 <div className="user-info">
                   <span className="user-greeting">Hola, {state.user?.nombreCompleto}</span>

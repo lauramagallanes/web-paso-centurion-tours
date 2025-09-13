@@ -1,0 +1,27 @@
+spring:
+  profiles:
+    active: lambda-no-db
+  main:
+    web-application-type: none
+    lazy-initialization: true
+  # Disable database auto-configuration
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+
+logging:
+  level:
+    com.tinambu.tours: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    org.springframework.boot: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Lambda-specific configurations
+management:
+  endpoints:
+    enabled-by-default: false

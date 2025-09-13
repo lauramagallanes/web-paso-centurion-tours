@@ -31,3 +31,19 @@ And allow the admin team to:
 - Reduce manual management of bookings and activities.
 - Provide a professional and coherent digital experience to visitors.
 - Ensure a solid architecture for future scalability.
+
+## Deployment Information
+
+### Environment URLs
+- **Development Site:** https://tinambu-frontend-dev.s3.us-east-1.amazonaws.com/
+- **Backend API:** [To be configured]
+
+### Admin Credentials
+- **Email:** admin@pasocenturion.com.uy
+- **Password:** admin123
+- **Note:** These are the default credentials created during database initialization
+
+### Access Information
+- Admin panel accessible at: `/admin` (requires authentication)
+- Public site: Root URL `/`
+- Authentication required for admin functionalities

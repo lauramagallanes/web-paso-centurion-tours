@@ -165,17 +165,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await apiService.login(email, password);
 
       if (data.status === 'success') {
+        console.log('🔍 Debug Login Response:', {
+          fullData: data,
+          userRole: data.user?.role,
+          userRoleType: typeof data.user?.role,
+          backendUser: data.user
+        });
+
+        const mappedUser = {
+          id: data.user.id.toString(),
+          email: data.user.email,
+          nombreCompleto: data.user.name,
+          tipo: data.user.role === 'ADMIN' ? 'ADMIN' : 'VISITANTE',
+          activo: true,
+          fechaCreacion: new Date().toISOString(),
+        };
+
+        console.log('🔍 Mapped User:', mappedUser);
+        console.log('🔍 Is Admin Check:', data.user.role === 'ADMIN', data.user.role, 'ADMIN');
+
         dispatch({
           type: 'LOGIN_SUCCESS',
           payload: {
-            user: {
-              id: data.user.id.toString(),
-              email: data.user.email,
-              nombreCompleto: data.user.name,
-              tipo: data.user.role === 'ADMIN' ? 'ADMIN' : 'VISITANTE',
-              activo: true,
-              fechaCreacion: new Date().toISOString(),
-            },
+            user: mappedUser,
             accessToken: data.token,
             refreshToken: data.token, // Mock usa el mismo token
           },

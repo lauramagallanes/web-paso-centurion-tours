@@ -143,3 +143,4 @@ curl -X POST "https://53dmek6dqk.execute-api.us-east-1.amazonaws.com/auth/login"
 5. **Integración**: Frontend puede comunicarse con backend
 
 **El usuario puede ahora acceder al frontend y probar todo el sistema, incluyendo login con las credenciales admin.**
+

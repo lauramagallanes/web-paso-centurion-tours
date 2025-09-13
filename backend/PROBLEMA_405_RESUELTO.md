@@ -123,3 +123,4 @@ baseURL: "https://53dmek6dqk.execute-api.us-east-1.amazonaws.com"
 **El usuario puede ahora acceder al frontend en S3 y hacer login correctamente sin errores 405.**
 
 **Frontend listo para usar**: https://tinambu-frontend-dev.s3.us-east-1.amazonaws.com/index.html
+

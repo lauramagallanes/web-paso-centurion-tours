@@ -164,3 +164,4 @@ if __name__ == "__main__":
     # Para ejecutar localmente
     result = init_database()
     print(json.dumps(result, indent=2))
+

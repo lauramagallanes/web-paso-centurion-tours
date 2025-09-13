@@ -107,3 +107,4 @@ Si necesitas probar login real, podemos configurar la base de datos, pero el sis
 - ✅ Arquitectura serverless funcionando
 
 **¡Puedes comenzar a explorar y probar todo el sistema ahora mismo!** 🚀
+

@@ -542,6 +542,42 @@
   padding: var(--space-6);
 }
 
+/* Admin Panel Link - Always visible */
+.admin-panel-link {
+  background-color: var(--color-accent-salmon) !important;
+  color: white !important;
+  border-radius: 6px !important;
+  font-weight: var(--font-semibold) !important;
+  box-shadow: 0 2px 8px rgba(217, 158, 130, 0.3) !important;
+}
+
+.admin-panel-link:hover {
+  background-color: #c8905f !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(217, 158, 130, 0.4) !important;
+}
+
+.admin-panel-link .admin-label {
+  display: block !important;
+  font-size: var(--text-sm) !important;
+  font-weight: var(--font-bold) !important;
+}
+
+/* Ensure desktop actions are always visible on desktop */
+@media (min-width: 769px) {
+  .desktop-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--space-4) !important;
+  }
+  
+  .admin-panel-link {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--space-2) !important;
+  }
+}
+
 /* Force horizontal layout on larger screens */
 @media (min-width: 769px) {
   .desktop-nav {

@@ -74,3 +74,10 @@ out/# Terraform
 *.tfstate.*
 *.tfvars
 *.tfvars.json
+# Environment backups
+.env-backups/
+.env.checksum
+.env.timestamp
+backup-cron-entry.txt
+.env.*.backup
+.env.*.tmp

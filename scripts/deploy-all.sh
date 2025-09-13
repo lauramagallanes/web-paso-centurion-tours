@@ -15,6 +15,12 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}🚀 DEPLOY COMPLETO - Tinambu Tours${NC}"
 echo -e "${BLUE}======================================${NC}"
 
+# Backup automático del .env antes del deploy
+if [ -f ".env" ] && [ -f "scripts/backup-env.sh" ]; then
+    echo -e "${YELLOW}💾 Creando backup de .env...${NC}"
+    ./scripts/backup-env.sh > /dev/null 2>&1
+fi
+
 # Validación rápida antes del deploy
 echo -e "${YELLOW}🔍 Validando configuración...${NC}"
 if ! ./scripts/quick-check.sh; then

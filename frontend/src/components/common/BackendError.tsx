@@ -3,7 +3,7 @@ import { Alert, Button, Spinner } from 'react-bootstrap';
 import Icon from './Icon';
 
 interface BackendErrorProps {
-  error?: Error | null;
+  error?: Error | string | null;
   loading?: boolean;
   onRetry: () => void;
   title?: string;
@@ -31,7 +31,17 @@ const BackendError: React.FC<BackendErrorProps> = ({
   }
 
   if (error) {
-    const is404 = error.message?.includes('404') || error.message?.includes('Not Found');
+    // Handle both Error objects and string errors
+    const errorMessage = typeof error === 'string' ? error : error.message || '';
+    const is404 = errorMessage.includes('404') || errorMessage.includes('Not Found');
+    
+    console.log('🔍 BackendError Debug:', {
+      error,
+      errorMessage,
+      is404,
+      title
+    });
+    
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight }}>
         <div className="text-center">
@@ -43,7 +53,7 @@ const BackendError: React.FC<BackendErrorProps> = ({
             <p className="mb-3">
               {is404 
                 ? (description || `${title || 'Esta funcionalidad'} aún no está disponible. El backend está siendo desarrollado.`)
-                : `No se pudo cargar ${title?.toLowerCase() || 'la información'}.`}
+                : `No se pudo cargar ${title?.toLowerCase() || 'la información'}. Error: ${errorMessage}`}
             </p>
             <Button variant="outline-warning" onClick={onRetry} disabled={loading}>
               <Icon name="refresh" className="me-2" />

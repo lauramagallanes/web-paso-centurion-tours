@@ -3,6 +3,7 @@ import { Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge } fro
 import { useNavigate } from 'react-router-dom';
 import { useHabitacionesAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
+import BackendError from '../../components/common/BackendError';
 
 interface Habitacion {
   id?: string;
@@ -211,14 +212,15 @@ const RoomManagement: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || error) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
-        <div className="text-center">
-          <Spinner animation="border" variant="primary" />
-          <p className="mt-3">Cargando habitaciones...</p>
-        </div>
-      </div>
+      <BackendError
+        error={error}
+        loading={loading}
+        onRetry={() => loadHabitaciones()}
+        title="Gestión de Habitaciones"
+        description="La gestión de habitaciones aún no está disponible. El backend está siendo desarrollado."
+      />
     );
   }
 
@@ -236,11 +238,6 @@ const RoomManagement: React.FC = () => {
         </Button>
       </div>
 
-      {error && (
-        <Alert variant="danger" className="mb-4">
-          {error}
-        </Alert>
-      )}
 
       <Card>
         <Card.Body>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Badge, Modal, Form, Alert, Spinner, Row, Col, InputGroup, Dropdown } from 'react-bootstrap';
 import { useReservasAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
+import BackendError from '../../components/common/BackendError';
 
 interface Reserva {
   id: string;
@@ -183,14 +184,15 @@ const ReservationManagement: React.FC = () => {
     canceladas: reservas.filter(r => r.estado === 'CANCELADA').length
   };
 
-  if (loading) {
+  if (loading || error) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
-        <div className="text-center">
-          <Spinner animation="border" variant="primary" />
-          <p className="mt-3">Cargando reservas...</p>
-        </div>
-      </div>
+      <BackendError
+        error={error}
+        loading={loading}
+        onRetry={() => loadReservas()}
+        title="Gestión de Reservas"
+        description="La gestión de reservas aún no está disponible. El backend está siendo desarrollado."
+      />
     );
   }
 
@@ -210,12 +212,6 @@ const ReservationManagement: React.FC = () => {
         </Button>
       </div>
 
-      {error && (
-        <Alert variant="danger" className="mb-4">
-          <Alert.Heading>Error al cargar reservas</Alert.Heading>
-          {error}
-        </Alert>
-      )}
 
       {/* Estadísticas rápidas */}
       <Row className="mb-4">

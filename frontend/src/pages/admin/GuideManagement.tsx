@@ -3,6 +3,7 @@ import { Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge } fro
 import { useNavigate } from 'react-router-dom';
 import { useGuiasAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
+import BackendError from '../../components/common/BackendError';
 
 interface Guia {
   id?: string;
@@ -208,14 +209,15 @@ const GuideManagement: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || error) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
-        <div className="text-center">
-          <Spinner animation="border" variant="primary" />
-          <p className="mt-3">Cargando guías...</p>
-        </div>
-      </div>
+      <BackendError
+        error={error}
+        loading={loading}
+        onRetry={() => loadGuias()}
+        title="Gestión de Guías"
+        description="La gestión de guías aún no está disponible. El backend está siendo desarrollado."
+      />
     );
   }
 
@@ -233,11 +235,6 @@ const GuideManagement: React.FC = () => {
         </Button>
       </div>
 
-      {error && (
-        <Alert variant="danger" className="mb-4">
-          {error}
-        </Alert>
-      )}
 
       <Card>
         <Card.Body>

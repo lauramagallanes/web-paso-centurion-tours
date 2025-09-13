@@ -3,6 +3,7 @@ import { Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge } fro
 import { useNavigate } from 'react-router-dom';
 import { useSenderosAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
+import BackendError from '../../components/common/BackendError';
 
 interface Sendero {
   id?: string;
@@ -233,14 +234,15 @@ const TrailManagement: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || error) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
-        <div className="text-center">
-          <Spinner animation="border" variant="primary" />
-          <p className="mt-3">Cargando senderos...</p>
-        </div>
-      </div>
+      <BackendError
+        error={error}
+        loading={loading}
+        onRetry={() => loadSenderos()}
+        title="Gestión de Senderos"
+        description="La gestión de senderos aún no está disponible. El backend está siendo desarrollado."
+      />
     );
   }
 
@@ -258,11 +260,6 @@ const TrailManagement: React.FC = () => {
         </Button>
       </div>
 
-      {error && (
-        <Alert variant="danger" className="mb-4">
-          {error}
-        </Alert>
-      )}
 
       <Card>
         <Card.Body>

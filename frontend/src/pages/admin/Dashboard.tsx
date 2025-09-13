@@ -29,6 +29,7 @@ interface DashboardStats {
 const Dashboard: React.FC = () => {
   const { data: stats, loading, error, execute: loadStats } = useApi<DashboardStats>();
   const [refreshing, setRefreshing] = useState(false);
+  const [mockStats, setMockStats] = useState<DashboardStats | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -36,7 +37,75 @@ const Dashboard: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      await loadStats('/api/dashboard/admin/stats');
+      // MOCK DATA TEMPORALES - Simulando respuesta del backend
+      const mockStats: DashboardStats = {
+        totalReservas: 47,
+        reservasPendientes: 8,
+        reservasConfirmadas: 32,
+        reservasCanceladas: 7,
+        habitacionesDisponibles: 12,
+        ingresosMensuales: 85650,
+        senderosMasPopulares: [
+          { id: '1', nombre: 'Avistamiento de Aves', totalReservas: 18 },
+          { id: '2', nombre: 'Sendero del Río', totalReservas: 14 },
+          { id: '3', nombre: 'Mirador Panorámico', totalReservas: 11 },
+          { id: '4', nombre: 'Ruta de los Ceibos', totalReservas: 8 },
+          { id: '5', nombre: 'Sendero Nocturno', totalReservas: 6 }
+        ],
+        reservasRecientes: [
+          {
+            id: '101',
+            tipoReserva: 'Sendero',
+            nombreContacto: 'María González',
+            fechaCreacion: new Date().toISOString(),
+            estado: 'PENDIENTE',
+            total: 2340
+          },
+          {
+            id: '102',
+            tipoReserva: 'Alojamiento',
+            nombreContacto: 'Carlos Rodríguez',
+            fechaCreacion: new Date(Date.now() - 86400000).toISOString(),
+            estado: 'CONFIRMADA',
+            total: 4500
+          },
+          {
+            id: '103',
+            tipoReserva: 'Sendero',
+            nombreContacto: 'Ana Martínez',
+            fechaCreacion: new Date(Date.now() - 172800000).toISOString(),
+            estado: 'CONFIRMADA',
+            total: 1890
+          },
+          {
+            id: '104',
+            tipoReserva: 'Alojamiento',
+            nombreContacto: 'Luis Fernández',
+            fechaCreacion: new Date(Date.now() - 259200000).toISOString(),
+            estado: 'PENDIENTE',
+            total: 3200
+          },
+          {
+            id: '105',
+            tipoReserva: 'Sendero',
+            nombreContacto: 'Elena Vásquez',
+            fechaCreacion: new Date(Date.now() - 345600000).toISOString(),
+            estado: 'CONFIRMADA',
+            total: 1560
+          }
+        ]
+      };
+
+      console.log('📊 Loading MOCK dashboard data:', mockStats);
+      
+      // Simular delay de red
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Set mock data to state
+      setMockStats(mockStats);
+      
+      // Bypass API call for now - uncomment when backend is ready
+      // await loadStats('/api/dashboard/admin/stats');
     } catch (err) {
       console.error('Error loading dashboard stats:', err);
     }
@@ -79,13 +148,30 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (loading && !stats) {
+  // Use mock data if available, otherwise fall back to API data
+  const currentStats = mockStats || stats;
+
+  if (loading && !currentStats) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
         <div className="text-center">
           <Spinner animation="border" variant="primary" />
           <p className="mt-3">Cargando dashboard...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!currentStats) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+        <Alert variant="warning">
+          <Alert.Heading>Sin datos disponibles</Alert.Heading>
+          <p>No se pudieron cargar las estadísticas del dashboard.</p>
+          <Button variant="outline-warning" onClick={handleRefresh}>
+            Reintentar
+          </Button>
+        </Alert>
       </div>
     );
   }
@@ -126,7 +212,7 @@ const Dashboard: React.FC = () => {
         </Alert>
       )}
 
-      {stats && (
+      {currentStats && (
         <>
           {/* Métricas principales */}
           <Row className="mb-4">
@@ -134,7 +220,7 @@ const Dashboard: React.FC = () => {
               <Card className="text-center h-100">
                 <Card.Body>
                   <div className="display-4 text-primary mb-2">
-                    {stats.totalReservas || 0}
+                    {currentStats.totalReservas || 0}
                   </div>
                   <h6 className="card-title text-muted">Total Reservas</h6>
                   <small className="text-muted">Todas las reservas</small>
@@ -146,7 +232,7 @@ const Dashboard: React.FC = () => {
               <Card className="text-center h-100">
                 <Card.Body>
                   <div className="display-4 text-warning mb-2">
-                    {stats.reservasPendientes || 0}
+                    {currentStats.reservasPendientes || 0}
                   </div>
                   <h6 className="card-title text-muted">Pendientes</h6>
                   <small className="text-muted">Requieren atención</small>
@@ -158,7 +244,7 @@ const Dashboard: React.FC = () => {
               <Card className="text-center h-100">
                 <Card.Body>
                   <div className="display-4 text-success mb-2">
-                    {stats.reservasConfirmadas || 0}
+                    {currentStats.reservasConfirmadas || 0}
                   </div>
                   <h6 className="card-title text-muted">Confirmadas</h6>
                   <small className="text-muted">Listas para ejecutar</small>
@@ -170,7 +256,7 @@ const Dashboard: React.FC = () => {
               <Card className="text-center h-100">
                 <Card.Body>
                   <div className="display-4 text-info mb-2">
-                    {formatCurrency(stats.ingresosMensuales || 0)}
+                    {formatCurrency(currentStats.ingresosMensuales || 0)}
                   </div>
                   <h6 className="card-title text-muted">Ingresos Mes</h6>
                   <small className="text-muted">Mes actual</small>
@@ -190,7 +276,7 @@ const Dashboard: React.FC = () => {
                   </h5>
                 </Card.Header>
                 <Card.Body>
-                  {stats.senderosMasPopulares && stats.senderosMasPopulares.length > 0 ? (
+                  {currentStats.senderosMasPopulares && currentStats.senderosMasPopulares.length > 0 ? (
                     <div className="table-responsive">
                       <Table size="sm">
                         <thead>
@@ -200,7 +286,7 @@ const Dashboard: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {stats.senderosMasPopulares.map((sendero, index) => (
+                          {currentStats.senderosMasPopulares.map((sendero, index) => (
                             <tr key={sendero.id}>
                               <td>
                                 <div className="d-flex align-items-center">
@@ -239,7 +325,7 @@ const Dashboard: React.FC = () => {
                   </Button>
                 </Card.Header>
                 <Card.Body>
-                  {stats.reservasRecientes && stats.reservasRecientes.length > 0 ? (
+                  {currentStats.reservasRecientes && currentStats.reservasRecientes.length > 0 ? (
                     <div className="table-responsive">
                       <Table size="sm">
                         <thead>
@@ -251,7 +337,7 @@ const Dashboard: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {stats.reservasRecientes.slice(0, 5).map((reserva) => (
+                          {currentStats.reservasRecientes.slice(0, 5).map((reserva) => (
                             <tr key={reserva.id}>
                               <td>
                                 <div>
@@ -340,13 +426,13 @@ const Dashboard: React.FC = () => {
           </Row>
 
           {/* Alertas y notificaciones */}
-          {stats.reservasPendientes > 0 && (
+          {currentStats.reservasPendientes > 0 && (
             <Row className="mt-4">
               <Col md={12}>
                 <Alert variant="warning" className="d-flex align-items-center">
                   <Icon name="calendar" size="md" className="me-3" />
                   <div>
-                    <strong>Atención requerida:</strong> Tienes {stats.reservasPendientes} reserva(s) pendiente(s) de confirmación.
+                    <strong>Atención requerida:</strong> Tienes {currentStats.reservasPendientes} reserva(s) pendiente(s) de confirmación.
                     <div className="mt-2">
                       <Button variant="outline-warning" size="sm" href="/admin/reservations?filter=pending">
                         Revisar reservas pendientes

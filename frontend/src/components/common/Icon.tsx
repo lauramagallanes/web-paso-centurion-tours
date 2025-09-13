@@ -54,6 +54,43 @@ const PauseIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
+const AlertTriangleIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+  </svg>
+);
+
+const InfoIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+  </svg>
+);
+
+const InboxIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M19 3H4.99c-1.11 0-1.98.89-1.98 2L3 19c0 1.1.88 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.11-.9-2-2-2zm0 12h-4c0 1.66-1.35 3-3 3s-3-1.34-3-3H5V5h14v10z"/>
+  </svg>
+);
+
+const CheckIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+  </svg>
+);
+
+const ClockIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+    <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+  </svg>
+);
+
+const CheckCircleIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+  </svg>
+);
+
 // Activity Icons
 import BirdIcon from '../../assets/icons/activities/bird.svg?react';
 import HikingIcon from '../../assets/icons/activities/hiking.svg?react';
@@ -94,6 +131,12 @@ const iconMap = {
   save: SaveIcon,
   play: PlayIcon,
   pause: PauseIcon,
+  'alert-triangle': AlertTriangleIcon,
+  info: InfoIcon,
+  inbox: InboxIcon,
+  check: CheckIcon,
+  clock: ClockIcon,
+  'check-circle': CheckCircleIcon,
   
   // Activity Icons
   bird: BirdIcon,

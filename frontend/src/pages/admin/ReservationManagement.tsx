@@ -184,17 +184,18 @@ const ReservationManagement: React.FC = () => {
     canceladas: reservas.filter(r => r.estado === 'CANCELADA').length
   };
 
-  if (loading || error) {
+  if (loading) {
     return (
-      <BackendError
-        error={error}
-        loading={loading}
-        onRetry={() => loadReservas()}
-        title="Gestión de Reservas"
-        description="La gestión de reservas aún no está disponible. El backend está siendo desarrollado."
-      />
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+        <div className="text-center">
+          <Spinner animation="border" variant="primary" />
+          <p className="mt-3">Cargando reservas...</p>
+        </div>
+      </div>
     );
   }
+
+  // If backend not available, continue with empty reservas array
 
   return (
     <div className="reservation-management">

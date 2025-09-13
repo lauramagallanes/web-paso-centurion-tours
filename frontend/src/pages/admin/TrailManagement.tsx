@@ -234,17 +234,18 @@ const TrailManagement: React.FC = () => {
     }
   };
 
-  if (loading || error) {
+  if (loading) {
     return (
-      <BackendError
-        error={error}
-        loading={loading}
-        onRetry={() => loadSenderos()}
-        title="Gestión de Senderos"
-        description="La gestión de senderos aún no está disponible. El backend está siendo desarrollado."
-      />
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+        <div className="text-center">
+          <Spinner animation="border" variant="primary" />
+          <p className="mt-3">Cargando senderos...</p>
+        </div>
+      </div>
     );
   }
+
+  // If backend not available, continue with empty senderos array
 
   return (
     <div className="trail-management">

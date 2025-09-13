@@ -1,0 +1,34 @@
+package com.tinambu.tours.repository;
+
+import com.tinambu.tours.entity.habitacion.Habitacion;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Repositorio simplificado para entidad Habitacion
+ */
+@Repository
+public interface HabitacionRepository extends JpaRepository<Habitacion, UUID> {
+    
+    // Métodos básicos usando Spring Data derivados
+    List<Habitacion> findByActivaTrue();
+    
+    Optional<Habitacion> findByNumero(String numero);
+    
+    boolean existsByNumero(String numero);
+    
+    Long countByActivaTrue();
+    
+    // Métodos simples con @Query
+    @Query("SELECT h FROM Habitacion h WHERE h.activa = true ORDER BY h.capacidadMaxima")
+    List<Habitacion> findAllActiveOrderByCapacity();
+    
+    @Query("SELECT h FROM Habitacion h WHERE h.activa = true AND h.capacidadMaxima >= :capacidad")
+    List<Habitacion> findByMinCapacity(@Param("capacidad") Integer capacidad);
+}

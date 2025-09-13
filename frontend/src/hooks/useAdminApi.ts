@@ -1,6 +1,5 @@
 import React from 'react';
 import { useApi } from './useApi';
-import localStorageService from '../services/localStorageService';
 
 // Hook personalizado para APIs específicas del admin
 export const useHabitacionesDisponibles = () => {
@@ -138,127 +137,48 @@ export const useHabitacionesAdmin = () => {
 
 export const useSenderosAdmin = () => {
   const { data, loading, error, execute } = useApi();
-  const [localData, setLocalData] = React.useState<any[]>([]);
-  const [localLoading, setLocalLoading] = React.useState(false);
-  const [localError, setLocalError] = React.useState<string | null>(null);
-  const [useLocalStorage, setUseLocalStorage] = React.useState(false);
 
   const loadSenderos = async () => {
     try {
       const result = await execute('/senderos/admin');
-      setUseLocalStorage(false);
       return result;
     } catch (err) {
-      console.log('Backend not available, switching to localStorage');
-      setUseLocalStorage(true);
-      setLocalLoading(true);
-      setLocalError(null);
-      
-      try {
-        // Initialize with sample data if first time
-        localStorageService.initializeSampleData();
-        const senderos = localStorageService.getSenderos();
-        setLocalData(senderos);
-        setLocalError(null);
-      } catch (localErr) {
-        console.error('Error loading from localStorage:', localErr);
-        setLocalError('Error cargando datos locales');
-      } finally {
-        setLocalLoading(false);
-      }
-      return null;
+      console.error('Error loading senderos:', err);
+      throw err;
     }
   };
   
   const createSendero = async (sendero: any) => {
-    if (useLocalStorage) {
-      try {
-        const newSendero = localStorageService.createSendero(sendero);
-        const updatedSenderos = localStorageService.getSenderos();
-        setLocalData(updatedSenderos);
-        return { success: true, data: newSendero };
-      } catch (err) {
-        console.error('Error creating sendero locally:', err);
-        throw new Error('Error guardando sendero localmente');
-      }
-    } else {
-      return execute('/senderos/admin', {
-        method: 'POST',
-        body: JSON.stringify(sendero)
-      });
-    }
+    return execute('/senderos/admin', {
+      method: 'POST',
+      body: JSON.stringify(sendero)
+    });
   };
 
   const updateSendero = async (id: string, sendero: any) => {
-    if (useLocalStorage) {
-      try {
-        const updatedSendero = localStorageService.updateSendero(id, sendero);
-        const updatedSenderos = localStorageService.getSenderos();
-        setLocalData(updatedSenderos);
-        return { success: true, data: updatedSendero };
-      } catch (err) {
-        console.error('Error updating sendero locally:', err);
-        throw new Error('Error actualizando sendero localmente');
-      }
-    } else {
-      return execute(`/senderos/admin/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(sendero)
-      });
-    }
+    return execute(`/senderos/admin/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(sendero)
+    });
   };
 
   const toggleActive = async (id: string, activo: boolean) => {
-    if (useLocalStorage) {
-      try {
-        const updatedSendero = localStorageService.updateSendero(id, { activo });
-        const updatedSenderos = localStorageService.getSenderos();
-        setLocalData(updatedSenderos);
-        return { success: true, data: updatedSendero };
-      } catch (err) {
-        console.error('Error toggling sendero locally:', err);
-        throw new Error('Error actualizando estado localmente');
-      }
-    } else {
-      return execute(`/senderos/admin/${id}/estado?activo=${activo}`, { method: 'PUT' });
-    }
+    return execute(`/senderos/admin/${id}/estado?activo=${activo}`, { method: 'PUT' });
   };
 
   const deleteSendero = async (id: string) => {
-    if (useLocalStorage) {
-      try {
-        const deleted = localStorageService.deleteSendero(id);
-        if (deleted) {
-          const updatedSenderos = localStorageService.getSenderos();
-          setLocalData(updatedSenderos);
-          return { success: true };
-        } else {
-          throw new Error('Sendero no encontrado');
-        }
-      } catch (err) {
-        console.error('Error deleting sendero locally:', err);
-        throw new Error('Error eliminando sendero localmente');
-      }
-    } else {
-      return execute(`/senderos/admin/${id}`, { method: 'DELETE' });
-    }
+    return execute(`/senderos/admin/${id}`, { method: 'DELETE' });
   };
 
-  // Return appropriate data based on source
-  const currentData = useLocalStorage ? localData : (data?.success ? (data.data || []) : []);
-  const currentLoading = useLocalStorage ? localLoading : loading;
-  const currentError = useLocalStorage ? localError : error;
-
   return { 
-    data: currentData, 
-    loading: currentLoading, 
-    error: currentError, 
+    data: data?.success ? (data.data || []) : [], 
+    loading, 
+    error, 
     loadSenderos,
     createSendero,
     updateSendero,
     toggleActive,
-    deleteSendero,
-    isUsingLocalStorage: useLocalStorage
+    deleteSendero
   };
 };
 

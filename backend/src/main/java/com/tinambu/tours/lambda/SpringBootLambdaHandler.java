@@ -71,7 +71,7 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
         try {
             // Configure Spring Application for Lambda
             SpringApplication app = new SpringApplication(TinambuToursApplication.class);
-            app.setWebApplicationType(WebApplicationType.NONE);
+            app.setWebApplicationType(WebApplicationType.SERVLET);
             
             // Determine and configure profile
             String profile = determineProfile();
@@ -90,9 +90,9 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
             
                     System.out.println("Setting up Spring MVC components...");
         
-        // Get the RequestMappingHandlerMapping from the ApplicationContext
-        handlerMapping = applicationContext.getBean(RequestMappingHandlerMapping.class);
-        handlerAdapter = applicationContext.getBean(RequestMappingHandlerAdapter.class);
+        // Get the RequestMappingHandlerMapping from the ApplicationContext by name
+        handlerMapping = (RequestMappingHandlerMapping) applicationContext.getBean("requestMappingHandlerMapping");
+        handlerAdapter = (RequestMappingHandlerAdapter) applicationContext.getBean("requestMappingHandlerAdapter");
         
         System.out.println("Spring MVC components configured:");
         System.out.println("- HandlerMapping: " + handlerMapping.getClass().getSimpleName());

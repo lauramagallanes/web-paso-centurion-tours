@@ -29,8 +29,7 @@ const TrailManagement: React.FC = () => {
     createSendero,
     updateSendero,
     toggleActive,
-    deleteSendero,
-    isUsingLocalStorage 
+    deleteSendero
   } = useSenderosAdmin();
   
   const [actionLoading, setActionLoading] = useState(false);
@@ -255,12 +254,6 @@ const TrailManagement: React.FC = () => {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2>Gestión de Senderos</h2>
-          {isUsingLocalStorage && (
-            <small className="text-info">
-              <Icon name="info" size="sm" className="me-1" />
-              Funcionando con almacenamiento local (datos se guardan en tu navegador)
-            </small>
-          )}
         </div>
         <Button 
           variant="success" 

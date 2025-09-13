@@ -1,0 +1,41 @@
+package com.tinambu.tours.repository;
+
+import com.tinambu.tours.entity.reserva.SenderoReserva;
+import com.tinambu.tours.entity.reserva.TurnoSendero;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Repositorio simplificado para entidad SenderoReserva
+ */
+@Repository
+public interface SenderoReservaRepository extends JpaRepository<SenderoReserva, UUID> {
+    
+    // Métodos básicos usando las propiedades correctas de la entidad
+    List<SenderoReserva> findByUsuario_Id(UUID usuarioId);
+    
+    List<SenderoReserva> findBySendero_Id(UUID senderoId);
+    
+    List<SenderoReserva> findByGuia_Id(UUID guiaId);
+    
+    // Métodos simples con @Query
+    @Query("SELECT sr FROM SenderoReserva sr WHERE sr.sendero.id = :senderoId AND sr.fechaInicio = :fecha AND sr.turno = :turno")
+    List<SenderoReserva> findBySenderoAndFechaAndTurno(
+        @Param("senderoId") UUID senderoId,
+        @Param("fecha") LocalDate fecha,
+        @Param("turno") TurnoSendero turno
+    );
+    
+    @Query("SELECT COUNT(sr) FROM SenderoReserva sr WHERE sr.sendero.id = :senderoId AND sr.fechaInicio = :fecha AND sr.turno = :turno")
+    Long countBySenderoAndFechaAndTurno(
+        @Param("senderoId") UUID senderoId,
+        @Param("fecha") LocalDate fecha,
+        @Param("turno") TurnoSendero turno
+    );
+}

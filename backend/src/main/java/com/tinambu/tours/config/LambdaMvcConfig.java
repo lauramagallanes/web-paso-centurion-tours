@@ -16,7 +16,7 @@ import java.util.ArrayList;
  * Configuration to ensure Spring MVC components are available in Lambda with JSON support
  */
 @Configuration
-@Profile({"lambda-no-db", "lambda-with-db"})
+@Profile({"lambda-no-db-manual-mvc-DISABLED"})
 public class LambdaMvcConfig {
 
     @Bean

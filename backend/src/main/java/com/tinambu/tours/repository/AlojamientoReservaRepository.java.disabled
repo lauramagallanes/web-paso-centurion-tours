@@ -1,0 +1,31 @@
+package com.tinambu.tours.repository;
+
+import com.tinambu.tours.entity.reserva.AlojamientoReserva;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Repositorio simplificado para entidad AlojamientoReserva
+ */
+@Repository
+public interface AlojamientoReservaRepository extends JpaRepository<AlojamientoReserva, UUID> {
+    
+    // Métodos básicos usando las propiedades correctas de la entidad
+    List<AlojamientoReserva> findByUsuario_Id(UUID usuarioId);
+    
+    List<AlojamientoReserva> findByHabitacion_Id(UUID habitacionId);
+    
+    // Métodos simples con @Query usando nombres de propiedades correctos
+    @Query("SELECT ar FROM AlojamientoReserva ar WHERE ar.habitacion.id = :habitacionId AND ar.fechaInicio <= :fechaFin AND ar.fechaFin >= :fechaInicio")
+    List<AlojamientoReserva> findOverlappingReservations(
+        @Param("habitacionId") UUID habitacionId,
+        @Param("fechaInicio") LocalDate fechaInicio,
+        @Param("fechaFin") LocalDate fechaFin
+    );
+}

@@ -1,0 +1,33 @@
+package com.tinambu.tours.repository;
+
+import com.tinambu.tours.entity.reserva.Reserva;
+import com.tinambu.tours.entity.reserva.EstadoReserva;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Repositorio simplificado para entidad Reserva
+ */
+@Repository
+public interface ReservaRepository extends JpaRepository<Reserva, UUID> {
+    
+    // Métodos básicos usando Spring Data derivados con propiedades correctas
+    List<Reserva> findByUsuario_IdOrderByFechaCreacionDesc(UUID usuarioId);
+    
+    List<Reserva> findByEstadoOrderByFechaCreacionDesc(EstadoReserva estado);
+    
+    Long countByEstado(EstadoReserva estado);
+    
+    // Métodos simples con @Query
+    @Query("SELECT r FROM Reserva r WHERE r.estado = 'CONFIRMADA' ORDER BY r.fechaCreacion DESC")
+    List<Reserva> findActiveReservations();
+    
+    @Query("SELECT r FROM Reserva r WHERE r.fechaCreacion >= :fechaInicio ORDER BY r.fechaCreacion DESC")
+    List<Reserva> findRecentReservations(@Param("fechaInicio") LocalDateTime fechaInicio);
+}

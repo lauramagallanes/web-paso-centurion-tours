@@ -1,0 +1,43 @@
+package com.tinambu.tours.repository;
+
+import com.tinambu.tours.entity.sendero.Sendero;
+import com.tinambu.tours.entity.sendero.NivelDificultad;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Repositorio simplificado para entidad Sendero
+ */
+@Repository
+public interface SenderoRepository extends JpaRepository<Sendero, UUID> {
+    
+    // Métodos básicos usando Spring Data derivados
+    List<Sendero> findByActivoTrue();
+    
+    Optional<Sendero> findByNombre(String nombre);
+    
+    List<Sendero> findByNivelDificultadAndActivoTrue(NivelDificultad nivelDificultad);
+    
+    Long countByActivoTrue();
+    
+    Long countByNivelDificultadAndActivoTrue(NivelDificultad nivelDificultad);
+    
+    // Métodos simples con @Query para funcionalidad básica
+    @Query("SELECT s FROM Sendero s WHERE s.activo = true ORDER BY s.nombre")
+    List<Sendero> findAllActiveOrderByName();
+    
+    @Query("SELECT s FROM Sendero s WHERE s.activo = true ORDER BY s.precioPorPersona")
+    List<Sendero> findAllActiveOrderByPrice();
+    
+    @Query("SELECT s FROM Sendero s WHERE s.activo = true ORDER BY s.duracionHoras")
+    List<Sendero> findAllActiveOrderByDuration();
+    
+    @Query("SELECT s FROM Sendero s WHERE s.capacidadMaximaGrupo >= :capacidad AND s.activo = true")
+    List<Sendero> findByMinCapacity(@Param("capacidad") Integer capacidad);
+}

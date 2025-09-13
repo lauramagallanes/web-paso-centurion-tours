@@ -3,10 +3,11 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    // HARDCODEADO: URL fija para AWS Lambda - SIN condicionales
-    this.baseURL = 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com';
-    console.log('🔥 API Service HARDCODED: Usando AWS Lambda URL:', this.baseURL);
-    console.log('🔥 Hostname actual:', typeof window !== 'undefined' ? window.location.hostname : 'server');
+    // Usar variable de entorno o fallback a la URL actual
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com';
+    console.log('🔗 API Service: Usando URL:', this.baseURL);
+    console.log('🔗 Entorno:', import.meta.env.VITE_ENV || 'production');
+    console.log('🔗 Hostname actual:', typeof window !== 'undefined' ? window.location.hostname : 'server');
   }
 
   // Método privado para obtener headers con autenticación

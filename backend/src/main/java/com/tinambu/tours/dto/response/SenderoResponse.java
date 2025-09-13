@@ -3,11 +3,13 @@ package com.tinambu.tours.dto.response;
 import com.tinambu.tours.entity.sendero.NivelDificultad;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * DTO de respuesta para senderos
  * Expone solo la información pública necesaria para el frontend
+ * Updated for multiple image support based on senderos-implementation-plan.md
  */
 public class SenderoResponse {
     
@@ -18,7 +20,13 @@ public class SenderoResponse {
     private NivelDificultad nivelDificultad;
     private Integer capacidadMaximaGrupo;
     private BigDecimal precioPorPersona;
-    private String urlImagen;
+    private String urlImagen; // Legacy field for backward compatibility
+    
+    // New fields for multiple image support
+    private String imagenPrincipal; // Main image URL
+    private Boolean tieneGaleria = false; // Has gallery (multiple images)
+    private Integer totalImagenes = 0; // Total number of images
+    private List<SenderoImagenResponse> imagenes; // All images (optional, for detailed view)
 
     // Constructors
     public SenderoResponse() {}
@@ -47,4 +55,17 @@ public class SenderoResponse {
 
     public String getUrlImagen() { return urlImagen; }
     public void setUrlImagen(String urlImagen) { this.urlImagen = urlImagen; }
+
+    // New getters and setters for image support
+    public String getImagenPrincipal() { return imagenPrincipal; }
+    public void setImagenPrincipal(String imagenPrincipal) { this.imagenPrincipal = imagenPrincipal; }
+
+    public Boolean getTieneGaleria() { return tieneGaleria; }
+    public void setTieneGaleria(Boolean tieneGaleria) { this.tieneGaleria = tieneGaleria; }
+
+    public Integer getTotalImagenes() { return totalImagenes; }
+    public void setTotalImagenes(Integer totalImagenes) { this.totalImagenes = totalImagenes; }
+
+    public List<SenderoImagenResponse> getImagenes() { return imagenes; }
+    public void setImagenes(List<SenderoImagenResponse> imagenes) { this.imagenes = imagenes; }
 }

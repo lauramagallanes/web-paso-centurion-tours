@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge } from 'react-bootstrap';
+import { Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge, Tab, Tabs } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useSenderosAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
 import BackendError from '../../components/common/BackendError';
+import SenderoImageUploader from '../../components/admin/SenderoImageUploader';
 
 interface Sendero {
   id?: string;
@@ -15,8 +16,23 @@ interface Sendero {
   precioPorPersona: number;
   urlImagen?: string;
   activo: boolean;
+  
+  // New image fields
+  imagenPrincipal?: string;
+  tieneGaleria?: boolean;
+  totalImagenes?: number;
+  imagenes?: SenderoImage[];
+
   fechaCreacion?: string;
   fechaActualizacion?: string;
+}
+
+interface SenderoImage {
+  id: string;
+  url: string;
+  descripcion?: string;
+  orden: number;
+  esPrincipal: boolean;
 }
 
 const TrailManagement: React.FC = () => {
@@ -44,9 +60,12 @@ const TrailManagement: React.FC = () => {
     capacidadMaximaGrupo: 8,
     precioPorPersona: 1100,
     urlImagen: '',
-    activo: true
+    activo: true,
+    imagenes: []
   });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [activeTab, setActiveTab] = useState<string>('basic');
+  const [senderoImages, setSenderoImages] = useState<SenderoImage[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -120,10 +139,38 @@ const TrailManagement: React.FC = () => {
       capacidadMaximaGrupo: 8,
       precioPorPersona: 1100,
       urlImagen: '',
-      activo: true
+      activo: true,
+      imagenes: []
     });
     setErrors({});
     setSelectedSendero(null);
+    setSenderoImages([]);
+    setActiveTab('basic');
+  };
+
+  const loadSenderoImages = async (senderoId: string) => {
+    try {
+      const response = await fetch(`/api/images/senderos/${senderoId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      
+      if (response.ok) {
+        const images = await response.json();
+        setSenderoImages(images || []);
+      } else {
+        console.error('Error loading images');
+        setSenderoImages([]);
+      }
+    } catch (error) {
+      console.error('Error loading sendero images:', error);
+      setSenderoImages([]);
+    }
+  };
+
+  const handleImagesChange = (newImages: SenderoImage[]) => {
+    setSenderoImages(newImages);
   };
 
   const handleOpenModal = (mode: 'create' | 'edit' | 'view', sendero?: Sendero) => {
@@ -132,6 +179,10 @@ const TrailManagement: React.FC = () => {
     if (sendero) {
       setSelectedSendero(sendero);
       setFormData({ ...sendero });
+      // Load images for existing sendero
+      if (sendero.id && (mode === 'edit' || mode === 'view')) {
+        loadSenderoImages(sendero.id);
+      }
     } else {
       resetForm();
     }

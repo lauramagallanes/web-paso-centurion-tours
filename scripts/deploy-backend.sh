@@ -14,12 +14,16 @@ NC='\033[0m' # No Color
 echo -e "${YELLOW}🚀 Deployando Backend - Tinambu Tours${NC}"
 
 # Verificar que existe archivo de configuración
-if [ -f "deployment-config.sh" ]; then
-    echo -e "${GREEN}📋 Cargando configuración de deployment...${NC}"
+if [ -f ".env" ]; then
+    echo -e "${GREEN}📋 Cargando configuración desde .env...${NC}"
+    # Cargar variables del archivo .env
+    export $(grep -v '^#' .env | grep -v '^$' | xargs)
+elif [ -f "deployment-config.sh" ]; then
+    echo -e "${GREEN}📋 Cargando configuración desde deployment-config.sh...${NC}"
     source deployment-config.sh
 else
-    echo -e "${RED}❌ ERROR: Archivo deployment-config.sh no encontrado${NC}"
-    echo -e "${YELLOW}💡 Crea este archivo copiando deployment-config.example.sh${NC}"
+    echo -e "${RED}❌ ERROR: Archivo .env o deployment-config.sh no encontrado${NC}"
+    echo -e "${YELLOW}💡 Crea un archivo .env copiando ENV-TEMPLATE.txt${NC}"
     exit 1
 fi
 

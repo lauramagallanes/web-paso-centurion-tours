@@ -1,0 +1,43 @@
+# ==========================================
+# 🔧 TINAMBU TOURS - Variables de Entorno
+# ==========================================
+# INSTRUCCIONES:
+# 1. Copia este archivo: cp ENV-TEMPLATE.txt .env
+# 2. Edita .env con TUS valores reales (reemplaza your-* con datos reales)
+# 3. El archivo .env NO se sube a GitHub (está protegido por .gitignore)
+# 4. NUNCA commitees el archivo .env con credenciales reales
+
+# ==========================================
+# 🌐 FRONTEND (Variables para la página web)
+# ==========================================
+VITE_API_BASE_URL=https://[API_GATEWAY_ID].execute-api.us-east-1.amazonaws.com
+VITE_ENV=development
+VITE_DEBUG=true
+
+# ==========================================
+# 🚀 DEPLOYMENT (Variables para subir cambios)
+# ==========================================
+AWS_PROFILE=your-aws-profile-name
+AWS_REGION=us-east-1
+FRONTEND_BUCKET=your-frontend-bucket-name
+ASSETS_BUCKET=your-assets-bucket-name
+LAMBDA_FUNCTION_NAME=your-lambda-function-name
+API_GATEWAY_ID=your-api-gateway-id
+INTEGRATION_ID=your-integration-id
+
+# ==========================================
+# 🔐 ADMIN (Credenciales - SOLO PARA TI)
+# ==========================================
+# NOTA: Estas son solo para desarrollo/testing local
+ADMIN_EMAIL=your-admin-email@example.com
+ADMIN_PASSWORD=your-admin-password
+
+# ==========================================
+# 📊 INFO DEL SISTEMA (Solo para referencia)
+# ==========================================
+# Database: Se configura automáticamente en AWS Lambda
+# JWT Secret: Se configura automáticamente en AWS Lambda
+# URLs del Sistema (después de configurar):
+# - Sitio web: https://[FRONTEND_BUCKET].s3.us-east-1.amazonaws.com/
+# - Panel admin: https://[FRONTEND_BUCKET].s3.us-east-1.amazonaws.com/admin
+# - API: https://[API_GATEWAY_ID].execute-api.us-east-1.amazonaws.com

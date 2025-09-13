@@ -33,12 +33,20 @@ const BackendError: React.FC<BackendErrorProps> = ({
   if (error) {
     // Handle both Error objects and string errors
     const errorMessage = typeof error === 'string' ? error : error.message || '';
-    const is404 = errorMessage.includes('404') || errorMessage.includes('Not Found');
+    
+    // Detect backend unavailable conditions
+    const isBackendUnavailable = 
+      errorMessage.includes('404') || 
+      errorMessage.includes('Not Found') ||
+      errorMessage.includes('Failed to fetch') ||
+      errorMessage.includes('ERR_FAILED') ||
+      errorMessage.includes('Network Error') ||
+      errorMessage.includes('TypeError: Failed to fetch');
     
     console.log('🔍 BackendError Debug:', {
       error,
       errorMessage,
-      is404,
+      isBackendUnavailable,
       title
     });
     
@@ -48,10 +56,10 @@ const BackendError: React.FC<BackendErrorProps> = ({
           <Alert variant="warning" className="text-center">
             <Alert.Heading className="d-flex align-items-center justify-content-center">
               <Icon name="alert-triangle" className="me-2" />
-              {is404 ? 'Backend en Desarrollo' : 'Error de Conexión'}
+              {isBackendUnavailable ? 'Backend en Desarrollo' : 'Error de Conexión'}
             </Alert.Heading>
             <p className="mb-3">
-              {is404 
+              {isBackendUnavailable 
                 ? (description || `${title || 'Esta funcionalidad'} aún no está disponible. El backend está siendo desarrollado.`)
                 : `No se pudo cargar ${title?.toLowerCase() || 'la información'}. Error: ${errorMessage}`}
             </p>

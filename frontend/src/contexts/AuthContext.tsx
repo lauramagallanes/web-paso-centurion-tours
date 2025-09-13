@@ -172,17 +172,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           backendUser: data.user
         });
 
+        // Check for admin role with multiple possible values
+        const backendRole = data.user?.role;
+        const isAdminRole = backendRole && (
+          backendRole.toLowerCase() === 'admin' ||
+          backendRole.toUpperCase() === 'ADMIN' ||
+          backendRole === 'administrador' ||
+          backendRole === 'ADMINISTRADOR' ||
+          data.user.email === 'admin@pasocenturion.com.uy'  // Fallback for admin email
+        );
+
+        console.log('🔍 ADMIN DETECTION DEBUG:', {
+          backendRole: backendRole,
+          backendRoleType: typeof backendRole,
+          isAdminRole: isAdminRole,
+          emailCheck: data.user.email === 'admin@pasocenturion.com.uy',
+          userEmail: data.user.email
+        });
+
         const mappedUser = {
           id: data.user.id.toString(),
           email: data.user.email,
           nombreCompleto: data.user.name,
-          tipo: data.user.role === 'ADMIN' ? 'ADMIN' : 'VISITANTE',
+          tipo: isAdminRole ? 'ADMIN' : 'VISITANTE',
           activo: true,
           fechaCreacion: new Date().toISOString(),
         };
 
         console.log('🔍 Mapped User:', mappedUser);
-        console.log('🔍 Is Admin Check:', data.user.role === 'ADMIN', data.user.role, 'ADMIN');
+        console.log('🔍 Final Admin Check:', isAdminRole, 'Final tipo:', mappedUser.tipo);
 
         dispatch({
           type: 'LOGIN_SUCCESS',

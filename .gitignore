@@ -20,11 +20,19 @@ README-LOCAL.md
 .env
 .env.local
 .env.backup.*
+.env.development
+.env.production
 
 # Generated credential files
 *credentials*.txt
 *password*.txt
+*admin*.txt
 generate-admin-credentials.sh
+deployment-config.sh
+
+# AWS configuration files (if they contain sensitive data)
+aws-config-local.*
+deployment-secrets.*
 
 # Backend (Spring Boot)
 backend/target/

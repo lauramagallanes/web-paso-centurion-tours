@@ -192,20 +192,20 @@ const MainNavbar: React.FC = () => {
           <div className="navbar-actions desktop-actions">
             <CartButton />
             
+            {/* ADMIN PANEL BUTTON - ALWAYS VISIBLE WHEN AUTHENTICATED */}
+            {state.isAuthenticated && (
+              <Link to={routes.admin} className="admin-panel-button-super-visible">
+                <span className="admin-icon">⚙️</span>
+                <span className="admin-text">ADMIN</span>
+              </Link>
+            )}
+            
             {state.isAuthenticated ? (
               <div className="user-menu">
                 <Link to={routes.myBookings} className="nav-link">
                   <span className="nav-icon">📋</span>
                   <span className="nav-label">Mis Reservas</span>
                 </Link>
-                
-                {/* Admin Panel Link - ALWAYS VISIBLE for authenticated users */}
-                {state.isAuthenticated && (
-                  <Link to={routes.admin} className="nav-link admin-link admin-panel-link">
-                    <span className="nav-icon">⚙️</span>
-                    <span className="nav-label admin-label">Panel Admin</span>
-                  </Link>
-                )}
                 
                 {/* Debug info */}
                 {console.log('🔍 Debug MainNavbar:', { 
@@ -303,6 +303,16 @@ const MainNavbar: React.FC = () => {
               
               {state.isAuthenticated && (
                 <>
+                  {/* ADMIN BUTTON MOBILE - ALWAYS VISIBLE */}
+                  <Link 
+                    to={routes.admin} 
+                    className="mobile-nav-link admin-super-visible"
+                    onClick={closeMobileMenu}
+                  >
+                    <span className="nav-icon">⚙️</span>
+                    <span className="nav-label">🔥 PANEL ADMIN</span>
+                  </Link>
+                  
                   <Link 
                     to={routes.myBookings} 
                     className="mobile-nav-link"
@@ -311,17 +321,6 @@ const MainNavbar: React.FC = () => {
                     <span className="nav-icon">📋</span>
                     <span className="nav-label">Mis Reservas</span>
                   </Link>
-                  
-                  {state.user?.tipo === 'ADMIN' && (
-                    <Link 
-                      to={routes.admin} 
-                      className="mobile-nav-link admin-link"
-                      onClick={closeMobileMenu}
-                    >
-                      <span className="nav-icon">⚙️</span>
-                      <span className="nav-label">Admin</span>
-                    </Link>
-                  )}
                 </>
               )}
             </div>

@@ -542,7 +542,84 @@
   padding: var(--space-6);
 }
 
-/* Admin Panel Link - Always visible */
+/* SUPER VISIBLE ADMIN BUTTONS - NEVER HIDDEN */
+.admin-panel-button-super-visible {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 16px !important;
+  background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+  color: white !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  text-decoration: none !important;
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4) !important;
+  border: 2px solid #fff !important;
+  animation: pulse-admin 2s infinite !important;
+  z-index: 9999 !important;
+  position: relative !important;
+  min-width: 100px !important;
+  text-align: center !important;
+}
+
+.admin-panel-button-super-visible:hover {
+  background: linear-gradient(135deg, #c0392b, #a93226) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6) !important;
+  color: white !important;
+  text-decoration: none !important;
+}
+
+.admin-panel-button-super-visible .admin-icon {
+  font-size: 18px !important;
+}
+
+.admin-panel-button-super-visible .admin-text {
+  display: block !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+}
+
+@keyframes pulse-admin {
+  0%, 100% { box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4); }
+  50% { box-shadow: 0 4px 20px rgba(231, 76, 60, 0.8); }
+}
+
+/* MOBILE ADMIN BUTTON - ALWAYS VISIBLE */
+.admin-super-visible {
+  background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+  color: white !important;
+  border: 2px solid #fff !important;
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+  font-size: 16px !important;
+  animation: pulse-admin 2s infinite !important;
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.6) !important;
+}
+
+.admin-super-visible:hover,
+.admin-super-visible.active {
+  background: linear-gradient(135deg, #c0392b, #a93226) !important;
+  color: white !important;
+  transform: scale(1.02) !important;
+  border-color: #ffff00 !important;
+}
+
+/* Force visibility in ALL responsive breakpoints */
+@media (min-width: 0px) {
+  .admin-panel-button-super-visible,
+  .admin-super-visible {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 9999 !important;
+  }
+}
+
+/* OLD STYLES - Keep for compatibility */
 .admin-panel-link {
   background-color: var(--color-accent-salmon) !important;
   color: white !important;

@@ -199,6 +199,20 @@ const TrailManagement: React.FC = () => {
       
     } catch (error) {
       console.error('Error guardando sendero:', error);
+      
+      // Show user-friendly error message for backend unavailable
+      const errorMessage = typeof error === 'string' ? error : (error as Error)?.message || '';
+      const isBackendUnavailable = 
+        errorMessage.includes('Failed to fetch') || 
+        errorMessage.includes('404') || 
+        errorMessage.includes('Not Found') ||
+        errorMessage.includes('CORS');
+      
+      if (isBackendUnavailable) {
+        alert('⚠️ No se pudo guardar el sendero.\n\nEl backend está en desarrollo. Esta funcionalidad estará disponible próximamente.\n\nTus datos se han preservado en el formulario.');
+      } else {
+        alert('❌ Error inesperado al guardar el sendero. Por favor, inténtalo de nuevo.');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -246,41 +260,20 @@ const TrailManagement: React.FC = () => {
   }
 
   // If backend not available, continue with empty senderos array
-  const isBackendUnavailable = error && (
-    typeof error === 'string' ? 
-      (error.includes('Failed to fetch') || error.includes('404') || error.includes('Not Found')) :
-      (error.message?.includes('Failed to fetch') || error.message?.includes('404') || error.message?.includes('Not Found'))
-  );
+  // Allow modal to open but handle errors when saving
 
   return (
     <div className="trail-management">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Gestión de Senderos</h2>
-        {isBackendUnavailable ? (
-          <div className="d-flex align-items-center">
-            <small className="text-muted me-3">
-              <Icon name="info" size="sm" className="me-1" />
-              Sistema en modo de solo lectura
-            </small>
-            <Button 
-              variant="outline-secondary" 
-              disabled
-              title="La creación de senderos estará disponible cuando el backend esté funcionando"
-            >
-              <Icon name="plus" size="sm" className="me-2" />
-              Nuevo Sendero
-            </Button>
-          </div>
-        ) : (
-          <Button 
-            variant="success" 
-            onClick={() => handleOpenModal('create')}
-            disabled={actionLoading}
-          >
-            <Icon name="plus" size="sm" className="me-2" />
-            Nuevo Sendero
-          </Button>
-        )}
+        <Button 
+          variant="success" 
+          onClick={() => handleOpenModal('create')}
+          disabled={actionLoading}
+        >
+          <Icon name="plus" size="sm" className="me-2" />
+          Nuevo Sendero
+        </Button>
       </div>
 
 

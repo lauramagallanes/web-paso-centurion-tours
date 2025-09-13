@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiService } from '../../services/apiService';
 import HeroSlider, { HeroSlide } from '../../components/common/HeroSlider';
 
 import ActivityCard from '../../components/common/ActivityCard';
@@ -10,16 +11,104 @@ import backgroundImage from '../../assets/illustrations/Foto home  conocenos.svg
 import mapaImage from '../../assets/illustrations/mapa.svg';
 import './Home.css';
 
+interface FeaturedActivity {
+  id: string;
+  name: string;
+  description: string;
+  imagenPrincipal: string;
+  totalImagenes: number;
+  tieneGaleria: boolean;
+  duration: string;
+  difficulty: 'Fácil' | 'Moderado' | 'Difícil';
+  price: number;
+  currency: string;
+  maxParticipants: number;
+  includes: string[];
+}
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const ctaRef = useRef<HTMLElement>(null);
+  
+  // State for featured activities
+  const [featuredActivities, setFeaturedActivities] = useState<FeaturedActivity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
 
   useEffect(() => {
     // Apply background image to CTA section
     if (ctaRef.current) {
       ctaRef.current.style.setProperty('--mapa-background', `url(${mapaImage})`);
     }
+    
+    // Load featured activities
+    loadFeaturedActivities();
   }, []);
+
+  const loadFeaturedActivities = async () => {
+    try {
+      setActivitiesLoading(true);
+      const response = await apiService.getSenderos() as any;
+      
+      if (response.success) {
+        // Transform API data and take first 3 as featured
+        const transformedActivities = response.data.slice(0, 3).map((sendero: any) => ({
+          id: sendero.id,
+          name: sendero.nombre,
+          description: sendero.descripcion,
+          imagenPrincipal: sendero.imagenPrincipal || 'https://images.unsplash.com/photo-1551632811-561732d1e306',
+          totalImagenes: sendero.totalImagenes || 1,
+          tieneGaleria: sendero.tieneGaleria || false,
+          duration: sendero.duracion || '2-3 horas',
+          difficulty: sendero.dificultad || 'Moderado',
+          price: sendero.precio || 2000,
+          currency: sendero.moneda || 'UYU',
+          maxParticipants: sendero.maxParticipantes || 8,
+          includes: sendero.incluye || [
+            'Guía especializado',
+            'Equipo básico de seguridad',
+            'Refrigerio natural'
+          ]
+        }));
+        
+        setFeaturedActivities(transformedActivities);
+      }
+    } catch (error) {
+      console.error('Error loading featured activities:', error);
+      // Fallback to default activities if API fails
+      setFeaturedActivities([
+        {
+          id: 'default-1',
+          name: 'Observación de Aves',
+          description: 'Descubre la rica avifauna de Paso Centurión con nuestros guías especializados.',
+          imagenPrincipal: 'https://images.unsplash.com/photo-1444927714506-8492d94b5ba0',
+          totalImagenes: 3,
+          tieneGaleria: true,
+          duration: '3-4 horas',
+          difficulty: 'Fácil',
+          price: 2500,
+          currency: 'UYU',
+          maxParticipants: 8,
+          includes: ['Guía especializado', 'Binoculares', 'Desayuno campestre']
+        },
+        {
+          id: 'default-2',
+          name: 'Sendero de la Biodiversidad',
+          description: 'Caminata interpretativa por ecosistemas nativos únicos.',
+          imagenPrincipal: 'https://images.unsplash.com/photo-1551632811-561732d1e306',
+          totalImagenes: 4,
+          tieneGaleria: true,
+          duration: '2-3 horas',
+          difficulty: 'Moderado',
+          price: 1800,
+          currency: 'UYU',
+          maxParticipants: 12,
+          includes: ['Guía naturalista', 'Refrigerio', 'Mapa del sendero']
+        }
+      ]);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
 
   // Hero slider data
   const heroSlides: HeroSlide[] = [
@@ -117,45 +206,6 @@ const Home: React.FC = () => {
     }
   ];
 
-  // Sample activities data
-  const featuredActivities = [
-    {
-      id: 'birdwatching-morning',
-      name: 'Observación de Aves al Amanecer',
-      description: 'Experiencia mágica con la avifauna matutina. Guías ornitólogos expertos te llevarán a descubrir especies únicas mientras el sol ilumina el paisaje natural.',
-      image: 'https://images.unsplash.com/photo-1444927714506-8492d94b5ba0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2076&q=80',
-      duration: '3-4 horas',
-      difficulty: 'Fácil' as const,
-      price: 2500,
-      currency: 'UYU',
-      maxParticipants: 8,
-      includes: [
-        'Guía ornitólogo certificado',
-        'Binoculares Bushnell profesionales',
-        'Desayuno campestre gourmet',
-        'Guía de especies ilustrada',
-        'Seguro de actividad'
-      ]
-    },
-    {
-      id: 'nature-trail',
-      name: 'Sendero de la Biodiversidad',
-      description: 'Inmersión total en ecosistemas nativos. Descubre plantas medicinales, rastros de fauna y aprende sobre conservación en este recorrido educativo único.',
-      image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-      duration: '2-3 horas',
-      difficulty: 'Moderado' as const,
-      price: 1800,
-      currency: 'UYU',
-      maxParticipants: 12,
-      includes: [
-        'Guía naturalista especializado',
-        'Refrigerio con productos locales',
-        'Mapa detallado del sendero',
-        'Kit de observación naturalista',
-        'Certificado de participación'
-      ]
-    }
-  ];
 
   // Sample accommodations data
   const featuredAccommodations = [
@@ -206,7 +256,11 @@ const Home: React.FC = () => {
     navigate(`${routes.book}?accommodation=${id}`);
   };
 
-  const handleViewDetails = (id: string) => {
+  const handleViewActivityDetails = (id: string) => {
+    navigate(`/actividades/${id}`);
+  };
+
+  const handleViewAccommodationDetails = (id: string) => {
     navigate(`${routes.accomodations}/${id}`);
   };
 
@@ -299,13 +353,39 @@ const Home: React.FC = () => {
           </div>
           
           <div className="activities-grid">
-            {featuredActivities.map((activity) => (
-              <ActivityCard
-                key={activity.id}
-                {...activity}
-                onBook={handleBookActivity}
-              />
-            ))}
+            {activitiesLoading ? (
+              // Loading state
+              [1, 2, 3].map((i) => (
+                <div key={i} className="activity-card-skeleton">
+                  <div className="skeleton-image"></div>
+                  <div className="skeleton-content">
+                    <div className="skeleton-title"></div>
+                    <div className="skeleton-text"></div>
+                    <div className="skeleton-text short"></div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              featuredActivities.map((activity) => (
+                <ActivityCard
+                  key={activity.id}
+                  id={activity.id}
+                  name={activity.name}
+                  description={activity.description}
+                  imagenPrincipal={activity.imagenPrincipal}
+                  totalImagenes={activity.totalImagenes}
+                  tieneGaleria={activity.tieneGaleria}
+                  duration={activity.duration}
+                  difficulty={activity.difficulty}
+                  price={activity.price}
+                  currency={activity.currency}
+                  maxParticipants={activity.maxParticipants}
+                  includes={activity.includes}
+                  onBook={handleBookActivity}
+                  onViewDetails={handleViewActivityDetails}
+                />
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -333,7 +413,7 @@ const Home: React.FC = () => {
                 key={accommodation.id}
                 {...accommodation}
                 onBook={handleBookAccommodation}
-                onViewDetails={handleViewDetails}
+                onViewDetails={handleViewAccommodationDetails}
               />
             ))}
           </div>

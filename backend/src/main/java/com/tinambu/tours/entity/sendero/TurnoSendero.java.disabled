@@ -1,0 +1,49 @@
+package com.tinambu.tours.entity.sendero;
+
+public enum TurnoSendero {
+    MANANA("Turno Mañana", "08:00 - 12:00"),
+    TARDE("Turno Tarde", "14:00 - 18:00");
+
+    private final String nombre;
+    private final String horario;
+
+    TurnoSendero(String nombre, String horario) {
+        this.nombre = nombre;
+        this.horario = horario;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public String getHorario() {
+        return horario;
+    }
+
+    public String getDescripcion() {
+        return nombre + " (" + horario + ")";
+    }
+
+    public static TurnoSendero fromString(String value) {
+        if (value == null) return null;
+        
+        return switch (value.toUpperCase()) {
+            case "MAÑANA", "MANANA", "MORNING" -> MANANA;
+            case "TARDE", "AFTERNOON" -> TARDE;
+            default -> throw new IllegalArgumentException("Turno no válido: " + value);
+        };
+    }
+
+    public boolean esMañana() {
+        return this == MANANA;
+    }
+
+    public boolean esTarde() {
+        return this == TARDE;
+    }
+
+    @Override
+    public String toString() {
+        return name();
+    }
+}

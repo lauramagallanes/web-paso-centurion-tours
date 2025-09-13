@@ -174,6 +174,175 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  // ========== MÉTODOS DE SENDEROS - IMAGE MANAGEMENT ==========
+
+  // Upload multiple images to a sendero
+  async uploadSenderoImages(senderoId: string, files: FileList) {
+    const formData = new FormData();
+    Array.from(files).forEach((file, index) => {
+      formData.append(`images`, file);
+    });
+
+    const response = await fetch(`${this.baseURL}/images/senderos/${senderoId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': localStorage.getItem('accessToken') ? `Bearer ${localStorage.getItem('accessToken')}` : '',
+      },
+      body: formData,
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Delete single image
+  async deleteSenderoImage(imageId: string) {
+    const response = await fetch(`${this.baseURL}/images/${imageId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Set as main image
+  async setSenderoMainImage(imageId: string) {
+    const response = await fetch(`${this.baseURL}/images/${imageId}/principal`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Update display order
+  async updateSenderoImageOrder(senderoId: string, imageIds: string[]) {
+    const response = await fetch(`${this.baseURL}/images/${senderoId}/orden`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+      body: JSON.stringify({ imageIds }),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // ========== MÉTODOS DE SENDEROS - BOOKING FUNCTIONALITY ==========
+
+  // Calculate detailed price with adults/children breakdown (with debouncing)
+  private priceCalculationTimeouts = new Map<string, NodeJS.Timeout>();
+  
+  async calculateSenderoPrice(
+    senderoId: string, 
+    adults: number, 
+    children: number, 
+    startDate?: string, 
+    endDate?: string,
+    debounced: boolean = true
+  ) {
+    const key = `${senderoId}-${adults}-${children}-${startDate}-${endDate}`;
+    
+    if (debounced) {
+      // Clear existing timeout
+      if (this.priceCalculationTimeouts.has(key)) {
+        clearTimeout(this.priceCalculationTimeouts.get(key)!);
+      }
+  
+      // Return a promise that resolves after debounce delay
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(async () => {
+          try {
+            const result = await this._calculateSenderoPriceInternal(senderoId, adults, children, startDate, endDate);
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          } finally {
+            this.priceCalculationTimeouts.delete(key);
+          }
+        }, 500); // 500ms debounce
+        
+        this.priceCalculationTimeouts.set(key, timeout);
+      });
+    }
+    
+    return this._calculateSenderoPriceInternal(senderoId, adults, children, startDate, endDate);
+  }
+  
+  // Internal method for price calculation
+  private async _calculateSenderoPriceInternal(
+    senderoId: string, 
+    adults: number, 
+    children: number, 
+    startDate?: string, 
+    endDate?: string
+  ) {
+    const requestData = {
+      adultos: adults,
+      ninos: children,
+      ...(startDate && { fechaInicio: startDate }),
+      ...(endDate && { fechaFin: endDate })
+    };
+
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/calcular-precio`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(requestData),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Live price calculation (debounced for real-time updates)
+  async calculateSenderoPriceLive(senderoId: string, adults: number, children: number) {
+    return this.calculateSenderoPrice(senderoId, adults, children, undefined, undefined, true);
+  }
+
+  // Check sendero availability for specific dates
+  async checkSenderoAvailability(senderoId: string, startDate: string, endDate: string, shift?: string) {
+    const params = new URLSearchParams({
+      fechaInicio: startDate,
+      fechaFin: endDate,
+      ...(shift && { turno: shift })
+    });
+
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/disponibilidad?${params}`, {
+      headers: this.getHeaders(),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Get available guides for date/shift
+  async getAvailableGuides(senderoId: string, date: string, shift: string) {
+    const params = new URLSearchParams({ fecha: date, turno: shift });
+
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/guias-disponibles?${params}`, {
+      headers: this.getHeaders(),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Get related senderos for recommendations
+  async getRelatedSenderos(senderoId: string, limit: number = 3) {
+    const params = new URLSearchParams({ limite: limit.toString() });
+
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/relacionados?${params}`, {
+      headers: this.getHeaders(),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Verify sendero booking availability
+  async verifySenderoBooking(senderoId: string, bookingData: any) {
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/verificar-disponibilidad`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(bookingData),
+    });
+
+    return this.handleResponse(response);
+  }
+
   // ========== MÉTODOS DE GUÍAS ==========
 
   async getGuias() {
@@ -273,6 +442,149 @@ class ApiService {
     const response = await fetch(`${this.baseURL}/reservas/admin/${id}/cancelar`, {
       method: 'PUT',
       headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // ========== ADMIN - PAYMENT MANAGEMENT ==========
+
+  // Get detailed reservations with payment info
+  async getDetailedReservations() {
+    const response = await fetch(`${this.baseURL}/reservas/admin/detalladas`, {
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Update reservation status
+  async updateReservationStatus(reservationId: string, status: string) {
+    const response = await fetch(`${this.baseURL}/reservas/${reservationId}/estado`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+      body: JSON.stringify({ estado: status }),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Register payment for reservation
+  async registerPayment(paymentData: any) {
+    const response = await fetch(`${this.baseURL}/pagos/registrar`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(paymentData),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Get payment history for reservation
+  async getPaymentHistory(reservationId: string) {
+    const response = await fetch(`${this.baseURL}/pagos/reserva/${reservationId}`, {
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Get reservations with pending payments
+  async getPendingPayments() {
+    const response = await fetch(`${this.baseURL}/pagos/pendientes`, {
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Get reservation statistics for admin dashboard
+  async getReservationStatistics() {
+    const response = await fetch(`${this.baseURL}/reservas/admin/estadisticas`, {
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // ========== ADMIN - GUIDE MANAGEMENT ==========
+
+  // Assign guide to sendero
+  async assignGuideToSendero(senderoId: string, guiaId: string) {
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/guias/${guiaId}`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Remove guide from sendero
+  async removeGuideFromSendero(senderoId: string, guiaId: string) {
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/guias/${guiaId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Get assigned guides for sendero
+  async getAssignedGuides(senderoId: string) {
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/guias`, {
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // ========== ADMIN - SENDERO AVAILABILITY MANAGEMENT ==========
+
+  // Create availability range
+  async createSenderoAvailability(availabilityData: any) {
+    const response = await fetch(`${this.baseURL}/senderos/${availabilityData.senderoId}/disponibilidad`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(availabilityData),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Update availability range
+  async updateSenderoAvailability(senderoId: string, disponibilidadId: string, availabilityData: any) {
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/disponibilidad/${disponibilidadId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(availabilityData),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Delete availability range
+  async deleteSenderoAvailability(senderoId: string, disponibilidadId: string) {
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/disponibilidad/${disponibilidadId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Get all availability ranges for sendero (admin)
+  async getSenderoAvailabilities(senderoId: string) {
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/disponibilidad`, {
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Get availability for specific date (public)
+  async getSenderoAvailabilityByDate(senderoId: string, fecha: string) {
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/disponibilidad/fecha/${fecha}`, {
+      headers: this.getHeaders(),
     });
 
     return this.handleResponse(response);

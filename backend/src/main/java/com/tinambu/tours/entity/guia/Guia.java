@@ -1,10 +1,17 @@
 package com.tinambu.tours.entity.guia;
 
+import com.tinambu.tours.entity.sendero.Sendero;
+import com.tinambu.tours.entity.sendero.TurnoSendero;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -39,6 +46,9 @@ public class Guia {
     @Column(name = "url_foto")
     private String urlFoto;
 
+    @Column(name = "tarifa_especial", precision = 10, scale = 2)
+    private BigDecimal tarifaEspecial;
+
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
 
@@ -47,6 +57,11 @@ public class Guia {
 
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
+
+    // Relationships
+    @JsonIgnore
+    @ManyToMany(mappedBy = "guiasAsignados")
+    private Set<Sendero> senderosAsignados = new HashSet<>();
 
     // Constructors
     public Guia() {}
@@ -65,6 +80,26 @@ public class Guia {
     public boolean esExpertoEn(String especialidad) {
         return especialidades != null && 
                especialidades.toLowerCase().contains(especialidad.toLowerCase());
+    }
+
+    // New business methods for sendero relationships
+    public boolean puedeGuiar(Sendero sendero) {
+        if (!activo || sendero == null || !sendero.getActivo()) return false;
+        return senderosAsignados.contains(sendero);
+    }
+
+    public boolean estaDisponibleEn(LocalDate fecha, TurnoSendero turno) {
+        // This would need to check against GuiaReservaBloqueo table
+        // For now, return true if active
+        return activo;
+    }
+
+    public boolean tieneTarifaEspecial() {
+        return tarifaEspecial != null && tarifaEspecial.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public BigDecimal obtenerTarifa() {
+        return tieneTarifaEspecial() ? tarifaEspecial : BigDecimal.ZERO;
     }
 
     @PreUpdate
@@ -96,6 +131,13 @@ public class Guia {
 
     public String getUrlFoto() { return urlFoto; }
     public void setUrlFoto(String urlFoto) { this.urlFoto = urlFoto; }
+
+    public BigDecimal getTarifaEspecial() { return tarifaEspecial; }
+    public void setTarifaEspecial(BigDecimal tarifaEspecial) { this.tarifaEspecial = tarifaEspecial; }
+
+    // COMMENTED FOR COMPATIBILITY
+    public Set<Sendero> getSenderosAsignados() { return senderosAsignados; }
+    public void setSenderosAsignados(Set<Sendero> senderosAsignados) { this.senderosAsignados = senderosAsignados; }
 
     public Boolean getActivo() { return activo; }
     public void setActivo(Boolean activo) { this.activo = activo; }

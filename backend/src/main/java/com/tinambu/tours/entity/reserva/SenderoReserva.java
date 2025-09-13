@@ -1,6 +1,7 @@
 package com.tinambu.tours.entity.reserva;
 
 import com.tinambu.tours.entity.sendero.Sendero;
+import com.tinambu.tours.entity.sendero.TurnoSendero;
 import com.tinambu.tours.entity.guia.Guia;
 
 import jakarta.persistence.*;

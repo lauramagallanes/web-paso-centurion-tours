@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useApi } from '../../hooks/useApi';
+import { apiService } from '../../services/apiService';
 import ActivityCard from '../../components/common/ActivityCard';
 import Button from '../../components/common/Button';
 import Card, { CardBody } from '../../components/common/Card';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { routes } from '../../utils/routes';
 import backgroundImage from '../../assets/illustrations/Foto home  conocenos.svg';
 import './Activities.css';
@@ -12,21 +13,20 @@ interface Activity {
   id: string;
   name: string;
   description: string;
-  image: string;
+  imagenPrincipal: string;
+  totalImagenes: number;
+  tieneGaleria: boolean;
   duration: string;
-  difficulty: 'Fácil' | 'Moderado' | 'Difícil' | 'Experto';
+  difficulty: 'Fácil' | 'Moderado' | 'Difícil';
   price: number;
   currency: string;
   maxParticipants: number;
   includes: string[];
   category?: 'hiking' | 'birdwatching' | 'photography' | 'nature' | 'adventure';
   location?: string;
-  bestTime?: string;
-  equipment?: string[];
 }
 
 const Activities: React.FC = () => {
-  const { getSenderos } = useApi();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -37,166 +37,51 @@ const Activities: React.FC = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'price' | 'duration' | 'difficulty'>('price');
 
-  // Sample activities data (fallback if API fails)
-  const sampleActivities: Activity[] = [
-    {
-      id: 'observacion-aves-matutina',
-      name: 'Observación de Aves Matutina',
-      description: 'Descubre la rica avifauna del amanecer con nuestros guías especializados en ornitología. Una experiencia única para fotógrafos y amantes de la naturaleza que incluye identificación de especies y técnicas de observación.',
-      image: '/src/assets/react.svg',
-      duration: '3-4 horas',
-      difficulty: 'Fácil',
-      price: 2500,
-      currency: 'UYU',
-      maxParticipants: 8,
-      includes: [
-        'Guía especializado en ornitología',
-        'Binoculares profesionales Bushnell',
-        'Desayuno campestre orgánico',
-        'Material educativo y guía de especies',
-        'Certificado de participación'
-      ],
-      category: 'birdwatching',
-      location: 'Sendero del Mirador',
-      bestTime: 'Amanecer (6:00 - 10:00)',
-      equipment: ['Ropa cómoda', 'Calzado antideslizante', 'Protector solar', 'Gorra']
-    },
-    {
-      id: 'sendero-biodiversidad',
-      name: 'Sendero de la Biodiversidad',
-      description: 'Caminata interpretativa por senderos naturales, conociendo la flora y fauna local en un recorrido educativo. Perfecto para familias y grupos que buscan aprender sobre los ecosistemas locales.',
-      image: '/src/assets/react.svg',
-      duration: '2-3 horas',
-      difficulty: 'Moderado',
-      price: 1800,
-      currency: 'UYU',
-      maxParticipants: 12,
-      includes: [
-        'Guía naturalista certificado',
-        'Refrigerio natural a base de frutas locales',
-        'Mapa detallado del sendero',
-        'Lupa de campo para observación',
-        'Certificado de participación'
-      ],
-      category: 'hiking',
-      location: 'Sendero Principal',
-      bestTime: 'Mañana o tarde',
-      equipment: ['Calzado de trekking', 'Botella de agua', 'Mochila pequeña']
-    },
-    {
-      id: 'fotografia-naturaleza',
-      name: 'Fotografía de Naturaleza',
-      description: 'Workshop de fotografía en plena naturaleza con un fotógrafo profesional. Aprende técnicas de macro, paisaje y fotografía de fauna mientras capturas la belleza única de Paso Centurión.',
-      image: '/src/assets/react.svg',
-      duration: '4-5 horas',
-      difficulty: 'Moderado',
-      price: 3200,
-      currency: 'UYU',
-      maxParticipants: 6,
-      includes: [
-        'Instructor fotógrafo profesional',
-        'Acceso a ubicaciones exclusivas',
-        'Tips de composición y técnica',
-        'Revisión y edición básica de fotos',
-        'Almuerzo campestre',
-        'USB con las mejores fotos del grupo'
-      ],
-      category: 'photography',
-      location: 'Diversos puntos panorámicos',
-      bestTime: 'Hora dorada (mañana y tarde)',
-      equipment: ['Cámara (réflex o mirrorless)', 'Trípode', 'Baterías extra', 'Tarjetas de memoria']
-    },
-    {
-      id: 'aventura-nocturna',
-      name: 'Aventura Nocturna',
-      description: 'Experiencia única de senderismo nocturno para observar la fauna nocturna y disfrutar del cielo estrellado. Una aventura para los más intrépidos que buscan vivir la naturaleza de una forma completamente diferente.',
-      image: '/src/assets/react.svg',
-      duration: '3-4 horas',
-      difficulty: 'Difícil',
-      price: 2800,
-      currency: 'UYU',
-      maxParticipants: 8,
-      includes: [
-        'Guía especializado en fauna nocturna',
-        'Linternas frontales profesionales',
-        'Cena al aire libre',
-        'Bebida caliente (té o chocolate)',
-        'Manta térmica',
-        'Observación astronómica básica'
-      ],
-      category: 'adventure',
-      location: 'Sendero Nocturno Especial',
-      bestTime: 'Noche (19:00 - 23:00)',
-      equipment: ['Ropa de abrigo', 'Calzado con buena tracción', 'Repelente', 'Linterna personal']
-    },
-    {
-      id: 'expedicion-completa',
-      name: 'Expedición Naturalista Completa',
-      description: 'La experiencia más completa que ofrecemos: día completo de actividades que incluye senderismo, observación de aves, fotografía y almuerzo gourmet. Para verdaderos amantes de la naturaleza.',
-      image: '/src/assets/react.svg',
-      duration: '8-9 horas',
-      difficulty: 'Experto',
-      price: 4800,
-      currency: 'UYU',
-      maxParticipants: 6,
-      includes: [
-        'Guía naturalista y ornitólogo',
-        'Desayuno, almuerzo y merienda gourmet',
-        'Equipo completo (binoculares, lupa, GPS)',
-        'Transporte interno en el área',
-        'Acceso a zonas restringidas',
-        'Certificado de expedicionario',
-        'Pack de recuerdos'
-      ],
-      category: 'nature',
-      location: 'Recorrido completo del área',
-      bestTime: 'Día completo (7:00 - 16:00)',
-      equipment: ['Mochila grande', 'Ropa de trekking completa', 'Protección solar', 'Cámara']
-    }
-  ];
+  // Load activities from API
 
   useEffect(() => {
     const fetchActivities = async () => {
       try {
         setLoading(true);
-        const response = await getSenderos();
-        if (response.success && response.data.length > 0) {
+        setError(null);
+        
+        const response = await apiService.getSenderos();
+        if (response.success) {
           // Transform API data to our format
           const transformedData = response.data.map((sendero: any) => ({
-            id: sendero.id.toString(),
+            id: sendero.id,
             name: sendero.nombre,
             description: sendero.descripcion,
-            image: '/src/assets/react.svg',
-            duration: `${sendero.duracionEstimadaHoras} horas`,
-            difficulty: sendero.dificultad === 'FACIL' ? 'Fácil' : 
-                       sendero.dificultad === 'MODERADO' ? 'Moderado' : 
-                       sendero.dificultad === 'DIFICIL' ? 'Difícil' : 'Experto',
-            price: sendero.precioPorPersona || 2000,
-            currency: 'UYU',
-            maxParticipants: sendero.capacidadMaxima,
-            includes: [
+            imagenPrincipal: sendero.imagenPrincipal || '/src/assets/react.svg',
+            totalImagenes: sendero.totalImagenes || 1,
+            tieneGaleria: sendero.tieneGaleria || false,
+            duration: sendero.duracion || '2-3 horas',
+            difficulty: sendero.dificultad || 'Moderado',
+            price: sendero.precio || 2000,
+            currency: sendero.moneda || 'UYU',
+            maxParticipants: sendero.maxParticipantes || 8,
+            includes: sendero.incluye || [
               'Guía especializado',
               'Equipo básico de seguridad',
               'Refrigerio natural'
             ],
-            category: 'hiking' as const
+            category: 'hiking' as const,
+            location: sendero.ubicacion
           }));
           setActivities(transformedData);
         } else {
-          // Use sample data as fallback
-          setActivities(sampleActivities);
+          setError(response.error || 'Error al cargar las actividades');
         }
       } catch (err) {
         console.error('Error fetching activities:', err);
-        // Use sample data as fallback
-        setActivities(sampleActivities);
+        setError('Error de conexión al cargar las actividades');
       } finally {
         setLoading(false);
       }
     };
 
     fetchActivities();
-  }, [getSenderos]);
+  }, []);
 
   // Filter activities
   const filteredActivities = activities.filter(activity => {
@@ -229,6 +114,10 @@ const Activities: React.FC = () => {
     navigate(`${routes.book}?activity=${id}`);
   };
 
+  const handleViewActivityDetails = (id: string) => {
+    navigate(`/actividades/${id}`);
+  };
+
   const activityCategories = [
     { value: 'all', label: 'Todas las Actividades', icon: '🌿' },
     { value: 'birdwatching', label: 'Observación de Aves', icon: '🦅' },
@@ -258,19 +147,43 @@ const Activities: React.FC = () => {
           </div>
         </div>
         <div className="container">
-          <div className="loading-grid">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <Card key={i} className="loading-card">
-                <CardBody>
-                  <div className="loading-skeleton">
-                    <div className="skeleton-image"></div>
-                    <div className="skeleton-title"></div>
-                    <div className="skeleton-text"></div>
-                    <div className="skeleton-text short"></div>
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
+          <div className="activities-loading">
+            <LoadingSpinner size="lg" />
+            <p>Cargando actividades...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="activities-page">
+        <div className="activities-hero">
+          <div className="container">
+            <div className="hero-content">
+              <h1 className="hero-title">Actividades y Tours</h1>
+              <p className="hero-subtitle">Error al cargar las actividades</p>
+            </div>
+          </div>
+        </div>
+        <div className="container">
+          <div className="activities-error">
+            <Card variant="nature" size="lg" className="error-card">
+              <CardBody>
+                <div className="error-content">
+                  <div className="error-icon">⚠️</div>
+                  <h3 className="error-title">No se pudieron cargar las actividades</h3>
+                  <p className="error-description">{error}</p>
+                  <Button 
+                    variant="primary" 
+                    onClick={() => window.location.reload()}
+                  >
+                    Reintentar
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
           </div>
         </div>
       </div>
@@ -389,8 +302,20 @@ const Activities: React.FC = () => {
               {sortedActivities.map((activity) => (
                 <ActivityCard
                   key={activity.id}
-                  {...activity}
+                  id={activity.id}
+                  name={activity.name}
+                  description={activity.description}
+                  imagenPrincipal={activity.imagenPrincipal}
+                  totalImagenes={activity.totalImagenes}
+                  tieneGaleria={activity.tieneGaleria}
+                  duration={activity.duration}
+                  difficulty={activity.difficulty}
+                  price={activity.price}
+                  currency={activity.currency}
+                  maxParticipants={activity.maxParticipants}
+                  includes={activity.includes}
                   onBook={handleBookActivity}
+                  onViewDetails={handleViewActivityDetails}
                 />
               ))}
             </div>

@@ -1,7 +1,7 @@
 package com.tinambu.tours.dto.request;
 
 import com.tinambu.tours.entity.reserva.TipoReserva;
-import com.tinambu.tours.entity.reserva.TurnoSendero;
+import com.tinambu.tours.entity.sendero.TurnoSendero;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;

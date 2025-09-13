@@ -15,6 +15,14 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}🚀 DEPLOY COMPLETO - Tinambu Tours${NC}"
 echo -e "${BLUE}======================================${NC}"
 
+# Validación rápida antes del deploy
+echo -e "${YELLOW}🔍 Validando configuración...${NC}"
+if ! ./scripts/quick-check.sh; then
+    echo -e "${RED}❌ Validación falló. Deploy cancelado.${NC}"
+    exit 1
+fi
+echo ""
+
 # Verificar que existe archivo de configuración
 if [ -f ".env" ]; then
     echo -e "${GREEN}📋 Cargando configuración desde .env...${NC}"

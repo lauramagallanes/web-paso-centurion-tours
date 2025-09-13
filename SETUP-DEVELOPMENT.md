@@ -25,7 +25,20 @@ aws configure --profile [TU_PROFILE]
 aws sts get-caller-identity --profile [TU_PROFILE]
 ```
 
-### 3. Probar Setup
+### 3. Validar Configuración
+
+```bash
+# Validación completa (recomendado la primera vez)
+./scripts/validate-env.sh
+
+# Validación rápida (para uso diario)  
+./scripts/quick-check.sh
+
+# Configurar frontend automáticamente
+./scripts/setup-frontend-env.sh
+```
+
+### 4. Probar Setup
 
 ```bash
 # Deploy backend
@@ -34,8 +47,11 @@ aws sts get-caller-identity --profile [TU_PROFILE]
 # Deploy frontend  
 ./scripts/deploy-frontend.sh
 
-# O deploy completo
+# O deploy completo (incluye validación automática)
 ./scripts/deploy-all.sh
+
+# Probar que todo funciona
+./scripts/test-connections.sh
 ```
 
 ---
@@ -118,10 +134,20 @@ curl https://[API_GATEWAY_ID].execute-api.us-east-1.amazonaws.com/basic
 aws configure --profile [TU_PROFILE]
 ```
 
+### ❌ "Variables no configuradas"  
+```bash
+# Validar configuración completa
+./scripts/validate-env.sh
+
+# Validación rápida
+./scripts/quick-check.sh
+```
+
 ### ❌ "deployment-config.sh no encontrado"
 ```bash
-cp deployment-config.example.sh deployment-config.sh
-# Editar con tus valores
+# Usar .env en su lugar (más simple)
+cp ENV-TEMPLATE.txt .env
+# Editar .env con tus valores reales
 ```
 
 ### ❌ "Build falló"
@@ -131,6 +157,15 @@ cd backend && mvn clean install
 
 # Frontend
 cd frontend && npm install && npm run build
+```
+
+### ❌ "Deploy falló"
+```bash
+# Validar todo antes del deploy
+./scripts/validate-env.sh
+
+# Probar conexiones
+./scripts/test-connections.sh
 ```
 
 ### ❌ "API devuelve 404"

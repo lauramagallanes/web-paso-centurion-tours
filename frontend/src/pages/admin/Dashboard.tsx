@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Badge, Table, Button } from 'react-bootstrap';
+import { Card, Row, Col, Badge, Table, Button, Spinner } from 'react-bootstrap';
 import { useApi } from '../../hooks/useApi';
 import { useDashboardStats } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
-import BackendError from '../../components/common/BackendError';
 
 interface DashboardStats {
   totalReservas: number;

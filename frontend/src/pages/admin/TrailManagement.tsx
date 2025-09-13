@@ -29,7 +29,8 @@ const TrailManagement: React.FC = () => {
     createSendero,
     updateSendero,
     toggleActive,
-    deleteSendero 
+    deleteSendero,
+    isUsingLocalStorage 
   } = useSenderosAdmin();
   
   const [actionLoading, setActionLoading] = useState(false);
@@ -190,7 +191,7 @@ const TrailManagement: React.FC = () => {
       if (modalMode === 'create') {
         await createSendero(formData);
       } else if (modalMode === 'edit' && formData.id) {
-        await updateSendero(parseInt(formData.id), formData);
+        await updateSendero(formData.id, formData);
       }
 
       // Recargar senderos
@@ -199,20 +200,7 @@ const TrailManagement: React.FC = () => {
       
     } catch (error) {
       console.error('Error guardando sendero:', error);
-      
-      // Show user-friendly error message for backend unavailable
-      const errorMessage = typeof error === 'string' ? error : (error as Error)?.message || '';
-      const isBackendUnavailable = 
-        errorMessage.includes('Failed to fetch') || 
-        errorMessage.includes('404') || 
-        errorMessage.includes('Not Found') ||
-        errorMessage.includes('CORS');
-      
-      if (isBackendUnavailable) {
-        alert('⚠️ No se pudo guardar el sendero.\n\nEl backend está en desarrollo. Esta funcionalidad estará disponible próximamente.\n\nTus datos se han preservado en el formulario.');
-      } else {
-        alert('❌ Error inesperado al guardar el sendero. Por favor, inténtalo de nuevo.');
-      }
+      alert('❌ Error al guardar el sendero. Por favor, inténtalo de nuevo.');
     } finally {
       setActionLoading(false);
     }
@@ -223,7 +211,7 @@ const TrailManagement: React.FC = () => {
     
     setActionLoading(true);
     try {
-      await toggleActive(parseInt(sendero.id), !sendero.activo);
+      await toggleActive(sendero.id, !sendero.activo);
       await loadSenderos();
     } catch (error) {
       console.error('Error cambiando estado:', error);
@@ -239,7 +227,7 @@ const TrailManagement: React.FC = () => {
 
     setActionLoading(true);
     try {
-      await deleteSendero(parseInt(sendero.id));
+      await deleteSendero(sendero.id);
       await loadSenderos();
     } catch (error) {
       console.error('Error eliminando sendero:', error);
@@ -265,7 +253,15 @@ const TrailManagement: React.FC = () => {
   return (
     <div className="trail-management">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Gestión de Senderos</h2>
+        <div>
+          <h2>Gestión de Senderos</h2>
+          {isUsingLocalStorage && (
+            <small className="text-info">
+              <Icon name="info" size="sm" className="me-1" />
+              Funcionando con almacenamiento local (datos se guardan en tu navegador)
+            </small>
+          )}
+        </div>
         <Button 
           variant="success" 
           onClick={() => handleOpenModal('create')}

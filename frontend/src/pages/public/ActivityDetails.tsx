@@ -333,36 +333,38 @@ const ActivityDetails: React.FC = () => {
       {/* Hero Section with Image Gallery */}
       <section className="hero-section">
         <div className="hero-content">
-          <div className="hero-images">
+          {/* Prominent Gallery Section */}
+          <div className="hero-gallery">
             <ImageGallery
               images={sendero.imagenes}
               senderoName={sendero.nombre}
               onOpenGallery={() => setIsGalleryOpen(true)}
               showCompact={true}
-              maxVisible={4}
+              maxVisible={5}
             />
           </div>
           
-          <div className="hero-info">
-            <div className="hero-header">
-              <h1>{sendero.nombre}</h1>
-              <FavoriteButton
-                item={{
-                  id: sendero.id,
-                  type: 'activity',
-                  name: sendero.nombre,
-                  description: sendero.descripcion,
-                  image: sendero.imagenPrincipal,
-                  price: sendero.precio,
-                  currency: sendero.moneda,
-                  difficulty: sendero.dificultad,
-                  duration: sendero.duracion,
-                  maxParticipants: sendero.maxParticipantes,
-                  includes: sendero.incluye
-                }}
-                variant="large"
-                size="md"
-              />
+          {/* Main Info Section - Title, Location, Price */}
+          <div className="main-info-section">
+            <div className="main-info-header">
+              <div className="title-and-location">
+                <h1 className="activity-title">{sendero.nombre}</h1>
+                <p className="activity-location">
+                  {sendero.ubicacion || 'Paso Centurión, Uruguay - Ruta 7 km 439'}
+                </p>
+              </div>
+              <div className="price-display-main">
+                <span className="price-amount-main">
+                  {sendero.moneda === 'UYU' ? '$' : sendero.moneda} 
+                  {priceCalculation ? 
+                    priceCalculation.precioTotal.toLocaleString() : 
+                    sendero.precio.toLocaleString()
+                  }
+                </span>
+                <span className="price-unit-main">
+                  {sendero.moneda} {totalParticipants > 1 ? 'Por grupo' : 'Por persona'}
+                </span>
+              </div>
             </div>
             
             <div className="activity-meta">
@@ -383,12 +385,25 @@ const ActivityDetails: React.FC = () => {
                 <span className="meta-label">Max. participantes:</span>
                 <span>{sendero.maxParticipantes}</span>
               </div>
-              {sendero.ubicacion && (
-                <div className="meta-item">
-                  <span className="meta-label">Ubicación:</span>
-                  <span>{sendero.ubicacion}</span>
-                </div>
-              )}
+              <div className="meta-item">
+                <FavoriteButton
+                  item={{
+                    id: sendero.id,
+                    type: 'activity',
+                    name: sendero.nombre,
+                    description: sendero.descripcion,
+                    image: sendero.imagenPrincipal,
+                    price: sendero.precio,
+                    currency: sendero.moneda,
+                    difficulty: sendero.dificultad,
+                    duration: sendero.duracion,
+                    maxParticipants: sendero.maxParticipantes,
+                    includes: sendero.incluye
+                  }}
+                  variant="large"
+                  size="md"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -420,20 +435,46 @@ const ActivityDetails: React.FC = () => {
               </section>
             )}
 
-            {/* Benefits */}
-            {sendero.beneficios && sendero.beneficios.length > 0 && (
-              <section className="details-section">
-                <h2>Beneficios</h2>
-                <ul className="benefits-list">
-                  {sendero.beneficios.map((beneficio, index) => (
-                    <li key={index}>
-                      <span className="benefit-icon">🎯</span>
-                      {beneficio}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+            {/* Beneficios Especiales */}
+            <section className="details-section">
+              <h2>Beneficios Especiales</h2>
+              <ul className="benefits-list">
+                <li>
+                  <span className="benefit-icon">👥</span>
+                  *Grupos de más de 10 personas: 10% de descuento en cada sendero
+                </li>
+                <li>
+                  <span className="benefit-icon">👶</span>
+                  *Niños menores de 12 años: 30% de descuento en senderos
+                </li>
+                <li>
+                  <span className="benefit-icon">🎒</span>
+                  *Cada sendero incluye: entrada a los predios, guía de naturaleza especializada, botiquín de primeros auxilios
+                </li>
+                <li>
+                  <span className="benefit-icon">🚫</span>
+                  *Traslados no incluidos desde el punto de encuentro hasta el inicio del sendero
+                </li>
+              </ul>
+            </section>
+
+            {/* Duración */}
+            <section className="details-section">
+              <h2>Duración:</h2>
+              <p className="duration-text">
+                5 min hasta inicio del sendero (2.5 km) 4 horas de caminata aproximadamente (4 km)
+              </p>
+            </section>
+
+            {/* Métodos de pago */}
+            <section className="details-section">
+              <h2>Métodos de pago</h2>
+              <ul className="payment-methods">
+                <li>Efectivo</li>
+                <li>Transferencia</li>
+                <li>MercadoPago</li>
+              </ul>
+            </section>
 
             {/* Special Offers */}
             {sendero.ofertas && sendero.ofertas.length > 0 && (

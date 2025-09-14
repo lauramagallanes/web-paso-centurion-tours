@@ -201,8 +201,8 @@
 
 .activities-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--space-8);
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-6);
   margin-top: var(--space-8);
 }
 
@@ -556,7 +556,7 @@
   
   .activities-grid,
   .accommodations-grid {
-    gap: var(--space-6);
+    gap: var(--space-4);
   }
   
   .team-grid {
@@ -665,7 +665,7 @@
   border: 1px solid var(--border-primary);
   padding: 0;
   overflow: hidden;
-  min-height: 300px;
+  height: auto;
   display: flex;
   flex-direction: column;
 }

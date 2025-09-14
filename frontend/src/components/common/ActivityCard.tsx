@@ -99,7 +99,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         <CardImage 
           src={displayImage} 
           alt={name} 
-          aspectRatio="video"
+          aspectRatio="16/10"
         />
         
         {/* Gallery indicator */}

@@ -213,20 +213,20 @@
 
 .activities-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--space-8);
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-6);
 }
 
 /* Loading States */
 .loading-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--space-8);
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-6);
   padding: var(--space-16) 0;
 }
 
 .loading-card {
-  min-height: 450px;
+  height: auto;
 }
 
 .loading-skeleton {
@@ -526,7 +526,7 @@
   .activities-grid,
   .loading-grid {
     grid-template-columns: 1fr;
-    gap: var(--space-6);
+    gap: var(--space-4);
   }
   
   .contact-title {

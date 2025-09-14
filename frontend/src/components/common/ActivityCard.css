@@ -61,9 +61,18 @@
   margin-bottom: 0.25rem !important;
 }
 
+/* Ensure buttons are visible and properly styled */
 .activity-card button {
   padding: 0.375rem 0.75rem !important;
   font-size: 0.8rem !important;
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.activity-card .card-footer .flex.gap-2 {
+  display: flex !important;
+  gap: 0.5rem !important;
 }
 
 /* Line clamp utilities for compact text */
@@ -120,22 +129,13 @@
 
 /* Responsive adjustments for buttons */
 @media (max-width: 640px) {
-  .activity-card .flex.gap-2.flex-wrap {
+  .activity-card .flex.gap-2 {
     gap: 0.375rem;
   }
   
-  .activity-card .flex.gap-2.flex-wrap button {
-    font-size: 0.8rem;
-    padding: 0.4rem 0.8rem;
-  }
-  
-  .activity-card .flex.gap-2.flex-wrap button span {
-    display: none; /* Hide text on mobile, keep icons */
-  }
-  
-  /* Show text for primary button */
-  .activity-card .flex.gap-2.flex-wrap button[class*="btn-primary"] span {
-    display: inline;
+  .activity-card .flex.gap-2 button {
+    font-size: 0.75rem !important;
+    padding: 0.4rem 0.6rem !important;
   }
   
   .gallery-indicator {

@@ -17,19 +17,21 @@
   flex-direction: column !important;
 }
 
-/* Make cards much more compact - AGGRESSIVE */
+/* Make ActivityCards compact and well-distributed */
 .activity-card .card-body {
   padding: 0.5rem !important;
-  flex: 0 1 auto !important;
+  flex: 1 !important; /* Take available space */
   min-height: unset !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .activity-card .card-footer {
   padding: 0.5rem !important;
   border-top: 1px solid var(--color-border);
   min-height: unset !important;
-  margin-top: auto !important;
-  flex-shrink: 0 !important;
+  margin-top: auto !important; /* Always at bottom */
+  flex-shrink: 0 !important; /* Never compress */
 }
 
 .activity-card .card-image-container {
@@ -82,13 +84,7 @@
   flex-wrap: nowrap !important;
 }
 
-/* Make sure footer is always at bottom and visible */
-.activity-card .card-footer {
-  position: relative !important;
-  bottom: 0 !important;
-  background: var(--color-surface) !important;
-  z-index: 2 !important;
-}
+/* Remove duplicated footer rules - handled above */
 
 /* Line clamp utilities for compact text */
 .line-clamp-1 {

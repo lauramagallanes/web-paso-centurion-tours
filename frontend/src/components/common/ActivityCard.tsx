@@ -139,17 +139,17 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       />
 
       <CardBody>
-        <div className="mb-4">
-          <h3 className="card-title text-xl font-semibold mb-2 text-text">
+        <div className="mb-3">
+          <h3 className="card-title text-lg font-semibold mb-1 text-text line-clamp-1">
             {name}
           </h3>
-          <p className="text-text-secondary text-sm mb-3 leading-relaxed">
+          <p className="text-text-secondary text-sm mb-2 leading-relaxed line-clamp-2">
             {description}
           </p>
         </div>
 
-        <div className="activity-details mb-4">
-          <div className="flex items-center gap-4 text-sm text-text-muted mb-2">
+        <div className="activity-details mb-3">
+          <div className="flex items-center justify-between text-xs text-text-muted">
             <span className="flex items-center gap-1">
               <span>⏱️</span>
               <span>{duration}</span>
@@ -160,25 +160,6 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             </span>
           </div>
         </div>
-
-        {includes && includes.length > 0 && (
-          <div className="activity-includes mb-4">
-            <h4 className="text-sm font-medium text-text mb-2">Incluye:</h4>
-            <ul className="text-xs text-text-secondary space-y-1">
-              {includes.slice(0, 3).map((item, index) => (
-                <li key={index} className="flex items-start gap-2">
-                  <span className="text-success mt-0.5">✓</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-              {includes.length > 3 && (
-                <li className="text-text-muted">
-                  +{includes.length - 3} más...
-                </li>
-              )}
-            </ul>
-          </div>
-        )}
       </CardBody>
 
       <CardFooter>
@@ -192,21 +173,12 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             </span>
           </div>
           
-          <div className="flex gap-2 flex-wrap">
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={handleAddToCart}
-              leftIcon="🛒"
-            >
-              Agregar
-            </Button>
+          <div className="flex gap-2">
             {onViewDetails && (
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={handleViewDetails}
-                leftIcon="👁️"
               >
                 Ver detalles
               </Button>
@@ -215,7 +187,6 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
               variant="primary" 
               size="sm"
               onClick={handleBookClick}
-              leftIcon="📅"
             >
               Reservar
             </Button>

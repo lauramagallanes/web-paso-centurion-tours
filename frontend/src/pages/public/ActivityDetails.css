@@ -639,7 +639,7 @@
 
 /* Force related sendero cards to be compact */
 .related-grid .activity-card {
-  height: 350px !important;
+  height: 420px !important;
 }
 
 /* Mobile Responsive */

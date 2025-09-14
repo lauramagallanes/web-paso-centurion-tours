@@ -213,8 +213,15 @@
 
 .activities-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: var(--space-6);
+  align-items: start;
+}
+
+/* Force activity cards to be compact in activities page */
+.activities-grid .activity-card {
+  height: auto !important;
+  max-height: 380px !important;
 }
 
 /* Loading States */

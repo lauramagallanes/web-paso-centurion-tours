@@ -634,6 +634,13 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
+  align-items: start;
+}
+
+/* Force related sendero cards to be compact */
+.related-grid .activity-card {
+  height: auto !important;
+  max-height: 360px !important;
 }
 
 /* Mobile Responsive */

@@ -201,8 +201,9 @@
 
 /* Card Body */
 .card-body {
-  flex: 0 1 auto;
+  flex: 0 1 auto !important;
   padding: 0;
+  min-height: unset !important;
 }
 
 .card-body p {

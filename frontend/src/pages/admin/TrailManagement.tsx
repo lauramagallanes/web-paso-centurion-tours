@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSenderosAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
 import BackendError from '../../components/common/BackendError';
-import SenderoImageUploader from '../../components/admin/SenderoImageUploader';
+import SenderoImageUploader from '../../components/admin/SenderoImageUploaderMock';
 
 interface Sendero {
   id?: string;
@@ -452,24 +452,26 @@ const TrailManagement: React.FC = () => {
           </Modal.Header>
           
           <Modal.Body>
-            <Row>
-              <Col md={12}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Nombre del Sendero *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Nombre descriptivo del sendero"
-                    value={formData.nombre}
-                    onChange={(e) => handleInputChange('nombre', e.target.value)}
-                    isInvalid={!!errors.nombre}
-                    disabled={modalMode === 'view'}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.nombre}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-            </Row>
+            <Tabs defaultActiveKey="datos" className="mb-3">
+              <Tab eventKey="datos" title="Datos Básicos">
+                <Row>
+                  <Col md={12}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Nombre del Sendero *</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="Nombre descriptivo del sendero"
+                        value={formData.nombre}
+                        onChange={(e) => handleInputChange('nombre', e.target.value)}
+                        isInvalid={!!errors.nombre}
+                        disabled={modalMode === 'view'}
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors.nombre}
+                      </Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
+                </Row>
 
             <Form.Group className="mb-3">
               <Form.Label>Descripción</Form.Label>
@@ -598,6 +600,27 @@ const TrailManagement: React.FC = () => {
                 </Col>
               </Row>
             )}
+              </Tab>
+
+              <Tab eventKey="imagenes" title="Imágenes">
+                {selectedSendero?.id && (
+                  <SenderoImageUploader
+                    senderoId={selectedSendero.id}
+                    images={senderoImages}
+                    onImagesChange={handleImagesChange}
+                    disabled={modalMode === 'view'}
+                  />
+                )}
+                {modalMode === 'create' && (
+                  <div className="text-center py-4">
+                    <p className="text-muted">
+                      <Icon name="info" size="sm" className="me-2" />
+                      Las imágenes estarán disponibles después de crear el sendero
+                    </p>
+                  </div>
+                )}
+              </Tab>
+            </Tabs>
           </Modal.Body>
           
           <Modal.Footer>

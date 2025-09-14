@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSenderosAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
 import BackendError from '../../components/common/BackendError';
-import SenderoImageUploader from '../../components/admin/SenderoImageUploaderMock';
+import SenderoImageUploader from '../../components/admin/SenderoImageUploader';
 
 interface Sendero {
   id?: string;

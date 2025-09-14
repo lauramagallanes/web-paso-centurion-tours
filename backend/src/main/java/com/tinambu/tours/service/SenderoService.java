@@ -13,10 +13,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+// S3 imports temporarily commented out to fix initialization issues
+// import software.amazon.awssdk.core.sync.RequestBody;
+// import software.amazon.awssdk.services.s3.S3Client;
+// import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+// import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -36,8 +37,8 @@ public class SenderoService {
     @Autowired
     private SenderoImagenRepository senderoImagenRepository;
     
-    @Autowired
-    private S3Client s3Client;
+    // S3Client temporarily removed - will be re-implemented later
+    // private S3Client s3Client;
     
     @Value("${aws.s3.bucket-name:imagenespasocenturion}")
     private String s3BucketName;
@@ -55,6 +56,11 @@ public class SenderoService {
      */
     @Transactional
     public List<SenderoImagenResponse> addImagesToSendero(UUID senderoId, MultipartFile[] files, String[] descriptions) {
+        // S3 functionality temporarily disabled
+        throw new IllegalStateException("Image upload functionality is temporarily disabled - will be re-implemented soon");
+        
+        /*
+        // TODO: Re-implement S3 functionality later
         // Validate sendero exists
         Sendero sendero = obtenerSenderoPorId(senderoId);
         
@@ -112,6 +118,7 @@ public class SenderoService {
         }
         
         return uploadedImages;
+        */
     }
     
     /**
@@ -119,6 +126,11 @@ public class SenderoService {
      */
     @Transactional
     public boolean removeImageFromSendero(UUID imageId) {
+        // S3 functionality temporarily disabled
+        throw new IllegalStateException("Image upload functionality is temporarily disabled - will be re-implemented soon");
+        
+        /*
+        // TODO: Re-implement S3 functionality later
         Optional<SenderoImagen> imageOpt = senderoImagenRepository.findById(imageId);
         if (!imageOpt.isPresent()) {
             return false;
@@ -151,6 +163,7 @@ public class SenderoService {
         } catch (Exception e) {
             throw new RuntimeException("Error eliminando imagen de S3", e);
         }
+        */
     }
     
     /**

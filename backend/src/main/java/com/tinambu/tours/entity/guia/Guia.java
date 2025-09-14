@@ -58,10 +58,10 @@ public class Guia {
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
 
-    // Relationships
-    @JsonIgnore
-    @ManyToMany(mappedBy = "guiasAsignados")
-    private Set<Sendero> senderosAsignados = new HashSet<>();
+    // Relationships - temporarily commented out to fix mapping inconsistency
+    // @JsonIgnore
+    // @ManyToMany(mappedBy = "guiasAsignados")
+    // private Set<Sendero> senderosAsignados = new HashSet<>();
 
     // Constructors
     public Guia() {}
@@ -82,11 +82,11 @@ public class Guia {
                especialidades.toLowerCase().contains(especialidad.toLowerCase());
     }
 
-    // New business methods for sendero relationships
-    public boolean puedeGuiar(Sendero sendero) {
-        if (!activo || sendero == null || !sendero.getActivo()) return false;
-        return senderosAsignados.contains(sendero);
-    }
+    // New business methods for sendero relationships - temporarily disabled
+    // public boolean puedeGuiar(Sendero sendero) {
+    //     if (!activo || sendero == null || !sendero.getActivo()) return false;
+    //     return senderosAsignados.contains(sendero);
+    // }
 
     public boolean estaDisponibleEn(LocalDate fecha, TurnoSendero turno) {
         // This would need to check against GuiaReservaBloqueo table
@@ -135,9 +135,9 @@ public class Guia {
     public BigDecimal getTarifaEspecial() { return tarifaEspecial; }
     public void setTarifaEspecial(BigDecimal tarifaEspecial) { this.tarifaEspecial = tarifaEspecial; }
 
-    // COMMENTED FOR COMPATIBILITY
-    public Set<Sendero> getSenderosAsignados() { return senderosAsignados; }
-    public void setSenderosAsignados(Set<Sendero> senderosAsignados) { this.senderosAsignados = senderosAsignados; }
+    // COMMENTED FOR COMPATIBILITY - temporarily disabled to fix mapping inconsistency
+    // public Set<Sendero> getSenderosAsignados() { return senderosAsignados; }
+    // public void setSenderosAsignados(Set<Sendero> senderosAsignados) { this.senderosAsignados = senderosAsignados; }
 
     public Boolean getActivo() { return activo; }
     public void setActivo(Boolean activo) { this.activo = activo; }

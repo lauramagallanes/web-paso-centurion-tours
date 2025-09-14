@@ -640,7 +640,7 @@
 /* Force related sendero cards to be compact */
 .related-grid .activity-card {
   height: auto !important;
-  max-height: 360px !important;
+  max-height: 450px !important;
 }
 
 /* Mobile Responsive */

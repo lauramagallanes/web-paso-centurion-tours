@@ -333,19 +333,22 @@ const ActivityDetails: React.FC = () => {
       {/* Hero Section with Image Gallery */}
       <section className="hero-section">
         <div className="hero-content">
-          {/* Prominent Gallery Section */}
-          <div className="hero-gallery">
-            <ImageGallery
-              images={sendero.imagenes}
-              senderoName={sendero.nombre}
-              onOpenGallery={() => setIsGalleryOpen(true)}
-              showCompact={true}
-              maxVisible={5}
-            />
-          </div>
+{/* Removed redundant gallery - now using main image in info section */}
           
           {/* Main Info Section - Title, Location, Price */}
           <div className="main-info-section">
+            {/* Hero Image */}
+            <div className="hero-image-main">
+              <img 
+                src={sendero.imagenes?.[0]?.url || sendero.imagenPrincipal || 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=300&fit=crop'} 
+                alt={sendero.nombre}
+                onError={(e) => {
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=300&fit=crop';
+                }}
+              />
+            </div>
+
+            {/* Title, Location and Meta */}
             <div className="main-info-header">
               <div className="title-and-location">
                 <h1 className="activity-title">{sendero.nombre}</h1>
@@ -353,57 +356,56 @@ const ActivityDetails: React.FC = () => {
                   {sendero.ubicacion || 'Paso Centurión, Uruguay - Ruta 7 km 439'}
                 </p>
               </div>
-              <div className="price-display-main">
-                <span className="price-amount-main">
-                  {sendero.moneda === 'UYU' ? '$' : sendero.moneda} 
-                  {priceCalculation ? 
-                    priceCalculation.precioTotal.toLocaleString() : 
-                    sendero.precio.toLocaleString()
-                  }
-                </span>
-                <span className="price-unit-main">
-                  {sendero.moneda} {totalParticipants > 1 ? 'Por grupo' : 'Por persona'}
-                </span>
+              
+              <div className="activity-meta">
+                <div className="meta-item">
+                  <span className="meta-label">Duración:</span>
+                  <span>{sendero.duracion}</span>
+                </div>
+                <div className="meta-item">
+                  <span className="meta-label">Dificultad:</span>
+                  <span 
+                    className="difficulty-badge"
+                    style={{ backgroundColor: getDifficultyColor(sendero.dificultad) }}
+                  >
+                    {sendero.dificultad}
+                  </span>
+                </div>
+                <div className="meta-item">
+                  <span className="meta-label">Max. participantes:</span>
+                  <span>{sendero.maxParticipantes}</span>
+                </div>
+                <div className="meta-item">
+                  <FavoriteButton
+                    item={{
+                      id: sendero.id,
+                      type: 'activity',
+                      name: sendero.nombre,
+                      description: sendero.descripcion,
+                      image: sendero.imagenPrincipal,
+                      price: sendero.precio,
+                      currency: sendero.moneda,
+                      difficulty: sendero.dificultad,
+                      duration: sendero.duracion,
+                      maxParticipants: sendero.maxParticipantes,
+                      includes: sendero.incluye
+                    }}
+                    variant="large"
+                    size="md"
+                  />
+                </div>
               </div>
             </div>
-            
-            <div className="activity-meta">
-              <div className="meta-item">
-                <span className="meta-label">Duración:</span>
-                <span>{sendero.duracion}</span>
-              </div>
-              <div className="meta-item">
-                <span className="meta-label">Dificultad:</span>
-                <span 
-                  className="difficulty-badge"
-                  style={{ backgroundColor: getDifficultyColor(sendero.dificultad) }}
-                >
-                  {sendero.dificultad}
-                </span>
-              </div>
-              <div className="meta-item">
-                <span className="meta-label">Max. participantes:</span>
-                <span>{sendero.maxParticipantes}</span>
-              </div>
-              <div className="meta-item">
-                <FavoriteButton
-                  item={{
-                    id: sendero.id,
-                    type: 'activity',
-                    name: sendero.nombre,
-                    description: sendero.descripcion,
-                    image: sendero.imagenPrincipal,
-                    price: sendero.precio,
-                    currency: sendero.moneda,
-                    difficulty: sendero.dificultad,
-                    duration: sendero.duracion,
-                    maxParticipants: sendero.maxParticipantes,
-                    includes: sendero.incluye
-                  }}
-                  variant="large"
-                  size="md"
-                />
-              </div>
+
+            {/* Price Display */}
+            <div className="price-display-main">
+              <span className="price-amount-main">
+                {sendero.moneda === 'UYU' ? '$' : sendero.moneda} 
+                {sendero.precio.toLocaleString()}
+              </span>
+              <span className="price-unit-main">
+                {sendero.moneda} Por persona
+              </span>
             </div>
           </div>
         </div>
@@ -514,7 +516,7 @@ const ActivityDetails: React.FC = () => {
                       sendero.precio.toLocaleString()
                     }
                   </span>
-                  <span className="unit">por {totalParticipants > 1 ? 'grupo' : 'persona'}</span>
+                  <span className="unit">por persona</span>
                 </div>
                 {isCalculatingPrice && (
                   <div className="price-loading">

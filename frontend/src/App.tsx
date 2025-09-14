@@ -11,6 +11,7 @@ import Home from './pages/public/Home'
 import About from './pages/public/About'
 import Accomodations from './pages/public/Accomodations'
 import Activities from './pages/public/Activities'
+import ActivityDetails from './pages/public/ActivityDetails'
 import Book from './pages/public/Book';
 import MyBookings from './pages/public/MyBookings';
 import Favorites from './pages/public/Favorites';
@@ -43,6 +44,7 @@ const App: React.FC = () => {
             <Route path={routes.about} element={<About/>}/>
             <Route path={routes.accomodations} element={<Accomodations/>}/>
             <Route path={routes.activities} element={<Activities/>}/>
+            <Route path="/actividades/:id" element={<ActivityDetails/>}/>
             <Route path={routes.book} element={<Book/>}/>
             <Route path={routes.myBookings} element={
               <ProtectedRoute>

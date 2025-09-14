@@ -4,6 +4,7 @@ export const routes = {
     accomodations: "/accomodations",
     about: "/about",
     activities: "/activities",
+    activityDetails: "/actividades/:id",
     birdDetail: "/bird/:id",
     book: "/book",
     bookings: "/bookings",

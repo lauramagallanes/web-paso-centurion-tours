@@ -39,9 +39,7 @@ public class SenderoImagen {
     @Column(name = "fecha_subida", nullable = false)
     private LocalDateTime fechaSubida;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sendero_id", insertable = false, updatable = false)
-    private Sendero sendero;
+    // Bidirectional reference removed to avoid lazy loading issues
 
     // Constructors
     public SenderoImagen() {}
@@ -124,13 +122,6 @@ public class SenderoImagen {
         this.fechaSubida = fechaSubida;
     }
 
-    public Sendero getSendero() {
-        return sendero;
-    }
-
-    public void setSendero(Sendero sendero) {
-        this.sendero = sendero;
-    }
 
     @Override
     public boolean equals(Object o) {

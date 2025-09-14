@@ -7,6 +7,8 @@ import Card, { CardBody } from '../../components/common/Card';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { routes } from '../../utils/routes';
 import backgroundImage from '../../assets/illustrations/Foto home  conocenos.svg';
+import { imageStorageService } from '../../services/imageStorageService';
+import { fixArrayEncoding } from '../../utils/encodingFixer';
 import './Activities.css';
 
 interface Activity {
@@ -47,27 +49,53 @@ const Activities: React.FC = () => {
         
         const response = await apiService.getSenderos();
         if (response.success) {
-          // Transform API data to our format
-          const transformedData = response.data.map((sendero: any) => ({
-            id: sendero.id,
-            name: sendero.nombre,
-            description: sendero.descripcion,
-            imagenPrincipal: sendero.imagenPrincipal || '/src/assets/react.svg',
-            totalImagenes: sendero.totalImagenes || 1,
-            tieneGaleria: sendero.tieneGaleria || false,
-            duration: sendero.duracion || '2-3 horas',
-            difficulty: sendero.dificultad || 'Moderado',
-            price: sendero.precio || 2000,
-            currency: sendero.moneda || 'UYU',
-            maxParticipants: sendero.maxParticipantes || 8,
-            includes: sendero.incluye || [
-              'Guía especializado',
-              'Equipo básico de seguridad',
-              'Refrigerio natural'
-            ],
-            category: 'hiking' as const,
-            location: sendero.ubicacion
-          }));
+          console.log('📊 Raw backend data:', response.data);
+          
+          // Fix encoding issues first
+          const fixedData = fixArrayEncoding(response.data);
+          console.log('🔧 Fixed encoding data:', fixedData);
+          
+          // Transform API data to our format with REAL data
+          const transformedData = fixedData.map((sendero: any) => {
+            // Get real images from localStorage
+            const imageStats = imageStorageService.getSenderoImageStats(sendero.id);
+            const senderoImages = imageStorageService.getSenderoImages(sendero.id);
+            
+            // Map difficulty levels
+            const difficultyMap: Record<string, string> = {
+              'FACIL': 'Fácil',
+              'MODERADO': 'Moderado', 
+              'DIFICIL': 'Difícil',
+              'EXPERTO': 'Experto'
+            };
+            
+            console.log(`📊 Sendero ${sendero.nombre}:`, {
+              hasImages: imageStats.total > 0,
+              imageCount: imageStats.total,
+              principalImage: imageStats.principal?.url
+            });
+            
+            return {
+              id: sendero.id,
+              name: sendero.nombre,
+              description: sendero.descripcion,
+              imagenPrincipal: imageStats.principal?.url || sendero.imagenPrincipal || 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=500&h=300&fit=crop',
+              totalImagenes: imageStats.total,
+              tieneGaleria: imageStats.total > 1,
+              duration: `${sendero.duracionHoras} hora${sendero.duracionHoras !== 1 ? 's' : ''}`,
+              difficulty: difficultyMap[sendero.nivelDificultad] || 'Moderado',
+              price: sendero.precioPorPersona,
+              currency: 'UYU',
+              maxParticipants: sendero.capacidadMaximaGrupo,
+              includes: [
+                'Guía especializado',
+                'Equipo básico de seguridad', 
+                'Refrigerio natural'
+              ],
+              category: 'hiking' as const,
+              location: 'Paso Centurión'
+            };
+          });
           setActivities(transformedData);
         } else {
           setError(response.error || 'Error al cargar las actividades');

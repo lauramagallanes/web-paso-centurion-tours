@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
+import { imageStorageService } from '../../services/imageStorageService';
+import { fixArrayEncoding } from '../../utils/encodingFixer';
 import { useCart } from '../../contexts/CartContext';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import Button from '../../components/common/Button';
@@ -101,14 +103,89 @@ const ActivityDetails: React.FC = () => {
       setError(null);
 
       try {
-        const response = await apiService.getSenderoById(id);
+        // Since backend doesn't have getSenderoById, get all senderos and filter
+        const response = await apiService.getSenderos();
         if (response.success) {
-          setSendero(response.data);
+          // Fix encoding issues first
+          const fixedData = fixArrayEncoding(response.data);
+          console.log('🔧 Fixed encoding data for activity details:', fixedData);
           
-          // Load related senderos
-          const relatedResponse = await apiService.getRelatedSenderos(id, 4);
-          if (relatedResponse.success) {
-            setRelatedSenderos(relatedResponse.data);
+          const sendero = fixedData.find((s: any) => s.id === id);
+          if (sendero) {
+            // Transform to SenderoDetails format with REAL data
+            const imageStats = imageStorageService.getSenderoImageStats(sendero.id);
+            const senderoImages = imageStorageService.getSenderoImages(sendero.id);
+            
+            // Map difficulty levels
+            const difficultyMap: Record<string, string> = {
+              'FACIL': 'Fácil',
+              'MODERADO': 'Moderado', 
+              'DIFICIL': 'Difícil',
+              'EXPERTO': 'Experto'
+            };
+            
+            console.log(`📄 ActivityDetails for ${sendero.nombre}:`, {
+              realImages: senderoImages.length,
+              principalImage: imageStats.principal?.url,
+              realPrice: sendero.precioPorPersona,
+              realDuration: sendero.duracionHoras
+            });
+            
+            const transformedSendero: SenderoDetails = {
+              id: sendero.id,
+              nombre: sendero.nombre,
+              descripcion: sendero.descripcion,
+              duracion: `${sendero.duracionHoras} hora${sendero.duracionHoras !== 1 ? 's' : ''}`,
+              dificultad: difficultyMap[sendero.nivelDificultad] as any || 'Moderado',
+              precio: sendero.precioPorPersona,
+              moneda: 'UYU',
+              maxParticipantes: sendero.capacidadMaximaGrupo,
+              incluye: [
+                'Guía especializado',
+                'Equipo básico de seguridad',
+                'Refrigerio natural'
+              ],
+              ubicacion: 'Paso Centurión',
+              imagenPrincipal: imageStats.principal?.url || sendero.imagenPrincipal || 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&h=600&fit=crop',
+              imagenes: senderoImages.map(img => ({
+                id: img.id,
+                url: img.url,
+                descripcion: img.descripcion,
+                orden: img.orden,
+                esPrincipal: img.esPrincipal
+              })),
+              tieneGaleria: imageStats.total > 1,
+              totalImagenes: imageStats.total,
+              beneficios: [
+                'Experiencia única en naturaleza',
+                'Guía experto local',
+                'Grupos pequeños personalizados'
+              ]
+            };
+            
+            setSendero(transformedSendero);
+            
+            // Load related senderos (other senderos)
+            const relatedSenderos: RelatedSendero[] = fixedData
+              .filter((s: any) => s.id !== id)
+              .slice(0, 3)
+              .map((s: any) => {
+                const relatedImageStats = imageStorageService.getSenderoImageStats(s.id);
+                return {
+                  id: s.id,
+                  nombre: s.nombre,
+                  descripcion: s.descripcion,
+                  imagenPrincipal: relatedImageStats.principal?.url || s.imagenPrincipal || 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=300&fit=crop',
+                  duracion: `${s.duracionHoras} hora${s.duracionHoras !== 1 ? 's' : ''}`,
+                  dificultad: difficultyMap[s.nivelDificultad] || 'Moderado',
+                  precio: s.precioPorPersona,
+                  moneda: 'UYU'
+                };
+              });
+            
+            setRelatedSenderos(relatedSenderos);
+          } else {
+            setError('Sendero no encontrado');
           }
         } else {
           setError(response.error || 'Error al cargar los detalles del sendero');

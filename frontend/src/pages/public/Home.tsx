@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
+import { imageStorageService } from '../../services/imageStorageService';
+import { fixArrayEncoding } from '../../utils/encodingFixer';
 import HeroSlider, { HeroSlide } from '../../components/common/HeroSlider';
 
 import ActivityCard from '../../components/common/ActivityCard';
@@ -50,25 +52,52 @@ const Home: React.FC = () => {
       const response = await apiService.getSenderos() as any;
       
       if (response.success) {
-        // Transform API data and take first 3 as featured
-        const transformedActivities = response.data.slice(0, 3).map((sendero: any) => ({
-          id: sendero.id,
-          name: sendero.nombre,
-          description: sendero.descripcion,
-          imagenPrincipal: sendero.imagenPrincipal || 'https://images.unsplash.com/photo-1551632811-561732d1e306',
-          totalImagenes: sendero.totalImagenes || 1,
-          tieneGaleria: sendero.tieneGaleria || false,
-          duration: sendero.duracion || '2-3 horas',
-          difficulty: sendero.dificultad || 'Moderado',
-          price: sendero.precio || 2000,
-          currency: sendero.moneda || 'UYU',
-          maxParticipants: sendero.maxParticipantes || 8,
-          includes: sendero.incluye || [
-            'Guía especializado',
-            'Equipo básico de seguridad',
-            'Refrigerio natural'
-          ]
-        }));
+        console.log('🏠 Loading featured activities from real backend data');
+        
+        // Fix encoding issues first
+        const fixedData = fixArrayEncoding(response.data);
+        console.log('🔧 Fixed encoding data for featured activities:', fixedData.slice(0, 3));
+        
+        // Transform API data and take first 3 as featured with REAL data
+        const transformedActivities = fixedData.slice(0, 3).map((sendero: any) => {
+          // Get real images from localStorage
+          const imageStats = imageStorageService.getSenderoImageStats(sendero.id);
+          
+          // Map difficulty levels
+          const difficultyMap: Record<string, string> = {
+            'FACIL': 'Fácil',
+            'MODERADO': 'Moderado', 
+            'DIFICIL': 'Difícil',
+            'EXPERTO': 'Experto'
+          };
+          
+          console.log(`🏠 Featured sendero ${sendero.nombre}:`, {
+            realPrice: sendero.precioPorPersona,
+            realDuration: sendero.duracionHoras,
+            realDifficulty: sendero.nivelDificultad,
+            hasRealImages: imageStats.total > 0,
+            principalImage: imageStats.principal?.url
+          });
+          
+          return {
+            id: sendero.id,
+            name: sendero.nombre,
+            description: sendero.descripcion,
+            imagenPrincipal: imageStats.principal?.url || sendero.imagenPrincipal || 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=500&h=300&fit=crop',
+            totalImagenes: imageStats.total,
+            tieneGaleria: imageStats.total > 1,
+            duration: `${sendero.duracionHoras} hora${sendero.duracionHoras !== 1 ? 's' : ''}`,
+            difficulty: difficultyMap[sendero.nivelDificultad] || 'Moderado',
+            price: sendero.precioPorPersona,
+            currency: 'UYU',
+            maxParticipants: sendero.capacidadMaximaGrupo,
+            includes: [
+              'Guía especializado',
+              'Equipo básico de seguridad',
+              'Refrigerio natural'
+            ]
+          };
+        });
         
         setFeaturedActivities(transformedActivities);
       }

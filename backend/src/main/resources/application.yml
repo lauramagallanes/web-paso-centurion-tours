@@ -20,6 +20,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        connection:
+          useUnicode: true
+          characterEncoding: UTF-8
+          CharSet: UTF-8
   
   security:
     jwt:

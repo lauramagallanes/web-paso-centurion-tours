@@ -220,8 +220,7 @@
 
 /* Force activity cards to be compact in activities page */
 .activities-grid .activity-card {
-  height: auto !important;
-  max-height: 450px !important;
+  height: 350px !important;
 }
 
 /* Loading States */

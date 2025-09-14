@@ -639,8 +639,7 @@
 
 /* Force related sendero cards to be compact */
 .related-grid .activity-card {
-  height: auto !important;
-  max-height: 450px !important;
+  height: 350px !important;
 }
 
 /* Mobile Responsive */

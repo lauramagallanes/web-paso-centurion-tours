@@ -209,8 +209,7 @@
 
 /* Force activity cards to be compact in grid */
 .activities-grid .activity-card {
-  height: auto !important;
-  max-height: 450px !important;
+  height: 350px !important;
 }
 
 /* Accommodations Section */

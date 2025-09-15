@@ -102,38 +102,15 @@ const Home: React.FC = () => {
         setFeaturedActivities(transformedActivities);
       }
     } catch (error) {
-      console.error('Error loading featured activities:', error);
-      // Fallback to default activities if API fails
-      setFeaturedActivities([
-        {
-          id: 'default-1',
-          name: 'Observación de Aves',
-          description: 'Descubre la rica avifauna de Paso Centurión con nuestros guías especializados.',
-          imagenPrincipal: 'https://images.unsplash.com/photo-1444927714506-8492d94b5ba0',
-          totalImagenes: 3,
-          tieneGaleria: true,
-          duration: '3-4 horas',
-          difficulty: 'Fácil',
-          price: 2500,
-          currency: 'UYU',
-          maxParticipants: 8,
-          includes: ['Guía especializado', 'Binoculares', 'Desayuno campestre']
-        },
-        {
-          id: 'default-2',
-          name: 'Sendero de la Biodiversidad',
-          description: 'Caminata interpretativa por ecosistemas nativos únicos.',
-          imagenPrincipal: 'https://images.unsplash.com/photo-1551632811-561732d1e306',
-          totalImagenes: 4,
-          tieneGaleria: true,
-          duration: '2-3 horas',
-          difficulty: 'Moderado',
-          price: 1800,
-          currency: 'UYU',
-          maxParticipants: 12,
-          includes: ['Guía naturalista', 'Refrigerio', 'Mapa del sendero']
-        }
-      ]);
+      console.error('❌ ERROR: Backend/API Gateway no está funcionando:', error);
+      console.error('❌ URL del backend:', 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com/senderos');
+      console.error('❌ Todos los endpoints retornan: {"message":"Not Found"}');
+      
+      // TEMPORALMENTE COMENTADO - Para mostrar el error real en lugar de senderos hardcodeados
+      // setFeaturedActivities([...]);
+      
+      // Show empty state instead of hardcoded data
+      setFeaturedActivities([]);
     } finally {
       setActivitiesLoading(false);
     }

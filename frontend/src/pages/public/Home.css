@@ -201,15 +201,10 @@
 
 .activities-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-6);
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
   margin-top: var(--space-8);
-  align-items: start;
-}
-
-/* Force activity cards to be compact in grid */
-.activities-grid .activity-card {
-  height: 420px !important;
+  justify-items: center;
 }
 
 /* Accommodations Section */

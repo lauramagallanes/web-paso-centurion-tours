@@ -632,14 +632,9 @@
 
 .related-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  align-items: start;
-}
-
-/* Force related sendero cards to be compact */
-.related-grid .activity-card {
-  height: 420px !important;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  justify-items: center;
 }
 
 /* Mobile Responsive */

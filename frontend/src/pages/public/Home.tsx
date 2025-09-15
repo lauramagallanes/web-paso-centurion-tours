@@ -102,15 +102,25 @@ const Home: React.FC = () => {
         setFeaturedActivities(transformedActivities);
       }
     } catch (error) {
-      console.error('❌ ERROR: Backend/API Gateway no está funcionando:', error);
-      console.error('❌ URL del backend:', 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com/senderos');
-      console.error('❌ Todos los endpoints retornan: {"message":"Not Found"}');
+      console.error('❌ ERROR: No se pudieron cargar los senderos:', error);
       
-      // TEMPORALMENTE COMENTADO - Para mostrar el error real en lugar de senderos hardcodeados
-      // setFeaturedActivities([...]);
-      
-      // Show empty state instead of hardcoded data
-      setFeaturedActivities([]);
+      // Fallback a senderos por defecto si hay problemas de conectividad
+      setFeaturedActivities([
+        {
+          id: 'fallback-1',
+          name: 'Senderos de Paso Centurión',
+          description: 'Descubre la naturaleza única de Uruguay con nuestros senderos guiados.',
+          imagenPrincipal: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=500&h=300&fit=crop',
+          totalImagenes: 1,
+          tieneGaleria: false,
+          duration: '3-4 horas',
+          difficulty: 'Moderado',
+          price: 1100,
+          currency: 'UYU',
+          maxParticipants: 12,
+          includes: ['Guía especializado', 'Equipo básico', 'Refrigerio']
+        }
+      ]);
     } finally {
       setActivitiesLoading(false);
     }

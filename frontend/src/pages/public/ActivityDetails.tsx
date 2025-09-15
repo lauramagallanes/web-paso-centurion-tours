@@ -54,6 +54,14 @@ const ActivityDetails: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [participantsCount, setParticipantsCount] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
+  
+  // Gallery modal state
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   // Load sendero details
   useEffect(() => {
@@ -207,6 +215,14 @@ const ActivityDetails: React.FC = () => {
     navigate(`/actividades/${senderoId}`);
   };
 
+  const handleOpenGallery = () => {
+    setIsGalleryModalOpen(true);
+  };
+
+  const handleCloseGallery = () => {
+    setIsGalleryModalOpen(false);
+  };
+
   const totalPrice = sendero ? sendero.precio * participantsCount : 0;
 
   if (isLoading) {
@@ -234,9 +250,9 @@ const ActivityDetails: React.FC = () => {
     );
   }
 
-  // Get up to 4 images for gallery
-  const galleryImages = sendero.imagenes.slice(0, 4);
-  while (galleryImages.length < 4) {
+  // Get up to 5 images for gallery
+  const galleryImages = sendero.imagenes.slice(0, 5);
+  while (galleryImages.length < 5) {
     galleryImages.push({
       id: `placeholder-${galleryImages.length}`,
       url: '/placeholder-sendero.svg',
@@ -289,10 +305,28 @@ const ActivityDetails: React.FC = () => {
                     }}
                   />
                 </div>
+                <div className="gallery-small-image">
+                  <img 
+                    src={galleryImages[3]?.url} 
+                    alt={sendero.nombre}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder-sendero.svg';
+                    }}
+                  />
+                </div>
+                <div className="gallery-small-image">
+                  <img 
+                    src={galleryImages[4]?.url} 
+                    alt={sendero.nombre}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder-sendero.svg';
+                    }}
+                  />
+                </div>
               </div>
 
               {sendero.imagenes.length > 1 && (
-                <button className="view-all-photos">
+                <button className="view-all-photos" onClick={handleOpenGallery}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M22,16V4A2,2 0 0,0 20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16M16,10L13.5,13L11,10.5L8,14H20L16,10M2,6V20A2,2 0 0,0 4,22H18V20H4V6H2Z" />
                   </svg>
@@ -470,6 +504,36 @@ const ActivityDetails: React.FC = () => {
                   onViewDetails={handleRelatedSenderoClick}
                 />
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Gallery Modal */}
+        {isGalleryModalOpen && (
+          <div className="gallery-modal-overlay" onClick={handleCloseGallery}>
+            <div className="gallery-modal-content" onClick={(e) => e.stopPropagation()}>
+              <button className="gallery-modal-close" onClick={handleCloseGallery}>
+                ✕
+              </button>
+              <div className="gallery-modal-header">
+                <h3>{sendero.nombre}</h3>
+                <button className="gallery-availability-btn">
+                  Comprobar disponibilidad
+                </button>
+              </div>
+              <div className="gallery-modal-grid">
+                {sendero.imagenes.map((imagen, index) => (
+                  <div key={imagen.id} className="gallery-modal-item">
+                    <img 
+                      src={imagen.url} 
+                      alt={`${sendero.nombre} - Imagen ${index + 1}`}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder-sendero.svg';
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

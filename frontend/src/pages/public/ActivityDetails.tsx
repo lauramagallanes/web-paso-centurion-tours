@@ -78,8 +78,27 @@ const ActivityDetails: React.FC = () => {
           const sendero = fixedData.find((s: any) => s.id === id);
           
           if (sendero) {
-            const imageStats = imageStorageService.getSenderoImageStats(sendero.id);
-            const senderoImages = imageStorageService.getSenderoImages(sendero.id);
+            // Get images from API instead of localStorage
+            let senderoImages: any[] = [];
+            try {
+              const imagesResponse = await apiService.getSenderoImages(sendero.id);
+              senderoImages = Array.isArray(imagesResponse) ? imagesResponse : [];
+              console.log('📸 Loaded images from API:', senderoImages.length);
+            } catch (error) {
+              console.error('Error loading images from API:', error);
+              senderoImages = [];
+            }
+            
+            // If no images from API, use urlImagen from sendero
+            if (senderoImages.length === 0 && sendero.urlImagen) {
+              senderoImages = [{
+                id: 'main',
+                url: sendero.urlImagen,
+                descripcion: 'Imagen principal del sendero',
+                esPrincipal: true
+              }];
+              console.log('📸 Using sendero.urlImagen:', sendero.urlImagen);
+            }
             
             const transformedSendero: SenderoDetails = {
               id: sendero.id,
@@ -92,8 +111,8 @@ const ActivityDetails: React.FC = () => {
               ubicacion: 'Paso Centurión, Uruguay - Ruta 7 km 439',
               imagenes: senderoImages.length > 0 ? senderoImages.map(img => ({
                 id: img.id,
-                url: img.url,
-                descripcion: img.descripcion
+                url: img.url || img.urlImagen,
+                descripcion: img.descripcion || 'Imagen del sendero'
               })) : [{
                 id: 'default',
                 url: '/placeholder-sendero.svg',
@@ -108,7 +127,6 @@ const ActivityDetails: React.FC = () => {
               .filter((s: any) => s.id !== id)
               .slice(0, 3)
               .map((s: any) => {
-                const relatedImageStats = imageStorageService.getSenderoImageStats(s.id);
                 const difficultyMap: Record<string, string> = {
                   'FACIL': 'Fácil',
                   'MODERADO': 'Moderado', 
@@ -119,15 +137,15 @@ const ActivityDetails: React.FC = () => {
                   id: s.id,
                   nombre: s.nombre,
                   descripcion: s.descripcion,
-                  imagenPrincipal: relatedImageStats.principal?.url || s.imagenPrincipal || '/placeholder-sendero.svg',
+                  imagenPrincipal: s.urlImagen || s.imagenPrincipal || '/placeholder-sendero.svg',
                   duracion: `${s.duracionHoras} hora${s.duracionHoras !== 1 ? 's' : ''}`,
                   dificultad: difficultyMap[s.nivelDificultad] || 'Moderado',
                   precio: s.precioPorPersona,
                   moneda: 'UYU',
                   maxParticipantes: s.capacidadMaximaGrupo,
                   incluye: ['Guía especializado', 'Equipo básico'],
-                  tieneGaleria: relatedImageStats.total > 1,
-                  totalImagenes: relatedImageStats.total
+                  tieneGaleria: s.galeria || false,
+                  totalImagenes: s.galeria ? 1 : 0
                 };
               });
             

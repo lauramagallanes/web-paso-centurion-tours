@@ -133,11 +133,24 @@ const ActivityDetails: React.FC = () => {
                   'DIFICIL': 'Difícil'
                 };
                 
+                // Fix image priority: handle empty strings properly
+                let imagenPrincipal = '/placeholder-sendero.svg';
+                if (s.urlImagen && s.urlImagen.trim() !== '') {
+                  imagenPrincipal = s.urlImagen;
+                } else if (s.imagenPrincipal && s.imagenPrincipal.trim() !== '') {
+                  imagenPrincipal = s.imagenPrincipal;
+                }
+                
+                console.log('🖼️ Related sendero:', s.nombre);
+                console.log('🖼️ urlImagen:', s.urlImagen);
+                console.log('🖼️ imagenPrincipal:', s.imagenPrincipal);
+                console.log('🖼️ Final image:', imagenPrincipal);
+                
                 return {
                   id: s.id,
                   nombre: s.nombre,
                   descripcion: s.descripcion,
-                  imagenPrincipal: s.urlImagen || s.imagenPrincipal || '/placeholder-sendero.svg',
+                  imagenPrincipal: imagenPrincipal,
                   duracion: `${s.duracionHoras} hora${s.duracionHoras !== 1 ? 's' : ''}`,
                   dificultad: difficultyMap[s.nivelDificultad] || 'Moderado',
                   precio: s.precioPorPersona,

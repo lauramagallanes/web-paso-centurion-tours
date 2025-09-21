@@ -4,7 +4,7 @@ import { apiService } from '../../services/apiService';
 import { imageStorageService } from '../../services/imageStorageService';
 import { fixArrayEncoding } from '../../utils/encodingFixer';
 import { useCart } from '../../contexts/CartContext';
-import ActivityCard from '../../components/common/ActivityCard';
+import SenderoCard from '../../components/common/SenderoCard';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import './ActivityDetails.css';
 
@@ -528,20 +528,17 @@ const ActivityDetails: React.FC = () => {
             </h2>
             <div className="related-grid">
               {relatedSenderos.map((related) => (
-                <ActivityCard
+                <SenderoCard
                   key={related.id}
                   id={related.id}
-                  name={related.nombre}
-                  description={related.descripcion}
+                  nombre={related.nombre}
+                  descripcion={related.descripcion}
                   imagenPrincipal={related.imagenPrincipal}
-                  totalImagenes={related.totalImagenes}
-                  tieneGaleria={related.tieneGaleria}
-                  duration={related.duracion}
-                  difficulty={related.dificultad as 'Fácil' | 'Moderado' | 'Difícil'}
-                  price={related.precio}
-                  currency={related.moneda}
-                  maxParticipants={related.maxParticipants}
-                  includes={related.incluye}
+                  duracion={related.duracion}
+                  dificultad={related.dificultad as 'Fácil' | 'Moderado' | 'Difícil'}
+                  precio={related.precio}
+                  moneda={related.moneda}
+                  maxParticipants={related.maxParticipantes}
                   onViewDetails={handleRelatedSenderoClick}
                 />
               ))}

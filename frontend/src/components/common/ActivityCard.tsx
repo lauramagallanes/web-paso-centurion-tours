@@ -43,43 +43,36 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   const [images, setImages] = useState<string[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Load images - prioritize imagenPrincipal from API over localStorage
+  // EMERGENCY: Load images - FORCE use of imagenPrincipal, ignore localStorage completely
   useEffect(() => {
     const loadImages = () => {
-      console.log('🖼️ ActivityCard loading images for:', id);
-      console.log('🖼️ imagenPrincipal:', imagenPrincipal);
-      console.log('🖼️ image (fallback):', image);
+      console.log('🚨 EMERGENCY ActivityCard loading images for:', name, 'ID:', id);
+      console.log('🚨 EMERGENCY imagenPrincipal:', JSON.stringify(imagenPrincipal));
+      console.log('🚨 EMERGENCY image (fallback):', JSON.stringify(image));
       
-      // Priority 1: Use imagenPrincipal from API if available
+      // EMERGENCY: Priority 1 - FORCE use imagenPrincipal from API
       if (imagenPrincipal && imagenPrincipal.trim() !== '') {
-        console.log('✅ Using imagenPrincipal from API');
-        setImages([imagenPrincipal]);
+        const finalImage = imagenPrincipal.trim();
+        console.log('🚨✅ EMERGENCY: FORCING imagenPrincipal:', finalImage);
+        setImages([finalImage]);
         return;
       }
       
-      // Priority 2: Use legacy image prop if available
+      // EMERGENCY: Priority 2 - Use legacy image prop if available  
       if (image && image.trim() !== '') {
-        console.log('✅ Using legacy image prop');
-        setImages([image]);
+        const finalImage = image.trim();
+        console.log('🚨✅ EMERGENCY: FORCING legacy image:', finalImage);
+        setImages([finalImage]);
         return;
       }
       
-      // Priority 3: Try localStorage as fallback (for backward compatibility)
-      const storedImages = imageStorageService.getSenderoImages(id);
-      if (storedImages.length > 0) {
-        console.log('✅ Using images from localStorage:', storedImages.length);
-        const imageUrls = storedImages.map(img => img.url);
-        setImages(imageUrls);
-        return;
-      }
-      
-      // Priority 4: Default placeholder
-      console.log('⚠️ No images found, using placeholder');
+      // EMERGENCY: Priority 3 - Default placeholder (NO localStorage!)
+      console.log('🚨❌ EMERGENCY: NO VALID IMAGE - using placeholder for:', name);
       setImages(['/placeholder-sendero.svg']);
     };
 
     loadImages();
-  }, [id, imagenPrincipal, image]);
+  }, [id, imagenPrincipal, image, name]);
 
   // Load favorite status from localStorage
   useEffect(() => {

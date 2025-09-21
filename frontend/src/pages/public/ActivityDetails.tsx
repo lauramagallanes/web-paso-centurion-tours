@@ -133,18 +133,28 @@ const ActivityDetails: React.FC = () => {
                   'DIFICIL': 'Difícil'
                 };
                 
-                // Fix image priority: handle empty strings properly
+                // EMERGENCY FIX: Always prioritize imagenPrincipal (most reliable field)
                 let imagenPrincipal = '/placeholder-sendero.svg';
-                if (s.urlImagen && s.urlImagen.trim() !== '') {
-                  imagenPrincipal = s.urlImagen;
-                } else if (s.imagenPrincipal && s.imagenPrincipal.trim() !== '') {
-                  imagenPrincipal = s.imagenPrincipal;
+                
+                // Priority 1: imagenPrincipal (most reliable)
+                if (s.imagenPrincipal && s.imagenPrincipal.trim() !== '') {
+                  imagenPrincipal = s.imagenPrincipal.trim();
+                  console.log('✅ EMERGENCY: Using imagenPrincipal for', s.nombre);
+                } 
+                // Priority 2: urlImagen (fallback)
+                else if (s.urlImagen && s.urlImagen.trim() !== '') {
+                  imagenPrincipal = s.urlImagen.trim();
+                  console.log('✅ EMERGENCY: Using urlImagen for', s.nombre);
+                }
+                // Priority 3: placeholder
+                else {
+                  console.log('❌ EMERGENCY: No image found for', s.nombre, '- using placeholder');
                 }
                 
-                console.log('🖼️ Related sendero:', s.nombre);
-                console.log('🖼️ urlImagen:', s.urlImagen);
-                console.log('🖼️ imagenPrincipal:', s.imagenPrincipal);
-                console.log('🖼️ Final image:', imagenPrincipal);
+                console.log('🚨 EMERGENCY DEBUG:', s.nombre);
+                console.log('🚨 urlImagen:', JSON.stringify(s.urlImagen));
+                console.log('🚨 imagenPrincipal:', JSON.stringify(s.imagenPrincipal));
+                console.log('🚨 FINAL IMAGE:', imagenPrincipal);
                 
                 return {
                   id: s.id,

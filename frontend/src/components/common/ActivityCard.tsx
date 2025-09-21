@@ -53,8 +53,10 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       // EMERGENCY: Priority 1 - FORCE use imagenPrincipal from API
       if (imagenPrincipal && imagenPrincipal.trim() !== '') {
         const finalImage = imagenPrincipal.trim();
-        console.log('🚨✅ EMERGENCY: FORCING imagenPrincipal:', finalImage);
-        setImages([finalImage]);
+        // Add cache buster to force image reload
+        const imageWithCacheBuster = finalImage + '?v=' + Date.now();
+        console.log('🚨✅ EMERGENCY: FORCING imagenPrincipal with cache buster:', imageWithCacheBuster);
+        setImages([imageWithCacheBuster]);
         return;
       }
       

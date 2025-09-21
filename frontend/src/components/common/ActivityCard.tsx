@@ -43,20 +43,39 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   const [images, setImages] = useState<string[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Load images from S3 service
+  // Load images - prioritize imagenPrincipal from API over localStorage
   useEffect(() => {
     const loadImages = () => {
+      console.log('🖼️ ActivityCard loading images for:', id);
+      console.log('🖼️ imagenPrincipal:', imagenPrincipal);
+      console.log('🖼️ image (fallback):', image);
+      
+      // Priority 1: Use imagenPrincipal from API if available
+      if (imagenPrincipal && imagenPrincipal.trim() !== '') {
+        console.log('✅ Using imagenPrincipal from API');
+        setImages([imagenPrincipal]);
+        return;
+      }
+      
+      // Priority 2: Use legacy image prop if available
+      if (image && image.trim() !== '') {
+        console.log('✅ Using legacy image prop');
+        setImages([image]);
+        return;
+      }
+      
+      // Priority 3: Try localStorage as fallback (for backward compatibility)
       const storedImages = imageStorageService.getSenderoImages(id);
       if (storedImages.length > 0) {
+        console.log('✅ Using images from localStorage:', storedImages.length);
         const imageUrls = storedImages.map(img => img.url);
         setImages(imageUrls);
-      } else if (imagenPrincipal || image) {
-        // Fallback to single image
-        setImages([imagenPrincipal || image || '']);
-      } else {
-        // Default placeholder
-        setImages(['/placeholder-sendero.svg']);
+        return;
       }
+      
+      // Priority 4: Default placeholder
+      console.log('⚠️ No images found, using placeholder');
+      setImages(['/placeholder-sendero.svg']);
     };
 
     loadImages();

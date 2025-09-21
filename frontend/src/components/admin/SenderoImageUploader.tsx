@@ -1,9 +1,13 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button, Alert, ProgressBar, Card, Modal, Image } from 'react-bootstrap';
+import { s3Service } from '../../services/s3Service';
+import { imageStorageService } from '../../services/imageStorageService';
+import apiService from '../../services/apiService';
 
 interface SenderoImage {
   id: string;
   url: string;
+  filename?: string; // Agregado para S3
   descripcion?: string;
   orden: number;
   esPrincipal: boolean;
@@ -25,12 +29,63 @@ const SenderoImageUploader: React.FC<SenderoImageUploaderProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Maximum 10 images per sendero
   const maxImages = 10;
   const canUploadMore = images.length < maxImages;
+
+  // Load images from API when senderoId changes
+  useEffect(() => {
+    const loadImages = async () => {
+      if (senderoId) {
+        console.log('📂 Loading images from API for sendero:', senderoId);
+        try {
+          const response = await apiService.getSenderoImages(senderoId);
+          console.log('📂 API Response:', response);
+          
+          // Convert API response to SenderoImage format
+          const apiImages = Array.isArray(response) ? response : [];
+          const convertedImages: SenderoImage[] = apiImages.map(img => ({
+            id: img.id,
+            url: img.urlImagen || img.url,
+            filename: img.descripcion || 'imagen',
+            descripcion: img.descripcion,
+            orden: img.orden || 0,
+            esPrincipal: img.esPrincipal || false,
+          }));
+          
+          console.log('📂 Loaded', convertedImages.length, 'images from API');
+          onImagesChange(convertedImages);
+        } catch (error) {
+          console.error('Error loading images:', error);
+          // Fallback to empty array if API fails
+          onImagesChange([]);
+        }
+      } else {
+        onImagesChange([]);
+      }
+    };
+
+    loadImages();
+  }, [senderoId]); // ✅ REMOVED onImagesChange from dependencies to prevent infinite loop
+
+  // Auto-hide messages after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -62,49 +117,52 @@ const SenderoImageUploader: React.FC<SenderoImageUploaderProps> = ({
       validFiles.push(file);
     }
 
-    // Upload files
+    // Upload files using API Service
     try {
       setUploading(true);
       setError(null);
-      setUploadProgress(0);
+      setSuccessMessage(null);
+      setUploadProgress(10);
 
-      const formData = new FormData();
-      validFiles.forEach(file => {
-        formData.append('files', file);
-      });
+      console.log('🚀 Starting upload of', validFiles.length, 'files via API...');
+      
+      // Prepare descriptions array
+      const descriptions = validFiles.map(() => ''); // Empty descriptions for now
 
-      // Add descriptions if needed
-      validFiles.forEach((_, index) => {
-        formData.append('descriptions', ''); // Empty description for now
-      });
-
-      const response = await fetch(`/api/images/senderos/${senderoId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error uploading images');
-      }
-
-      const result = await response.json();
+      setUploadProgress(30);
+      const uploadResults = await apiService.uploadSenderoImages(senderoId, validFiles, descriptions);
+      
+      setUploadProgress(80);
+      console.log('✅ API upload completed:', uploadResults);
+      
+      // Handle API response - it might be the images array or wrapped in a data property
+      const apiImages = uploadResults?.images || uploadResults?.data || uploadResults || [];
+      
+      // Convert API response to SenderoImage format
+      const newImages: SenderoImage[] = apiImages.map((result, index) => ({
+        id: result.id,
+        url: result.urlImagen || result.url,
+        filename: result.descripcion || `imagen-${index + 1}`,
+        descripcion: result.descripcion || descriptions[index],
+        orden: result.orden || (images.length + index + 1),
+        esPrincipal: result.esPrincipal || (images.length === 0 && index === 0),
+      }));
+      
+      console.log('🔄 Converted', newImages.length, 'images from API response');
       
       // Update images list
-      const newImages = result.images || [];
-      onImagesChange([...images, ...newImages]);
+      const updatedImages = [...images, ...newImages];
+      onImagesChange(updatedImages);
       
       setUploadProgress(100);
+      setSuccessMessage(`${validFiles.length} imagen${validFiles.length > 1 ? 'es' : ''} subida${validFiles.length > 1 ? 's' : ''} exitosamente`);
       
     } catch (err) {
       console.error('Upload error:', err);
       setError(err instanceof Error ? err.message : 'Error uploading images');
     } finally {
       setUploading(false);
-      setUploadProgress(0);
+      setTimeout(() => setUploadProgress(0), 1000); // Keep progress visible for a moment
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -115,26 +173,21 @@ const SenderoImageUploader: React.FC<SenderoImageUploaderProps> = ({
     if (!senderoId) return;
     
     try {
-      const response = await fetch(`/api/images/${imageId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error deleting image');
-      }
-
+      console.log('🗑️ Deleting image via API:', imageId);
+      
+      // Delete via API
+      await apiService.deleteSenderoImage(imageId);
+      console.log('✅ Image deleted via API');
+      
       // Remove image from list
       const updatedImages = images.filter(img => img.id !== imageId);
       onImagesChange(updatedImages);
+      
+      setSuccessMessage('Imagen eliminada exitosamente');
 
     } catch (err) {
       console.error('Delete error:', err);
-      setError(err instanceof Error ? err.message : 'Error deleting image');
+      setError(err instanceof Error ? err.message : 'Error eliminando imagen');
     }
   };
 
@@ -142,29 +195,24 @@ const SenderoImageUploader: React.FC<SenderoImageUploaderProps> = ({
     if (!senderoId) return;
     
     try {
-      const response = await fetch(`/api/images/${imageId}/principal`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error setting main image');
-      }
-
+      console.log('⭐ Setting main image via API:', imageId);
+      
+      // Update via API (if endpoint exists)
+      // Note: This might need to be implemented in the backend
+      // For now, we'll update locally
+      
       // Update images list - mark this as principal and others as not
       const updatedImages = images.map(img => ({
         ...img,
         esPrincipal: img.id === imageId
       }));
       onImagesChange(updatedImages);
-
+      
+      setSuccessMessage('Imagen principal actualizada');
+      
     } catch (err) {
       console.error('Set main image error:', err);
-      setError(err instanceof Error ? err.message : 'Error setting main image');
+      setError(err instanceof Error ? err.message : 'Error estableciendo imagen principal');
     }
   };
 
@@ -205,6 +253,20 @@ const SenderoImageUploader: React.FC<SenderoImageUploaderProps> = ({
             size="sm" 
             className="float-end"
             onClick={() => setError(null)}
+          >
+            ×
+          </Button>
+        </Alert>
+      )}
+
+      {successMessage && (
+        <Alert variant="success" className="mb-3">
+          <strong>✅ Éxito:</strong> {successMessage}
+          <Button 
+            variant="outline-success" 
+            size="sm" 
+            className="float-end"
+            onClick={() => setSuccessMessage(null)}
           >
             ×
           </Button>

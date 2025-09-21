@@ -66,6 +66,16 @@ output "frontend_bucket_id" {
   description = "Frontend S3 bucket ID"
 }
 
+output "frontend_website_endpoint" {
+  value       = module.storage.frontend_bucket_website_endpoint
+  description = "Frontend S3 bucket website endpoint"
+}
+
+output "frontend_website_url" {
+  value       = "http://${module.storage.frontend_bucket_website_endpoint}"
+  description = "Complete frontend website URL"
+}
+
 output "public_assets_bucket_id" {
   value       = module.storage.public_assets_bucket_id
   description = "Public assets S3 bucket ID"

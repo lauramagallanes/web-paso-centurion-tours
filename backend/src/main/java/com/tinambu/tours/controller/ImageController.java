@@ -20,7 +20,7 @@ import java.util.UUID;
  * Based on senderos-implementation-plan.md Phase 3.1
  */
 @RestController
-@RequestMapping("/api/images")
+@RequestMapping("/images")
 @CrossOrigin(origins = "*")
 public class ImageController {
 

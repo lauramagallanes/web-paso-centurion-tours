@@ -21,11 +21,11 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.Arrays;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -40,7 +40,7 @@ public class SenderoService {
     @Autowired(required = false)
     private S3Client s3Client;
     
-    @Value("${aws.s3.bucket-name:imagenespasocenturion}")
+    @Value("${S3_PUBLIC_ASSETS_BUCKET:tinambu-public-assets-dev}")
     private String s3BucketName;
     
     private final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(

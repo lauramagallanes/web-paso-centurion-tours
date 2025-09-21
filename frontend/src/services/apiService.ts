@@ -13,7 +13,9 @@ class ApiService {
   // Método privado para obtener headers con autenticación
   private getHeaders(includeAuth: boolean = false): HeadersInit {
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=utf-8',
+      'Accept': 'application/json; charset=utf-8',
+      'Accept-Charset': 'utf-8',
     };
 
     if (includeAuth) {
@@ -177,18 +179,43 @@ class ApiService {
   // ========== MÉTODOS DE SENDEROS - IMAGE MANAGEMENT ==========
 
   // Upload multiple images to a sendero
-  async uploadSenderoImages(senderoId: string, files: FileList) {
+  async uploadSenderoImages(senderoId: string, files: FileList | File[], descriptions?: string[]) {
     const formData = new FormData();
-    Array.from(files).forEach((file, index) => {
-      formData.append(`images`, file);
+    
+    // Convert FileList to Array if needed
+    const fileArray = Array.isArray(files) ? files : Array.from(files);
+    
+    fileArray.forEach((file, index) => {
+      formData.append('files', file);
     });
+
+    // Add descriptions if provided
+    if (descriptions) {
+      descriptions.forEach(desc => {
+        formData.append('descriptions', desc || '');
+      });
+    }
+
+    const token = localStorage.getItem('accessToken');
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
     const response = await fetch(`${this.baseURL}/images/senderos/${senderoId}`, {
       method: 'POST',
-      headers: {
-        'Authorization': localStorage.getItem('accessToken') ? `Bearer ${localStorage.getItem('accessToken')}` : '',
-      },
+      headers,
       body: formData,
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Get images for a sendero
+  async getSenderoImages(senderoId: string) {
+    const response = await fetch(`${this.baseURL}/images/senderos/${senderoId}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
     });
 
     return this.handleResponse(response);
@@ -628,6 +655,27 @@ class ApiService {
 
     return this.handleResponse<T>(response);
   }
+
+  // ========== MÉTODOS DE IMÁGENES ==========
+  // (Los métodos de imágenes están definidos arriba en la clase)
+
+  async setMainSenderoImage(imageId: string): Promise<any> {
+    const token = localStorage.getItem('accessToken');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${this.baseURL}/api/images/${imageId}/principal`, {
+      method: 'PUT',
+      headers,
+    });
+
+    return this.handleResponse(response);
+  }
+
 }
 
 // Instancia singleton del servicio

@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.s3.S3Client;
  * Configuración robusta de S3 con manejo de errores mejorado
  */
 @Configuration
-@Profile("lambda-with-db")
+@Profile({"lambda", "lambda-with-db"})
 public class S3Config {
 
     @Value("${aws.s3.region:us-east-1}")
@@ -44,3 +44,5 @@ public class S3Config {
         }
     }
 }
+
+

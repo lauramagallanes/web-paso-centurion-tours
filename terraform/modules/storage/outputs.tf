@@ -9,6 +9,16 @@ output "frontend_bucket_arn" {
   description = "Frontend S3 bucket ARN"
 }
 
+output "frontend_bucket_website_endpoint" {
+  value       = aws_s3_bucket_website_configuration.frontend.website_endpoint
+  description = "Frontend S3 bucket website endpoint"
+}
+
+output "frontend_bucket_website_domain" {
+  value       = aws_s3_bucket_website_configuration.frontend.website_domain
+  description = "Frontend S3 bucket website domain"
+}
+
 output "public_assets_bucket_id" {
   value       = aws_s3_bucket.public_assets.id
   description = "Public assets S3 bucket ID"

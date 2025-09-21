@@ -1,7 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button, Alert, ProgressBar, Card, Modal, Image } from 'react-bootstrap';
-import { s3Service } from '../../services/s3Service';
-import { imageStorageService } from '../../services/imageStorageService';
 import apiService from '../../services/apiService';
 
 interface SenderoImage {

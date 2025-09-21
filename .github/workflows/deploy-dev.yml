@@ -30,6 +30,10 @@ jobs:
       
     - name: Build frontend
       working-directory: ./frontend
+      env:
+        VITE_API_BASE_URL: https://53dmek6dqk.execute-api.us-east-1.amazonaws.com
+        VITE_ENV: development
+        VITE_DEBUG: false
       run: npm run build
       
     - name: Configure AWS credentials

@@ -1,5 +1,9 @@
 package com.tinambu.tours.service;
 
+import com.tinambu.tours.dto.request.UsuarioRequest;
+import com.tinambu.tours.dto.request.UsuarioUpdateRequest;
+import com.tinambu.tours.dto.request.CambioPasswordRequest;
+import com.tinambu.tours.dto.response.UsuarioResponse;
 import com.tinambu.tours.entity.usuario.TipoUsuario;
 import com.tinambu.tours.entity.usuario.Usuario;
 import com.tinambu.tours.repository.UsuarioRepository;
@@ -13,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -27,70 +32,81 @@ public class UsuarioService implements UserDetailsService {
     /**
      * Crear nuevo usuario
      */
-    public Usuario crearUsuario(Usuario usuario) {
+    public UsuarioResponse crearUsuario(UsuarioRequest usuarioRequest) {
         // Validar que el email no esté duplicado
-        if (usuarioRepository.existsByEmail(usuario.getEmail())) {
-            throw new IllegalArgumentException("Ya existe un usuario con el email: " + usuario.getEmail());
+        if (usuarioRepository.existsByEmail(usuarioRequest.getEmail())) {
+            throw new IllegalArgumentException("Ya existe un usuario con el email: " + usuarioRequest.getEmail());
         }
 
+        // Convertir DTO a entidad
+        Usuario usuario = convertirRequestAEntidad(usuarioRequest);
+        
         // Encriptar contraseña
-        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        usuario.setPassword(passwordEncoder.encode(usuarioRequest.getPassword()));
 
-        return usuarioRepository.save(usuario);
+        Usuario usuarioGuardado = usuarioRepository.save(usuario);
+        return convertirEntidadAResponse(usuarioGuardado);
     }
 
     /**
      * Crear administrador
      */
-    public Usuario crearAdministrador(String email, String password, String nombreCompleto) {
-        Usuario admin = new Usuario(email, password, nombreCompleto, TipoUsuario.ADMIN);
-        return crearUsuario(admin);
+    public UsuarioResponse crearAdministrador(String email, String password, String nombreCompleto) {
+        UsuarioRequest adminRequest = new UsuarioRequest(email, password, nombreCompleto, TipoUsuario.ADMIN);
+        return crearUsuario(adminRequest);
     }
 
     /**
      * Crear visitante
      */
-    public Usuario crearVisitante(String email, String password, String nombreCompleto) {
-        Usuario visitante = new Usuario(email, password, nombreCompleto, TipoUsuario.VISITANTE);
-        return crearUsuario(visitante);
+    public UsuarioResponse crearVisitante(String email, String password, String nombreCompleto) {
+        UsuarioRequest visitanteRequest = new UsuarioRequest(email, password, nombreCompleto, TipoUsuario.VISITANTE);
+        return crearUsuario(visitanteRequest);
     }
 
     /**
      * Actualizar usuario existente
      */
-    public Usuario actualizarUsuario(UUID id, Usuario usuarioActualizado) {
-        Usuario usuario = obtenerUsuarioPorId(id);
+    public UsuarioResponse actualizarUsuario(UUID id, UsuarioUpdateRequest usuarioUpdateRequest) {
+        Usuario usuario = obtenerUsuarioEntidadPorId(id);
 
         // Verificar si cambió el email y si ya existe
-        if (!usuario.getEmail().equals(usuarioActualizado.getEmail()) &&
-            usuarioRepository.existsByEmail(usuarioActualizado.getEmail())) {
-            throw new IllegalArgumentException("Ya existe un usuario con el email: " + usuarioActualizado.getEmail());
+        if (!usuario.getEmail().equals(usuarioUpdateRequest.getEmail()) &&
+            usuarioRepository.existsByEmail(usuarioUpdateRequest.getEmail())) {
+            throw new IllegalArgumentException("Ya existe un usuario con el email: " + usuarioUpdateRequest.getEmail());
         }
 
         // Actualizar campos (sin cambiar contraseña aquí)
-        usuario.setEmail(usuarioActualizado.getEmail());
-        usuario.setNombreCompleto(usuarioActualizado.getNombreCompleto());
-        usuario.setTipo(usuarioActualizado.getTipo());
+        usuario.setEmail(usuarioUpdateRequest.getEmail());
+        usuario.setNombreCompleto(usuarioUpdateRequest.getNombreCompleto());
+        usuario.setTipo(usuarioUpdateRequest.getTipo());
 
-        return usuarioRepository.save(usuario);
+        Usuario usuarioActualizado = usuarioRepository.save(usuario);
+        return convertirEntidadAResponse(usuarioActualizado);
     }
 
     /**
      * Cambiar contraseña de usuario
      */
-    public void cambiarContrasena(UUID id, String nuevaContrasena) {
-        Usuario usuario = obtenerUsuarioPorId(id);
-        usuario.setPassword(passwordEncoder.encode(nuevaContrasena));
+    public void cambiarContrasena(UUID id, CambioPasswordRequest cambioPasswordRequest) {
+        // Validar que las contraseñas coincidan
+        if (!cambioPasswordRequest.passwordsMatch()) {
+            throw new IllegalArgumentException("Las contraseñas no coinciden");
+        }
+        
+        Usuario usuario = obtenerUsuarioEntidadPorId(id);
+        usuario.setPassword(passwordEncoder.encode(cambioPasswordRequest.getNuevaPassword()));
         usuarioRepository.save(usuario);
     }
 
     /**
      * Activar/desactivar usuario
      */
-    public Usuario cambiarEstadoUsuario(UUID id, boolean activo) {
-        Usuario usuario = obtenerUsuarioPorId(id);
+    public UsuarioResponse cambiarEstadoUsuario(UUID id, boolean activo) {
+        Usuario usuario = obtenerUsuarioEntidadPorId(id);
         usuario.setActivo(activo);
-        return usuarioRepository.save(usuario);
+        Usuario usuarioActualizado = usuarioRepository.save(usuario);
+        return convertirEntidadAResponse(usuarioActualizado);
     }
 
     /**
@@ -99,7 +115,7 @@ public class UsuarioService implements UserDetailsService {
     @Transactional(readOnly = true)
     public boolean validarCredenciales(String email, String password) {
         try {
-            Usuario usuario = obtenerUsuarioPorEmail(email);
+            Usuario usuario = obtenerUsuarioEntidadPorEmail(email);
             return usuario.getActivo() && passwordEncoder.matches(password, usuario.getPassword());
         } catch (Exception e) {
             return false;
@@ -114,42 +130,58 @@ public class UsuarioService implements UserDetailsService {
             .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + email));
     }
 
-    // Métodos de consulta básicos
+    // ========== MÉTODOS PÚBLICOS QUE DEVUELVEN DTOs ==========
+    
     @Transactional(readOnly = true)
-    public Usuario obtenerUsuarioPorId(UUID id) {
-        return usuarioRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+    public UsuarioResponse obtenerUsuarioPorId(UUID id) {
+        Usuario usuario = obtenerUsuarioEntidadPorId(id);
+        return convertirEntidadAResponse(usuario);
     }
 
     @Transactional(readOnly = true)
-    public Usuario obtenerUsuarioPorEmail(String email) {
-        return usuarioRepository.findByEmail(email)
-            .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con email: " + email));
+    public UsuarioResponse obtenerUsuarioPorEmail(String email) {
+        Usuario usuario = obtenerUsuarioEntidadPorEmail(email);
+        return convertirEntidadAResponse(usuario);
     }
 
     @Transactional(readOnly = true)
-    public List<Usuario> obtenerTodosLosUsuarios() {
-        return usuarioRepository.findAll();
+    public List<UsuarioResponse> obtenerTodosLosUsuarios() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        return usuarios.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<Usuario> obtenerUsuariosActivos() {
-        return usuarioRepository.findByActivoTrue();
+    public List<UsuarioResponse> obtenerUsuariosActivos() {
+        List<Usuario> usuarios = usuarioRepository.findByActivoTrue();
+        return usuarios.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<Usuario> obtenerUsuariosPorTipo(TipoUsuario tipo) {
-        return usuarioRepository.findByTipoAndActivoTrue(tipo);
+    public List<UsuarioResponse> obtenerUsuariosPorTipo(TipoUsuario tipo) {
+        List<Usuario> usuarios = usuarioRepository.findByTipoAndActivoTrue(tipo);
+        return usuarios.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<Usuario> obtenerAdministradores() {
-        return usuarioRepository.findByTipoAndActivoTrueOrderByFechaCreacion(TipoUsuario.ADMIN);
+    public List<UsuarioResponse> obtenerAdministradores() {
+        List<Usuario> usuarios = usuarioRepository.findByTipoAndActivoTrueOrderByFechaCreacion(TipoUsuario.ADMIN);
+        return usuarios.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<Usuario> buscarPorNombre(String nombre) {
-        return usuarioRepository.findByNombreCompletoContainingIgnoreCaseAndActivoTrue(nombre);
+    public List<UsuarioResponse> buscarPorNombre(String nombre) {
+        List<Usuario> usuarios = usuarioRepository.findByNombreCompletoContainingIgnoreCaseAndActivoTrue(nombre);
+        return usuarios.stream()
+                .map(this::convertirEntidadAResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -180,6 +212,49 @@ public class UsuarioService implements UserDetailsService {
         long visitantes = usuarioRepository.countByTipoAndActivoTrue(TipoUsuario.VISITANTE);
 
         return new UsuarioStats(totalUsuarios, usuariosActivos, administradores, visitantes);
+    }
+
+    // ========== MÉTODOS PRIVADOS PARA USO INTERNO (Entidades) ==========
+    
+    /**
+     * Método interno para obtener entidad Usuario por ID
+     * Solo para uso interno del servicio
+     */
+    @Transactional(readOnly = true)
+    private Usuario obtenerUsuarioEntidadPorId(UUID id) {
+        return usuarioRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+    }
+
+    /**
+     * Método interno para obtener entidad Usuario por email
+     * Solo para uso interno del servicio
+     */
+    @Transactional(readOnly = true)
+    private Usuario obtenerUsuarioEntidadPorEmail(String email) {
+        return usuarioRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con email: " + email));
+    }
+
+    // ========== MÉTODOS DE CONVERSIÓN ==========
+
+    /**
+     * Convierte un UsuarioRequest DTO a entidad Usuario
+     */
+    private Usuario convertirRequestAEntidad(UsuarioRequest request) {
+        Usuario usuario = new Usuario();
+        usuario.setEmail(request.getEmail());
+        usuario.setNombreCompleto(request.getNombreCompleto());
+        usuario.setTipo(request.getTipo());
+        // La contraseña se setea por separado después del encode en el método que llama
+        return usuario;
+    }
+
+    /**
+     * Convierte una entidad Usuario a UsuarioResponse DTO
+     */
+    private UsuarioResponse convertirEntidadAResponse(Usuario usuario) {
+        return new UsuarioResponse(usuario);
     }
 
     // Clase interna para estadísticas

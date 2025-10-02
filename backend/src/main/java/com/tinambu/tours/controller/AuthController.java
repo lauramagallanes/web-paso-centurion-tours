@@ -2,11 +2,11 @@ package com.tinambu.tours.controller;
 
 import com.tinambu.tours.dto.request.LoginRequest;
 import com.tinambu.tours.dto.request.SignupRequest;
+import com.tinambu.tours.dto.request.UsuarioUpdateRequest;
 import com.tinambu.tours.dto.response.ApiResponse;
 import com.tinambu.tours.dto.response.JwtResponse;
 import com.tinambu.tours.dto.response.UsuarioResponse;
 import com.tinambu.tours.entity.usuario.TipoUsuario;
-import com.tinambu.tours.entity.usuario.Usuario;
 import com.tinambu.tours.security.JwtUtil;
 import com.tinambu.tours.service.UsuarioService;
 import jakarta.validation.Valid;
@@ -59,7 +59,7 @@ public class AuthController {
 
             // Cargar detalles del usuario
             UserDetails userDetails = usuarioService.loadUserByUsername(loginRequest.getEmail());
-            Usuario usuario = usuarioService.obtenerUsuarioPorEmail(loginRequest.getEmail());
+            UsuarioResponse usuario = usuarioService.obtenerUsuarioPorEmail(loginRequest.getEmail());
 
             // Verificar que el usuario esté activo
             if (!usuario.getActivo()) {
@@ -69,8 +69,14 @@ public class AuthController {
             
             // AUTO-PROMOTE admin@pasocenturion.com.uy to ADMIN (temporary fix)
             if ("admin@pasocenturion.com.uy".equals(usuario.getEmail()) && usuario.getTipo() != TipoUsuario.ADMIN) {
-                usuario.setTipo(TipoUsuario.ADMIN);
-                usuarioService.actualizarUsuario(usuario.getId(), usuario);
+                UsuarioUpdateRequest updateRequest = new UsuarioUpdateRequest(
+                    usuario.getEmail(), 
+                    usuario.getNombreCompleto(), 
+                    TipoUsuario.ADMIN
+                );
+                usuarioService.actualizarUsuario(usuario.getId(), updateRequest);
+                // Reload user with updated tipo
+                usuario = usuarioService.obtenerUsuarioPorEmail(loginRequest.getEmail());
             }
 
             // Generar tokens
@@ -82,7 +88,7 @@ public class AuthController {
                 accessToken,
                 refreshToken,
                 "Bearer",
-                convertirAUsuarioResponse(usuario)
+                usuario
             );
 
             return ResponseEntity.ok(
@@ -112,16 +118,14 @@ public class AuthController {
             }
 
             // Crear nuevo usuario visitante
-            Usuario nuevoUsuario = usuarioService.crearVisitante(
+            UsuarioResponse nuevoUsuario = usuarioService.crearVisitante(
                 signupRequest.getEmail(),
                 signupRequest.getPassword(),
                 signupRequest.getNombreCompleto()
             );
 
-            UsuarioResponse usuarioResponse = convertirAUsuarioResponse(nuevoUsuario);
-
             return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(usuarioResponse, "Usuario registrado exitosamente"));
+                .body(ApiResponse.success(nuevoUsuario, "Usuario registrado exitosamente"));
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -156,7 +160,7 @@ public class AuthController {
             // Obtener usuario del token
             String username = jwtUtil.extractUsername(refreshToken);
             UserDetails userDetails = usuarioService.loadUserByUsername(username);
-            Usuario usuario = usuarioService.obtenerUsuarioPorEmail(username);
+            UsuarioResponse usuario = usuarioService.obtenerUsuarioPorEmail(username);
 
             // Verificar que el usuario esté activo
             if (!usuario.getActivo()) {
@@ -172,7 +176,7 @@ public class AuthController {
                 newAccessToken,
                 newRefreshToken,
                 "Bearer",
-                convertirAUsuarioResponse(usuario)
+                usuario
             );
 
             return ResponseEntity.ok(
@@ -206,16 +210,15 @@ public class AuthController {
             }
 
             String username = jwtUtil.extractUsername(token);
-            Usuario usuario = usuarioService.obtenerUsuarioPorEmail(username);
+            UsuarioResponse usuario = usuarioService.obtenerUsuarioPorEmail(username);
 
             if (!usuario.getActivo()) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("Usuario desactivado"));
             }
 
-            UsuarioResponse usuarioResponse = convertirAUsuarioResponse(usuario);
             return ResponseEntity.ok(
-                ApiResponse.success(usuarioResponse, "Token válido")
+                ApiResponse.success(usuario, "Token válido")
             );
 
         } catch (Exception e) {
@@ -246,10 +249,9 @@ public class AuthController {
         try {
             String token = tokenHeader.substring(7);
             String username = jwtUtil.extractUsername(token);
-            Usuario usuario = usuarioService.obtenerUsuarioPorEmail(username);
+            UsuarioResponse usuario = usuarioService.obtenerUsuarioPorEmail(username);
 
-            UsuarioResponse usuarioResponse = convertirAUsuarioResponse(usuario);
-            return ResponseEntity.ok(ApiResponse.success(usuarioResponse));
+            return ResponseEntity.ok(ApiResponse.success(usuario));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -285,7 +287,7 @@ public class AuthController {
                     
                     // Verificar usuario en base de datos
                     try {
-                        Usuario usuario = usuarioService.obtenerUsuarioPorEmail(username);
+                        UsuarioResponse usuario = usuarioService.obtenerUsuarioPorEmail(username);
                         debugInfo.put("userExists", true);
                         debugInfo.put("userType", usuario.getTipo().name());
                         debugInfo.put("userActive", usuario.getActivo());
@@ -322,35 +324,24 @@ public class AuthController {
                     .body(ApiResponse.error("Email es requerido"));
             }
 
-            Usuario usuario = usuarioService.obtenerUsuarioPorEmail(email);
+            UsuarioResponse usuario = usuarioService.obtenerUsuarioPorEmail(email);
             if (usuario == null) {
                 return ResponseEntity.notFound().build();
             }
 
-            usuario.setTipo(TipoUsuario.ADMIN);
-            Usuario usuarioActualizado = usuarioService.actualizarUsuario(usuario.getId(), usuario);
+            UsuarioUpdateRequest updateRequest = new UsuarioUpdateRequest(
+                usuario.getEmail(), 
+                usuario.getNombreCompleto(), 
+                TipoUsuario.ADMIN
+            );
+            UsuarioResponse usuarioActualizado = usuarioService.actualizarUsuario(usuario.getId(), updateRequest);
             
-            UsuarioResponse response = convertirAUsuarioResponse(usuarioActualizado);
-            
-            return ResponseEntity.ok(ApiResponse.success(response, "Usuario promovido a ADMIN exitosamente"));
+            return ResponseEntity.ok(ApiResponse.success(usuarioActualizado, "Usuario promovido a ADMIN exitosamente"));
             
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error promoviendo usuario: " + e.getMessage()));
         }
     }
-
-    // Helper method para convertir Usuario a UsuarioResponse
-    private UsuarioResponse convertirAUsuarioResponse(Usuario usuario) {
-        UsuarioResponse response = new UsuarioResponse();
-        response.setId(usuario.getId());
-        response.setEmail(usuario.getEmail());
-        response.setNombreCompleto(usuario.getNombreCompleto());
-        response.setTipo(usuario.getTipo());
-        response.setActivo(usuario.getActivo());
-        response.setFechaCreacion(usuario.getFechaCreacion());
-        return response;
-    }
-
 
 }

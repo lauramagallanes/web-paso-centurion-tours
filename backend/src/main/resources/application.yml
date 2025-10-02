@@ -7,9 +7,9 @@ spring:
   main:
     allow-circular-references: true
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:tinambu_tours}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:password}
+    url: jdbc:postgresql://${DB_HOST:localhost:5432}/${DB_NAME:tinambu_tours}
+    username: ${DB_USER:postgres}
+    # Password será inyectada por SsmEnvironmentPostProcessor
     driver-class-name: org.postgresql.Driver
   
   jpa:

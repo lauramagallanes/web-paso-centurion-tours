@@ -81,6 +81,13 @@
             <version>2.21.29</version>
         </dependency>
         
+        <!-- Jakarta Servlet API (needed for Lambda) -->
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        
         <!-- Spring Test for MockHttpServletRequest -->
         <dependency>
             <groupId>org.springframework</groupId>

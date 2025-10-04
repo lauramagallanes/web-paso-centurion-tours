@@ -1,222 +1,135 @@
 import React from 'react';
-import Card, { CardBody, CardFooter, CardImage } from './Card';
-import Button from './Button';
-import FavoriteButton from './FavoriteButton';
-import { useCart } from '../../contexts/CartContext';
+import { Link } from 'react-router-dom';
+import { Heart, Users, Bed } from 'lucide-react';
+import './AccommodationCard.css';
+import { AlojamientoResponse } from '../../services/alojamientoApiService';
 
-export interface AccommodationCardProps {
-  id: string;
-  name: string;
-  description: string;
-  image: string;
-  capacity: {
-    min: number;
-    max: number;
-  };
-  price: number;
-  currency: string;
-  amenities: string[];
-  availability: boolean;
-  rating?: number;
-  onBook?: (id: string) => void;
-  onViewDetails?: (id: string) => void;
-  className?: string;
+interface AccommodationCardProps {
+  accommodation: AlojamientoResponse;
+  onToggleFavorite?: (id: string) => void;
+  isFavorite?: boolean;
 }
 
 const AccommodationCard: React.FC<AccommodationCardProps> = ({
-  id,
-  name,
-  description,
-  image,
-  capacity,
-  price,
-  currency,
-  amenities,
-  availability,
-  rating,
-  onBook,
-  onViewDetails,
-  className = ''
+  accommodation,
+  onToggleFavorite,
+  isFavorite = false
 }) => {
-  const { addItem } = useCart();
-
-  const handleBookClick = () => {
-    if (onBook) {
-      onBook(id);
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(accommodation.id);
     }
   };
 
-  const handleViewDetails = () => {
-    if (onViewDetails) {
-      onViewDetails(id);
+  const getMainImageUrl = () => {
+    if (accommodation.imagenPrincipal) {
+      return accommodation.imagenPrincipal;
     }
+    
+    if (accommodation.imagenes && accommodation.imagenes.length > 0) {
+      const principalImage = accommodation.imagenes.find(img => img.esPrincipal);
+      return principalImage ? principalImage.url : accommodation.imagenes[0].url;
+    }
+    
+    return '/placeholder-sendero.svg';
   };
 
-  const handleAddToCart = () => {
-    addItem({
-      id,
-      type: 'accommodation',
-      name,
-      description,
-      image,
-      price,
-      currency,
-      checkIn: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default: 1 week from now
-      checkOut: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000), // Default: 1 day stay
-      guests: capacity.min
-    });
+  const formatCapacity = () => {
+    if (accommodation.capacidadMinima === accommodation.capacidadMaxima) {
+      return `${accommodation.capacidadMinima} persona${accommodation.capacidadMinima > 1 ? 's' : ''}`;
+    }
+    return `${accommodation.capacidadMinima}-${accommodation.capacidadMaxima} personas`;
   };
 
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<span key={i}>⭐</span>);
+  const formatBedConfiguration = () => {
+    const config = [];
+    
+    if (accommodation.cantidadCamasDobles > 0) {
+      config.push(`${accommodation.cantidadCamasDobles} cama${accommodation.cantidadCamasDobles > 1 ? 's' : ''} doble${accommodation.cantidadCamasDobles > 1 ? 's' : ''}`);
     }
-
-    if (hasHalfStar) {
-      stars.push(<span key="half">⭐</span>);
+    
+    if (accommodation.cantidadLiteras > 0) {
+      config.push(`${accommodation.cantidadLiteras} litera${accommodation.cantidadLiteras > 1 ? 's' : ''}`);
     }
-
-    return stars;
+    
+    return config.join(', ') || 'Configuración no especificada';
   };
 
   return (
-    <Card 
-      variant="default" 
-      size="md" 
-      hoverable 
-      className={`accommodation-card ${className}`}
-    >
-      <CardImage 
-        src={image} 
-        alt={name} 
-        aspectRatio="video"
-      />
-      
-      {!availability && (
-        <div 
-          className="card-badge"
-          style={{ backgroundColor: 'var(--color-error)' }}
-        >
-          No Disponible
-        </div>
-      )}
-
-      <FavoriteButton
-        item={{
-          id,
-          type: 'accommodation',
-          name,
-          description,
-          image,
-          price,
-          currency,
-          capacity,
-          amenities,
-          rating
-        }}
-        variant="card"
-        size="sm"
-      />
-
-      <CardBody>
-        <div className="mb-4">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="card-title text-xl font-semibold text-text">
-              {name}
-            </h3>
-            {rating && (
-              <div className="flex items-center gap-1 text-sm">
-                {renderStars(rating)}
-                <span className="text-text-muted ml-1">({rating})</span>
-              </div>
-            )}
-          </div>
+    <Link to={`/alojamientos/${accommodation.id}`} className="accommodation-card-link">
+      <div className="accommodation-card">
+        {/* Image Section */}
+        <div className="accommodation-card__image-container">
+          <img
+            src={getMainImageUrl()}
+            alt={accommodation.nombre}
+            className="accommodation-card__image"
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/placeholder-sendero.svg';
+            }}
+          />
           
-          <p className="text-text-secondary text-sm mb-3 leading-relaxed">
-            {description}
-          </p>
+          {/* Gallery Indicator */}
+          {accommodation.tieneGaleria && (
+            <div className="accommodation-card__gallery-indicator">
+              📷 {accommodation.totalImagenes}
+            </div>
+          )}
+          
+          {/* Favorite Button */}
+          <button
+            className={`accommodation-card__favorite-btn ${isFavorite ? 'active' : ''}`}
+            onClick={handleFavoriteClick}
+            aria-label={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+          >
+            <Heart className={`heart-icon ${isFavorite ? 'filled' : ''}`} />
+          </button>
         </div>
 
-        <div className="accommodation-details mb-4">
-          <div className="flex items-center gap-4 text-sm text-text-muted mb-3">
-            <span className="flex items-center gap-1">
-              <span>👥</span>
-              <span>{capacity.min}-{capacity.max} personas</span>
-            </span>
-            <span className={`flex items-center gap-1 ${availability ? 'text-success' : 'text-error'}`}>
-              <span>{availability ? '✅' : '❌'}</span>
-              <span>{availability ? 'Disponible' : 'Ocupado'}</span>
-            </span>
-          </div>
-        </div>
+        {/* Content Section */}
+        <div className="accommodation-card__content">
+          {/* Title */}
+          <h3 className="accommodation-card__title">
+            {accommodation.nombre}
+          </h3>
 
-        {amenities && amenities.length > 0 && (
-          <div className="accommodation-amenities mb-4">
-            <h4 className="text-sm font-medium text-text mb-2">Comodidades:</h4>
-            <div className="flex flex-wrap gap-2">
-              {amenities.slice(0, 4).map((amenity, index) => (
-                <span 
-                  key={index}
-                  className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-neutral-100 text-text border"
-                >
-                  {amenity}
-                </span>
-              ))}
-              {amenities.length > 4 && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs text-text-muted">
-                  +{amenities.length - 4} más
-                </span>
-              )}
+          {/* Capacity Info */}
+          <div className="accommodation-card__info-row">
+            <div className="accommodation-card__capacity">
+              <Users className="icon" size={16} />
+              <span>ocupación: {formatCapacity()} max {accommodation.capacidadMaxima}</span>
             </div>
           </div>
-        )}
-      </CardBody>
 
-      <CardFooter>
-        <div className="flex items-center justify-between w-full">
-          <div className="price-info">
-            <span className="card-price">
-              {currency} {price.toLocaleString()}
-            </span>
-            <span className="card-price-unit ml-1">
-              por noche
-            </span>
+          {/* Bed Configuration */}
+          <div className="accommodation-card__info-row">
+            <div className="accommodation-card__beds">
+              <Bed className="icon" size={16} />
+              <span>{formatBedConfiguration()}</span>
+            </div>
           </div>
-          
-          <div className="flex gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={handleViewDetails}
-            >
-              Ver Detalles
-            </Button>
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={handleAddToCart}
-              disabled={!availability}
-              leftIcon="🛒"
-            >
-              Agregar
-            </Button>
-            <Button 
-              variant="primary" 
-              size="sm"
-              onClick={handleBookClick}
-              disabled={!availability}
-              leftIcon="🏠"
-            >
-              {availability ? 'Reservar' : 'No disponible'}
-            </Button>
+
+          {/* Location (if available) */}
+          {accommodation.ubicacion && (
+            <div className="accommodation-card__location">
+              📍 {accommodation.ubicacion}
+            </div>
+          )}
+
+          {/* Price Section */}
+          <div className="accommodation-card__price-section">
+            <div className="accommodation-card__price">
+              <span className="price-amount">Desde ${accommodation.precioPorNoche.toLocaleString('es-UY')} UYU</span>
+              <span className="price-period">por noche x persona</span>
+            </div>
           </div>
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </Link>
   );
 };
 

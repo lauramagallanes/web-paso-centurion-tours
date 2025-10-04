@@ -1,105 +1,111 @@
 package com.tinambu.tours.entity.reserva;
 
-import com.tinambu.tours.entity.habitacion.Habitacion;
-
+import com.tinambu.tours.entity.alojamiento.Alojamiento;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 @Entity
-@DiscriminatorValue("ALOJAMIENTO")
+@Table(name = "alojamiento_reservas")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
+@PrimaryKeyJoinColumn(name = "id")
 public class AlojamientoReserva extends Reserva {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "habitacion_id", nullable = false)
-    @NotNull(message = "Habitación es obligatoria para reserva de alojamiento")
-    private Habitacion habitacion;
+    @Column(name = "alojamiento_id", nullable = false)
+    private UUID alojamientoId;
 
-    @Column(name = "numero_noches", nullable = false)
+    @Column(name = "fecha_check_in", nullable = false)
+    private LocalDate fechaCheckIn;
+
+    @Column(name = "fecha_check_out", nullable = false)
+    private LocalDate fechaCheckOut;
+
+    @Column(name = "numero_noches")
     private Integer numeroNoches;
 
-    // Constructors
-    public AlojamientoReserva() {
-        super();
+    @Column(name = "numero_huespedes", nullable = false)
+    private Integer numeroHuespedes;
+
+    @Column(name = "observaciones_especiales", columnDefinition = "TEXT")
+    private String observacionesEspeciales;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "alojamiento_id", insertable = false, updatable = false)
+    private Alojamiento alojamiento;
+
+    @PrePersist
+    @PreUpdate
+    protected void calcularNoches() {
+        if (fechaCheckIn != null && fechaCheckOut != null) {
+            this.numeroNoches = (int) ChronoUnit.DAYS.between(fechaCheckIn, fechaCheckOut);
+        }
     }
 
-    public AlojamientoReserva(String emailContacto, String nombreContacto, Integer numeroPersonas,
-                             LocalDate fechaInicio, LocalDate fechaFin, Habitacion habitacion) {
-        super(emailContacto, nombreContacto, numeroPersonas, fechaInicio, fechaFin);
-        this.habitacion = habitacion;
-        this.numeroNoches = calcularNumeroNoches();
-        this.setPrecioTotal(calcularPrecioTotal());
+    // Business Methods
+    public int calcularNumeroNoches() {
+        if (fechaCheckIn == null || fechaCheckOut == null) {
+            return 0;
+        }
+        return (int) ChronoUnit.DAYS.between(fechaCheckIn, fechaCheckOut);
     }
 
-    @Override
-    public TipoReserva getTipoReserva() {
-        return TipoReserva.ALOJAMIENTO;
-    }
-
-    @Override
-    public void validarReserva() {
-        // Validar capacidad de habitación
-        if (!habitacion.puedeAcomodar(getNumeroPersonas())) {
-            throw new IllegalArgumentException(
-                String.format("Habitación %s no puede acomodar %d personas (capacidad: %d-%d)",
-                    habitacion.getNumero(), getNumeroPersonas(), 
-                    habitacion.getCapacidadMinima(), habitacion.getCapacidadMaxima())
-            );
+    public boolean validarFechas() {
+        if (fechaCheckIn == null || fechaCheckOut == null) {
+            return false;
         }
-
-        // Validar fechas
-        if (getFechaInicio().isAfter(getFechaFin())) {
-            throw new IllegalArgumentException("Fecha de inicio debe ser anterior a fecha de fin");
-        }
-
-        if (getFechaInicio().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Fecha de inicio no puede ser en el pasado");
-        }
-
-        // Validar mínimo una noche
-        if (numeroNoches < 1) {
-            throw new IllegalArgumentException("Reserva de alojamiento debe ser mínimo una noche");
-        }
+        return fechaCheckIn.isBefore(fechaCheckOut);
     }
 
     @Override
     public BigDecimal calcularPrecioTotal() {
-        if (habitacion == null || numeroNoches == null) {
+        if (alojamiento == null) {
+            return super.getPrecioTotal();
+        }
+        
+        int noches = calcularNumeroNoches();
+        if (noches <= 0) {
             return BigDecimal.ZERO;
         }
-        return habitacion.calcularPrecioTotal(getNumeroPersonas(), numeroNoches);
+        
+        return alojamiento.calcularPrecioTotal(noches, numeroHuespedes);
     }
 
-    // Business Methods
-    private int calcularNumeroNoches() {
-        return (int) (getFechaFin().toEpochDay() - getFechaInicio().toEpochDay());
+    public boolean estaEnRango(LocalDate fecha) {
+        return !fecha.isBefore(fechaCheckIn) && fecha.isBefore(fechaCheckOut);
     }
 
-    public boolean bloqueaHabitacionCompletamente() {
-        return true; // Las reservas de alojamiento bloquean la habitación completamente
+    public boolean seSolapaCon(LocalDate checkIn, LocalDate checkOut) {
+        return !(fechaCheckOut.isBefore(checkIn) || fechaCheckIn.isAfter(checkOut));
     }
 
-    @PostLoad
-    @PostPersist
-    @PostUpdate
-    public void calcularNoches() {
-        if (getFechaInicio() != null && getFechaFin() != null) {
-            this.numeroNoches = calcularNumeroNoches();
-        }
+    public boolean esValidaParaAlojamiento(Alojamiento alojamiento) {
+        return validarFechas() && 
+               alojamiento.puedeAcomodar(numeroHuespedes) &&
+               numeroNoches > 0;
     }
 
-    // Getters and Setters
-    public Habitacion getHabitacion() { return habitacion; }
-    public void setHabitacion(Habitacion habitacion) { 
-        this.habitacion = habitacion; 
-        if (getFechaInicio() != null && getFechaFin() != null) {
-            this.numeroNoches = calcularNumeroNoches();
-            this.setPrecioTotal(calcularPrecioTotal());
-        }
+    public long getDiasHastaCheckIn() {
+        return ChronoUnit.DAYS.between(LocalDate.now(), fechaCheckIn);
     }
 
-    public Integer getNumeroNoches() { return numeroNoches; }
-    public void setNumeroNoches(Integer numeroNoches) { this.numeroNoches = numeroNoches; }
+    public long getDiasDesdeCheckOut() {
+        return ChronoUnit.DAYS.between(fechaCheckOut, LocalDate.now());
+    }
+
+    public boolean estaActiva() {
+        LocalDate hoy = LocalDate.now();
+        return !hoy.isBefore(fechaCheckIn) && hoy.isBefore(fechaCheckOut);
+    }
 }

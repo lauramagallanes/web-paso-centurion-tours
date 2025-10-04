@@ -10,6 +10,8 @@ import ShoppingCart from './components/common/ShoppingCart';
 import Home from './pages/public/Home'
 import About from './pages/public/About'
 import Accomodations from './pages/public/Accomodations'
+import Accommodations from './pages/public/Accommodations'
+import AccommodationDetails from './pages/public/AccommodationDetails'
 import Activities from './pages/public/Activities'
 import ActivityDetails from './pages/public/ActivityDetails'
 import Book from './pages/public/Book';
@@ -43,6 +45,8 @@ const App: React.FC = () => {
             <Route index element={<Home/>}/>
             <Route path={routes.about} element={<About/>}/>
             <Route path={routes.accomodations} element={<Accomodations/>}/>
+            <Route path={routes.alojamientos} element={<Accommodations/>}/>
+            <Route path="/alojamientos/:id" element={<AccommodationDetails/>}/>
             <Route path={routes.activities} element={<Activities/>}/>
             <Route path="/actividades/:id" element={<ActivityDetails/>}/>
             <Route path={routes.book} element={<Book/>}/>

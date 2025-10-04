@@ -2,6 +2,8 @@ export const routes = {
     home: "/",
     contact: "/contact-us",
     accomodations: "/accomodations",
+    alojamientos: "/alojamientos",
+    alojamientoDetails: "/alojamientos/:id",
     about: "/about",
     activities: "/activities",
     activityDetails: "/actividades/:id",
@@ -15,6 +17,7 @@ export const routes = {
     adminRooms: "/admin/rooms",
     adminTrails: "/admin/trails",
     adminGuides: "/admin/guides",
+    adminAlojamientos: "/admin/alojamientos",
     login: "/login"
 } as const;
 

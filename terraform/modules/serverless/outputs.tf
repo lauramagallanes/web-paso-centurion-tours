@@ -9,10 +9,7 @@ output "lambda_function_name" {
   description = "Lambda function name"
 }
 
-output "lambda_security_group_id" {
-  value       = aws_security_group.lambda.id
-  description = "Lambda security group ID"
-}
+# lambda_security_group_id output removed - Lambda runs without VPC
 
 output "api_gateway_id" {
   value       = aws_apigatewayv2_api.main.id

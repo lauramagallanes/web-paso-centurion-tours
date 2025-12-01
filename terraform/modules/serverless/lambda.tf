@@ -1,31 +1,5 @@
 # Lambda Functions Configuration
-
-# Security Group for Lambda functions
-resource "aws_security_group" "lambda" {
-  name        = "tinambu-lambda-sg-${var.environment}"
-  description = "Security group for Lambda functions"
-  vpc_id      = var.vpc_id
-
-  # Outbound to RDS
-  egress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]
-  }
-
-  # Outbound to VPC endpoints and NAT Instance (HTTPS)
-  egress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "tinambu-lambda-sg-${var.environment}"
-  }
-}
+# NO VPC - Lambda runs in AWS managed network (no ENI costs)
 
 # Lambda Execution Role
 resource "aws_iam_role" "lambda_execution" {
@@ -51,11 +25,8 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Lambda VPC execution policy
-resource "aws_iam_role_policy_attachment" "lambda_vpc_execution" {
-  role       = aws_iam_role.lambda_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-}
+# Lambda VPC execution policy REMOVED - Lambda runs without VPC
+# This eliminates ENI costs (~$0.01/hour per ENI = ~$7.20/month per ENI)
 
 # Lambda custom policy for SSM and S3 access
 resource "aws_iam_role_policy" "lambda_custom" {
@@ -123,11 +94,12 @@ resource "aws_lambda_function" "backend_api" {
   # IAM Role
   role = aws_iam_role.lambda_execution.arn
 
-  # VPC Configuration for RDS access
-  vpc_config {
-    subnet_ids         = var.private_subnet_ids
-    security_group_ids = [aws_security_group.lambda.id]
-  }
+  # NO VPC Configuration - Lambda runs in AWS managed network
+  # This eliminates:
+  # - ENI costs (~$7.20/month per ENI)
+  # - NAT Instance costs (~$3-4/month)
+  # - VPC data transfer costs
+  # Lambda can still access RDS via public endpoint with Security Group restrictions
 
   # Environment variables from SSM Parameter Store
   environment {

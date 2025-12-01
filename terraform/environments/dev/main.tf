@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.1"
+    }
   }
 
   backend "s3" {
@@ -31,16 +35,6 @@ provider "aws" {
   }
 }
 
-# Networking Module
-module "networking" {
-  source = "../../modules/networking"
-
-  environment                = var.environment
-  region                     = var.aws_region
-  availability_zones         = var.availability_zones
-  enable_interface_endpoints = var.enable_interface_endpoints
-}
-
 # Storage Module
 module "storage" {
   source = "../../modules/storage"
@@ -49,14 +43,21 @@ module "storage" {
   region      = var.aws_region
 }
 
-# Serverless Module
+# Database Module - Must be created before Serverless (no VPC dependencies)
+module "database" {
+  source = "../../modules/database"
+
+  environment = var.environment
+  # VPC variables removed - using default VPC (no cost)
+}
+
+# Serverless Module - Lambda without VPC (no ENI costs)
 module "serverless" {
   source = "../../modules/serverless"
 
   environment                         = var.environment
   region                              = var.aws_region
-  vpc_id                              = module.networking.vpc_id
-  private_subnet_ids                  = module.networking.private_subnet_ids
+  # VPC variables removed - Lambda runs without VPC
   db_endpoint                         = module.database.db_endpoint
   db_name                             = module.database.db_name
   db_user                             = module.database.db_username
@@ -65,29 +66,6 @@ module "serverless" {
   api_domain_name                     = var.api_domain_name
   lambda_zip_path                     = var.lambda_zip_path
   enable_advanced_payment_integration = var.enable_advanced_payment_integration
-}
-
-# Update networking module with Lambda security group
-module "networking_update" {
-  source = "../../modules/networking"
-
-  environment                = var.environment
-  region                     = var.aws_region
-  availability_zones         = var.availability_zones
-  enable_interface_endpoints = var.enable_interface_endpoints
-  lambda_security_group_id   = module.serverless.lambda_security_group_id
-
-  depends_on = [module.serverless]
-}
-
-# Database Module
-module "database" {
-  source = "../../modules/database"
-
-  environment              = var.environment
-  vpc_id                   = module.networking.vpc_id
-  private_subnet_ids       = module.networking.private_subnet_ids
-  lambda_security_group_id = module.serverless.lambda_security_group_id
 }
 
 # Security Module
@@ -109,5 +87,5 @@ module "monitoring" {
   api_gateway_id         = module.serverless.api_gateway_id
   lambda_function_name   = module.serverless.lambda_function_name
   db_instance_identifier = module.database.db_name
-  budget_limit           = var.environment == "dev" ? 30 : (var.environment == "staging" ? 40 : 100)
+  budget_limit           = var.environment == "dev" ? 15 : (var.environment == "staging" ? 30 : 100) # Reducido para dev optimizado
 }

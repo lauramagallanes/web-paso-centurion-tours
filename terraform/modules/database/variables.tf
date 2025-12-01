@@ -4,20 +4,8 @@ variable "environment" {
   description = "Environment name (dev, staging, prod)"
 }
 
-variable "vpc_id" {
-  type        = string
-  description = "VPC ID where database will be created"
-}
-
-variable "private_subnet_ids" {
-  type        = list(string)
-  description = "Private subnet IDs for database subnet group"
-}
-
-variable "lambda_security_group_id" {
-  type        = string
-  description = "Security group ID of Lambda functions for database access"
-}
+# VPC variables removed - using default VPC (no cost)
+# Security is handled via Security Groups with Lambda IP ranges
 
 variable "db_name" {
   type        = string
@@ -39,13 +27,13 @@ variable "instance_class" {
 
 variable "allocated_storage" {
   type        = number
-  default     = 20
+  default     = 10 # Reducido para dev (usar 20+ en prod)
   description = "Allocated storage in GB"
 }
 
 variable "max_allocated_storage" {
   type        = number
-  default     = 100
+  default     = 30 # Reducido para dev (usar 100+ en prod)
   description = "Maximum allocated storage for autoscaling"
 }
 

@@ -2,15 +2,44 @@ server:
   port: 8080
   servlet:
     context-path: /api
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+      force-request: true
+      force-response: true
 
 spring:
   main:
     allow-circular-references: true
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost:5432}/${DB_NAME:tinambu_tours}
+    url: jdbc:postgresql://${DB_HOST:localhost:5432}/${DB_NAME:tinambu_tours}?useUnicode=true&characterEncoding=UTF-8&sslmode=require
     username: ${DB_USER:postgres}
     # Password será inyectada por SsmEnvironmentPostProcessor
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: SET client_encoding TO 'UTF8'
+  
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+  
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+      file-size-threshold: 2KB
   
   jpa:
     hibernate:
@@ -24,6 +53,11 @@ spring:
           useUnicode: true
           characterEncoding: UTF-8
           CharSet: UTF-8
+        jdbc:
+          lob:
+            non_contextual_creation: true
+          time_zone: UTC
+        default_schema: public
   
   security:
     jwt:
@@ -45,3 +79,15 @@ cors:
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
   allow-credentials: true
+
+# Google Places API Configuration
+google:
+  api:
+    key: ${GOOGLE_API_KEY:}
+    place-id: ${GOOGLE_PLACE_ID:}
+
+# Facebook API Configuration
+facebook:
+  api:
+    page-id: ${FACEBOOK_PAGE_ID:}
+    access-token: ${FACEBOOK_ACCESS_TOKEN:}

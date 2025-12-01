@@ -22,12 +22,12 @@ resource "aws_apigatewayv2_api" "main" {
 
 # Lambda Integration
 resource "aws_apigatewayv2_integration" "lambda" {
-  api_id               = aws_apigatewayv2_api.main.id
-  integration_type     = "AWS_PROXY"
-  integration_method   = "POST"
+  api_id             = aws_apigatewayv2_api.main.id
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
   # Use $LATEST instead of published version to avoid SnapStart cache issues
-  integration_uri      = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${aws_lambda_function.backend_api.arn}/invocations"
-  
+  integration_uri = "arn:aws:apigateway:${var.region}:lambda:path/2015-03-31/functions/${aws_lambda_function.backend_api.arn}/invocations"
+
   # Crucial: Set payload format version for API Gateway v2
   payload_format_version = "2.0"
 }

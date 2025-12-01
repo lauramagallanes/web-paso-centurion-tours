@@ -15,15 +15,8 @@ variable "project_name" {
   description = "Project name"
 }
 
-variable "vpc_id" {
-  type        = string
-  description = "VPC ID for Lambda functions"
-}
-
-variable "private_subnet_ids" {
-  type        = list(string)
-  description = "Private subnet IDs for Lambda functions"
-}
+# VPC variables removed - Lambda runs without VPC (no cost)
+# Security is handled via RDS Security Groups with Lambda IP ranges
 
 variable "db_endpoint" {
   type        = string

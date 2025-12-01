@@ -14,20 +14,20 @@ variable "environment" {
 
 variable "availability_zones" {
   type        = list(string)
-  default     = ["us-east-1a", "us-east-1b"]
+  default     = ["us-east-1a", "us-east-1b"] # Mantener 2 AZs (eliminar AZ problemático con Lambda ENIs)
   description = "Availability zones"
 }
 
 variable "domain_name" {
   type        = string
   description = "Domain name for the application"
-  default     = "dev.pasocenturion.com.uy"  # Subdominio dev
+  default     = "dev.pasocenturion.com.uy" # Subdominio dev
 }
 
 variable "api_domain_name" {
   type        = string
   description = "API domain name"
-  default     = "api-dev.pasocenturion.com.uy"  # API dev
+  default     = "api-dev.pasocenturion.com.uy" # API dev
 }
 
 # Cost-friendly defaults (all optional services disabled)

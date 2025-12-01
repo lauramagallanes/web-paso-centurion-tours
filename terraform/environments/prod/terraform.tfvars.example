@@ -1,0 +1,121 @@
+# Production Environment Configuration - OPTIMIZED FOR LOW COST
+# Copy this file to terraform.tfvars and update with your values
+#
+# OBJETIVO: $18-25 USD/mes para 1,000-2,000 usuarios/mes
+# Ver: AWS_PRODUCTION_COST_OPTIMIZED.md para detalles completos
+
+environment = "prod"
+aws_region  = "us-east-1"
+
+# DECISIÓN CRÍTICA: Single-AZ para economía (1-2K usuarios/mes)
+# Cambiar a 2 AZs solo cuando tráfico > 10K usuarios/mes
+availability_zones = ["us-east-1a"]  # Single-AZ
+
+# Dominios de producción
+domain_name     = "pasocenturion.com.uy"
+api_domain_name = "api.pasocenturion.com.uy"
+
+# Seguridad ECONÓMICA pero efectiva
+enable_guardduty                    = true   # $3-5/mes - ESENCIAL
+enable_waf                          = false  # Usar CloudFlare Free ($0) en lugar de AWS WAF ($10-15/mes)
+enable_config                       = false  # Ahorro $2-4/mes (no crítico para tráfico bajo)
+enable_interface_endpoints          = false  # Ahorro $22/mes c/u (no necesario)
+enable_advanced_payment_integration = true
+
+# Lambda
+lambda_zip_path = "../../../backend/target/tinambu-tours-lambda.zip"
+
+# Budget Alert (más agresivo)
+budget_limit = 25  # USD/mes - Alertar si supera $25
+
+# CONFIGURACIÓN DETALLADA EN prod.auto.tfvars
+# Ver: terraform/environments/prod/prod.auto.tfvars.example
+
+# ═══════════════════════════════════════════════════════════════════════
+#  ESTRATEGIA DE COSTOS
+# ═══════════════════════════════════════════════════════════════════════
+#
+# RDS: db.t4g.micro Single-AZ      → $12-13/mes  (suficiente 1-2K usuarios)
+# NAT Instance: t4g.nano           → $3-4/mes    (vs NAT Gateway $64/mes)
+# Lambda: Capa gratuita            → $0-1/mes    (40K requests incluidos)
+# CloudFront: Capa gratuita        → $0/mes      (1TB incluido)
+# CloudFlare WAF: Free plan        → $0/mes      (vs AWS WAF $10-15/mes)
+# GuardDuty: Esencial              → $3-5/mes
+# S3 + Route53 + CloudWatch        → $2-3/mes
+# ───────────────────────────────────────────────────────────────────────
+# TOTAL ESTIMADO:                    $18-25/mes
+#
+# AHORRO vs Arquitectura Enterprise: $80-100/mes (83% reducción)
+# ═══════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════
+#  SEGURIDAD MANTENIDA
+# ═══════════════════════════════════════════════════════════════════════
+#
+# ✅ CloudFlare WAF Free:
+#    - DDoS protection ilimitado
+#    - WAF con reglas básicas
+#    - Rate limiting (300 req/min)
+#    - Bot protection
+#    - SSL/TLS gratuito
+#
+# ✅ AWS GuardDuty:
+#    - Detección de amenazas
+#    - Análisis de logs
+#    - Alertas proactivas
+#
+# ✅ Backups Sólidos:
+#    - Automáticos: 7 días
+#    - Manuales: 30 días (scripts)
+#    - Point-in-time recovery
+#
+# ✅ Encryption:
+#    - RDS storage encrypted
+#    - SSL/TLS en tránsito
+#    - Secrets en SSM Parameter Store
+# ═══════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════
+#  CUÁNDO ESCALAR
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Tráfico 1-5K usuarios/mes:
+# - Mantener configuración actual
+# - Costo: $18-30/mes
+#
+# Tráfico 5-10K usuarios/mes:
+# - Upgrade RDS a db.t4g.small ($23/mes)
+# - Mantener Single-AZ
+# - Costo: $40-60/mes
+#
+# Tráfico >10K usuarios/mes:
+# - Implementar Multi-AZ
+# - NAT Gateway Multi-AZ
+# - CloudFlare Pro
+# - Costo: $80-120/mes
+# ═══════════════════════════════════════════════════════════════════════
+
+# INSTRUCCIONES DE USO:
+# 1. Copiar a terraform.tfvars:
+#    cp terraform.tfvars.example terraform.tfvars
+#
+# 2. Configurar CloudFlare ANTES de aplicar Terraform:
+#    - Crear cuenta gratuita en cloudflare.com
+#    - Añadir dominio pasocenturion.com.uy
+#    - Configurar nameservers
+#    - Ver: IMPLEMENTATION_GUIDE_PRODUCTION.md
+#
+# 3. Crear prod.auto.tfvars con configuración detallada:
+#    cp prod.auto.tfvars.example prod.auto.tfvars
+#    nano prod.auto.tfvars
+#
+# 4. Aplicar:
+#    terraform init
+#    terraform plan -out=prod.tfplan
+#    terraform apply prod.tfplan
+#
+# DOCUMENTACIÓN COMPLETA:
+# - AWS_PRODUCTION_COST_OPTIMIZED.md
+# - IMPLEMENTATION_GUIDE_PRODUCTION.md
+# - COST_COMPARISON_PRODUCTION.txt
+

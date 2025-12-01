@@ -48,17 +48,17 @@ output "payment_create_endpoint" {
   description = "POST endpoint for link creation (Advanced mode only)"
 }
 
-# Network Troubleshooting Outputs
-output "nat_instance_public_ip" {
-  value       = module.networking.nat_instance_public_ip
-  description = "NAT Instance Elastic IP for troubleshooting"
-}
+# Network Troubleshooting Outputs - REMOVED (no VPC)
+# output "nat_instance_public_ip" {
+#   value       = module.networking.nat_instance_public_ip
+#   description = "NAT Instance Elastic IP for troubleshooting"
+# }
 
-# VPC Information
-output "vpc_id" {
-  value       = module.networking.vpc_id
-  description = "VPC ID"
-}
+# VPC Information - REMOVED (using default VPC, no custom VPC)
+# output "vpc_id" {
+#   value       = module.networking.vpc_id
+#   description = "VPC ID"
+# }
 
 # Storage
 output "frontend_bucket_id" {

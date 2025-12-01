@@ -12,12 +12,18 @@ data "aws_subnets" "default" {
 }
 
 # RDS PostgreSQL Database Configuration
+# Use a new name to avoid conflicts when migrating from custom VPC to default VPC
 resource "aws_db_subnet_group" "main" {
-  name       = "tinambu-db-subnet-group-${var.environment}"
+  name       = "tinambu-db-subnet-group-${var.environment}-v2"
   subnet_ids = data.aws_subnets.default.ids
 
   tags = {
     Name = "tinambu-db-subnet-group-${var.environment}"
+  }
+
+  # Prevent deletion of old subnet group until RDS is migrated
+  lifecycle {
+    create_before_destroy = true
   }
 }
 

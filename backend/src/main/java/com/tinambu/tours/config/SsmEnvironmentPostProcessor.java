@@ -21,8 +21,8 @@ public class SsmEnvironmentPostProcessor implements EnvironmentPostProcessor {
 
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
-        // Solo ejecutar en perfil lambda
-        if (!environment.acceptsProfiles("lambda")) {
+        // Solo ejecutar en perfiles lambda
+        if (!environment.acceptsProfiles("lambda", "lambda-with-db")) {
             return;
         }
 
@@ -35,6 +35,20 @@ public class SsmEnvironmentPostProcessor implements EnvironmentPostProcessor {
                     .build();
 
             Map<String, Object> ssmProperties = new HashMap<>();
+
+            // Configurar datasource completo con variables de entorno
+            String dbHost = environment.getProperty("DB_HOST");
+            String dbPort = environment.getProperty("DB_PORT", "5432");
+            String dbName = environment.getProperty("DB_NAME");
+            String dbUser = environment.getProperty("DB_USER");
+            
+            if (dbHost != null && dbName != null && dbUser != null) {
+                // Construir JDBC URL con parámetros SSL y timeout
+                String jdbcUrl = String.format("jdbc:postgresql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&sslmode=require&connectTimeout=10&socketTimeout=30", dbHost, dbPort, dbName);
+                ssmProperties.put("spring.datasource.url", jdbcUrl);
+                ssmProperties.put("spring.datasource.username", dbUser);
+                System.out.println("🔗 Configurando datasource: " + jdbcUrl + " con usuario: " + dbUser);
+            }
 
             // Obtener contraseña de la base de datos de forma segura
             String dbPasswordPath = environment.getProperty("SSM_DB_PASSWORD");

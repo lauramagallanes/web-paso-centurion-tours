@@ -19,6 +19,11 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-init-sql: SET client_encoding TO 'UTF8'
+      connection-timeout: 30000  # 30 segundos
+      maximum-pool-size: 5
+      minimum-idle: 1
+      idle-timeout: 300000  # 5 minutos
+      max-lifetime: 600000  # 10 minutos
   
   jackson:
     default-property-inclusion: non_null

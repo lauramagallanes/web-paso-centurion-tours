@@ -43,8 +43,13 @@ public class SsmEnvironmentPostProcessor implements EnvironmentPostProcessor {
             String dbUser = environment.getProperty("DB_USER");
             
             if (dbHost != null && dbName != null && dbUser != null) {
+                // DB_HOST puede incluir el puerto (ej: host:5432), extraer solo el host
+                String hostOnly = dbHost;
+                if (dbHost.contains(":")) {
+                    hostOnly = dbHost.substring(0, dbHost.lastIndexOf(":"));
+                }
                 // Construir JDBC URL con parámetros SSL y timeout
-                String jdbcUrl = String.format("jdbc:postgresql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&sslmode=require&connectTimeout=10&socketTimeout=30", dbHost, dbPort, dbName);
+                String jdbcUrl = String.format("jdbc:postgresql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&sslmode=require&connectTimeout=10&socketTimeout=30", hostOnly, dbPort, dbName);
                 ssmProperties.put("spring.datasource.url", jdbcUrl);
                 ssmProperties.put("spring.datasource.username", dbUser);
                 System.out.println("🔗 Configurando datasource: " + jdbcUrl + " con usuario: " + dbUser);

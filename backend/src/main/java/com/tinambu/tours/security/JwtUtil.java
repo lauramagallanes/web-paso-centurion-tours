@@ -99,8 +99,12 @@ public class JwtUtil {
         return createToken(claims, userDetails.getUsername());
     }
 
+    private static final String TOKEN_ISSUER = "tinambu-tours";
+    private static final String TOKEN_AUDIENCE = "tinambu-web";
+
     /**
      * Crear token con claims y subject específicos
+     * Incluye issuer y audience para prevenir reutilización entre servicios (M3)
      */
     private String createToken(Map<String, Object> claims, String subject) {
         Date now = new Date();
@@ -109,6 +113,8 @@ public class JwtUtil {
         return Jwts.builder()
             .setClaims(claims)
             .setSubject(subject)
+            .setIssuer(TOKEN_ISSUER)
+            .setAudience(TOKEN_AUDIENCE)
             .setIssuedAt(now)
             .setExpiration(expirationDate)
             .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -183,6 +189,8 @@ public class JwtUtil {
         return Jwts.builder()
             .setClaims(claims)
             .setSubject(userDetails.getUsername())
+            .setIssuer(TOKEN_ISSUER)
+            .setAudience(TOKEN_AUDIENCE)
             .setIssuedAt(now)
             .setExpiration(expirationDate)
             .signWith(getSigningKey(), SignatureAlgorithm.HS256)

@@ -66,18 +66,6 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("Usuario desactivado"));
             }
-            
-            // AUTO-PROMOTE admin@pasocenturion.com.uy to ADMIN (temporary fix)
-            if ("admin@pasocenturion.com.uy".equals(usuario.getEmail()) && usuario.getTipo() != TipoUsuario.ADMIN) {
-                UsuarioUpdateRequest updateRequest = new UsuarioUpdateRequest(
-                    usuario.getEmail(), 
-                    usuario.getNombreCompleto(), 
-                    TipoUsuario.ADMIN
-                );
-                usuarioService.actualizarUsuario(usuario.getId(), updateRequest);
-                // Reload user with updated tipo
-                usuario = usuarioService.obtenerUsuarioPorEmail(loginRequest.getEmail());
-            }
 
             // Generar tokens
             String accessToken = jwtUtil.generateToken(userDetails);

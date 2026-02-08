@@ -82,13 +82,12 @@ public class SecurityConfig {
                 .requestMatchers("/auth/login").permitAll()
                 .requestMatchers("/auth/signup").permitAll()
                 .requestMatchers("/auth/refresh").permitAll()
-                .requestMatchers("/auth/promote-to-admin").permitAll()
-                // Endpoints de desarrollo (SOLO PARA DEV)
-                .requestMatchers("/dev/**").permitAll()
-                .requestMatchers("/simple-fix/**").permitAll()
+                // promote-to-admin requiere ser ADMIN (H1)
+                .requestMatchers("/auth/promote-to-admin").hasRole("ADMIN")
                 // Endpoints de auth que requieren autenticación
                 .requestMatchers("/auth/validate").authenticated()
-                .requestMatchers("/auth/debug").authenticated()
+                // debug solo para ADMIN (M4)
+                .requestMatchers("/auth/debug").hasRole("ADMIN")
                 .requestMatchers("/health").permitAll()
                 .requestMatchers("/health/**").permitAll()
                 .requestMatchers("/test").permitAll()
@@ -146,13 +145,14 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         // Orígenes permitidos (configurables por ambiente)
+        // CORS: solo origenes conocidos, sin wildcards amplios (M1)
         configuration.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:*",
             "https://localhost:*",
             "http://127.0.0.1:*",
             "https://127.0.0.1:*",
-            "https://*.s3.*.amazonaws.com",
-            "https://tinambu-frontend-dev.s3.us-east-1.amazonaws.com"
+            "https://tinambu-frontend-dev.s3.us-east-1.amazonaws.com",
+            "https://tinambu-frontend-dev.s3-website-us-east-1.amazonaws.com"
         ));
         
         // Métodos HTTP permitidos
@@ -196,7 +196,8 @@ public class SecurityConfig {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(usuarioService);
         provider.setPasswordEncoder(passwordEncoder());
-        provider.setHideUserNotFoundExceptions(false);
+        // Ocultar si el usuario no existe para evitar enumeración de cuentas (H4)
+        provider.setHideUserNotFoundExceptions(true);
         return provider;
     }
 

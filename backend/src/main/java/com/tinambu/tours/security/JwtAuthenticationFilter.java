@@ -63,6 +63,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails = usuarioService.loadUserByUsername(username);
                 logger.debug("UserDetails cargado para: " + userDetails.getUsername());
 
+                // Rechazar refresh tokens usados como access tokens (H3)
+                if (jwtUtil.isRefreshToken(jwtToken)) {
+                    logger.warn("Refresh token usado como access token, rechazado para usuario: " + username);
+                    chain.doFilter(request, response);
+                    return;
+                }
+
                 // Si el token es válido, configuramos Spring Security para establecer la autenticación
                 boolean isValidToken = jwtUtil.validateToken(jwtToken, userDetails);
                 logger.debug("Token válido: " + isValidToken);

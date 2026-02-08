@@ -173,7 +173,7 @@ const LoginPage: React.FC = () => {
           <span className="auth-mobile-nav-icon">🦅</span>
           <span className="auth-mobile-nav-text">Actividades</span>
         </Link>
-        <Link to={routes.accomodations} className="auth-mobile-nav-link">
+        <Link to={routes.alojamientos} className="auth-mobile-nav-link">
           <span className="auth-mobile-nav-icon">🏡</span>
           <span className="auth-mobile-nav-text">Alojamiento</span>
         </Link>

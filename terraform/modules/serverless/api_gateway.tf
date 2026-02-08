@@ -145,6 +145,13 @@ resource "aws_apigatewayv2_route" "senderos_list" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+# Contact Form Route
+resource "aws_apigatewayv2_route" "contacto" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /contacto"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "senderos_get" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "GET /senderos/{id}"

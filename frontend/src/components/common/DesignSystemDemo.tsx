@@ -2,7 +2,7 @@ import React from 'react';
 import ThemeToggle from './ThemeToggle';
 import Button from './Button';
 import Card, { CardHeader, CardBody, CardFooter, CardImage } from './Card';
-import ActivityCard from './ActivityCard';
+import SenderoCardV2 from './SenderoCardV2';
 import AccommodationCard from './AccommodationCard';
 
 const DesignSystemDemo: React.FC = () => {
@@ -271,23 +271,17 @@ const DesignSystemDemo: React.FC = () => {
         <div className="mb-8">
           <h3 className="card-title mb-4">Tourism Cards</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <ActivityCard
+            <SenderoCardV2
               id="bird-watching"
-              name="Observación de Aves"
-              description="Descubre la rica avifauna del Paso Centurión con nuestros guías especializados. Una experiencia única para los amantes de la naturaleza."
-              image="/src/assets/react.svg"
-              duration="3-4 horas"
-              difficulty="Fácil"
-              price={2500}
-              currency="UYU"
+              nombre="Observación de Aves"
+              descripcion="Descubre la rica avifauna del Paso Centurión con nuestros guías especializados. Una experiencia única para los amantes de la naturaleza."
+              imagenUrl="/src/assets/react.svg"
+              duracion="3-4 horas"
+              dificultad="Fácil"
+              precio={2500}
+              moneda="UYU"
               maxParticipants={8}
-              includes={[
-                "Guía especializado",
-                "Binoculares profesionales",
-                "Refrigerio incluido",
-                "Transporte desde el alojamiento"
-              ]}
-              onBook={(id) => console.log('Booking activity:', id)}
+              onViewDetails={(id) => console.log('Viewing activity details:', id)}
             />
 
             <AccommodationCard

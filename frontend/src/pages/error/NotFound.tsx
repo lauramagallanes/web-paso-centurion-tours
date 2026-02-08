@@ -22,7 +22,7 @@ const NotFound: React.FC = () => {
   };
 
   const handleExploreAccommodations = () => {
-    navigate(routes.accomodations);
+    navigate(routes.alojamientos);
   };
 
   return (

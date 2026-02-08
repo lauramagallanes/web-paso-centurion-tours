@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" fill="none">
+  <g>
+    <!-- Airbnb Symbol -->
+    <path d="M25 10 Q15 20 15 30 Q15 38 25 42 Q35 38 35 30 Q35 20 25 10 Z M25 18 Q20 25 20 30 Q20 34 25 36 Q30 34 30 30 Q30 25 25 18 Z" fill="#FF5A5F"/>
+    <!-- Text -->
+    <text x="55" y="32" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#484848">airbnb</text>
+  </g>
+</svg>
+
+

@@ -5,6 +5,7 @@ import Footer from '../common/Footer'
 import Breadcrumbs from '../common/Breadcrumbs'
 import { Outlet } from 'react-router-dom'
 import WhatsAppButton from '../common/WhatsappButton'
+import ScrollToTop from '../common/ScrollToTop'
 
 const PublicLayout: React.FC = () => {
   const location = useLocation();
@@ -16,6 +17,7 @@ const PublicLayout: React.FC = () => {
 
   return (
     <div>
+      <ScrollToTop />
       <MainNavbar/>
       {!hideBreadcrumbs && (
         <div className="breadcrumbs-container">

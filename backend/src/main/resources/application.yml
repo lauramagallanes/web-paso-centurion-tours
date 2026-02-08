@@ -1,7 +1,7 @@
 server:
   port: 8080
   servlet:
-    context-path: /api
+    # context-path removed - API Gateway routes don't include /api prefix
     encoding:
       charset: UTF-8
       enabled: true
@@ -19,7 +19,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-init-sql: SET client_encoding TO 'UTF8'
-      connection-timeout: 30000  # 30 segundos
+      connection-timeout: 60000  # 60 segundos (aumentado para Lambda cold start)
       maximum-pool-size: 5
       minimum-idle: 1
       idle-timeout: 300000  # 5 minutos
@@ -48,7 +48,7 @@ spring:
   
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate  # Cambiado de 'update' a 'validate' para evitar DDL durante inicialización en Lambda
     show-sql: ${SHOW_SQL:false}
     properties:
       hibernate:

@@ -1,22 +1,32 @@
 package com.tinambu.tours.dto.response;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-@EqualsAndHashCode(callSuper = true)
-public class AlojamientoReservaResponse extends ReservaResponse {
+@Builder
+public class AlojamientoReservaResponse {
+
+    private UUID id;
+    private String codigoReserva;
+    private String emailContacto;
+    private String nombreContacto;
+    private String telefonoContacto;
+    private String estado;
+    private BigDecimal precioTotal;
+    private String observaciones;
+    private LocalDateTime fechaCreacion;
+    private LocalDateTime fechaActualizacion;
 
     private UUID alojamientoId;
     private String alojamientoNombre;
@@ -86,11 +96,11 @@ public class AlojamientoReservaResponse extends ReservaResponse {
 
     public boolean requiereCheckIn() {
         return fechaCheckIn.equals(LocalDate.now()) && 
-               getEstado().name().equals("CONFIRMADA");
+               "CONFIRMADA".equals(estado);
     }
 
     public boolean requiereCheckOut() {
         return fechaCheckOut.equals(LocalDate.now()) && 
-               getEstado().name().equals("CONFIRMADA");
+               "CONFIRMADA".equals(estado);
     }
 }

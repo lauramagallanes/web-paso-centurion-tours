@@ -96,10 +96,17 @@ public class SenderoService {
                 // Save to database
                 SenderoImagen senderoImagen = new SenderoImagen(senderoId, imageUrl, description, currentOrder + i + 1);
                 
-                // Set as principal if it's the first image for this sendero
-                if (currentOrder == 0 && i == 0) {
+                // Set as principal if it's the first image for this sendero OR if sendero has no imagenPrincipal yet
+                boolean isFirstImage = (currentOrder == 0 && i == 0);
+                boolean needsMainImage = (sendero.getImagenPrincipal() == null || sendero.getImagenPrincipal().isEmpty());
+                
+                if (isFirstImage || (i == 0 && needsMainImage)) {
                     senderoImagen.marcarComoPrincipal();
-                    // Note: Can't set sendero properties due to simplified entity relationships
+                    // Update sendero with main image URL
+                    sendero.setImagenPrincipal(imageUrl);
+                    sendero.setGaleria(true);
+                    senderoRepository.save(sendero);
+                    System.out.println("✅ Set imagen principal for sendero: " + senderoId + " -> " + imageUrl);
                 }
                 
                 SenderoImagen savedImage = senderoImagenRepository.save(senderoImagen);
@@ -129,6 +136,8 @@ public class SenderoService {
         }
         
         SenderoImagen image = imageOpt.get();
+        boolean wasPrincipal = image.getEsPrincipal();
+        UUID senderoId = image.getSenderoId();
         
         try {
             // Delete from S3
@@ -142,9 +151,28 @@ public class SenderoService {
             // Delete from database
             senderoImagenRepository.delete(image);
             
+            // If this was the principal image, update sendero and set new principal
+            if (wasPrincipal) {
+                Sendero sendero = obtenerSenderoPorId(senderoId);
+                List<SenderoImagen> remainingImages = senderoImagenRepository.findBySenderoIdOrderByOrdenAsc(senderoId);
+                
+                if (!remainingImages.isEmpty()) {
+                    // Set first remaining image as principal
+                    SenderoImagen newPrincipal = remainingImages.get(0);
+                    newPrincipal.marcarComoPrincipal();
+                    senderoImagenRepository.save(newPrincipal);
+                    sendero.setImagenPrincipal(newPrincipal.getUrlImagen());
+                } else {
+                    // No more images, clear principal image
+                    sendero.setImagenPrincipal(null);
+                    sendero.setGaleria(false);
+                }
+                senderoRepository.save(sendero);
+            }
+            
             // Update order of remaining images if repository method exists
             try {
-                senderoImagenRepository.decrementOrderAfterPosition(image.getSenderoId(), image.getOrden());
+                senderoImagenRepository.decrementOrderAfterPosition(senderoId, image.getOrden());
             } catch (Exception e) {
                 // If custom repository method doesn't exist, continue silently
                 System.out.println("Warning: Could not reorder images after deletion");
@@ -319,6 +347,15 @@ public class SenderoService {
     }
 
     /**
+     * Obtener sendero por ID como Response (público para controller)
+     */
+    @Transactional(readOnly = true)
+    public SenderoResponse obtenerSenderoPorIdResponse(UUID id) {
+        Sendero sendero = obtenerSenderoPorId(id);
+        return convertirEntidadAResponse(sendero);
+    }
+
+    /**
      * Actualizar sendero existente
      */
     public SenderoResponse actualizarSendero(UUID id, SenderoRequest senderoRequest) {
@@ -403,6 +440,96 @@ public class SenderoService {
     }
 
     /**
+     * Versión optimizada que evita el problema N+1 haciendo batch queries
+     * Obtiene todos los senderos activos y sus imágenes en solo 3 queries totales
+     */
+    @Transactional(readOnly = true)
+    public List<SenderoResponse> obtenerSenderosActivosOptimizado() {
+        System.out.println("🚀 Obteniendo senderos activos (VERSIÓN OPTIMIZADA)");
+        
+        // Query 1: Obtener todos los senderos activos
+        List<Sendero> senderos = senderoRepository.findAll().stream()
+            .filter(Sendero::getActivo)
+            .collect(Collectors.toList());
+        
+        if (senderos.isEmpty()) {
+            System.out.println("✅ No hay senderos activos");
+            return List.of();
+        }
+        
+        // Obtener IDs de senderos para batch queries
+        List<UUID> senderoIds = senderos.stream()
+            .map(Sendero::getId)
+            .collect(Collectors.toList());
+        
+        // Query 2: Obtener TODAS las imágenes principales en una sola query batch optimizada
+        List<SenderoImagen> imagenesPrincipales = senderoImagenRepository.findBySenderoIdInAndEsPrincipalTrue(senderoIds);
+        
+        // Crear un mapa de senderoId -> imagen principal para acceso O(1)
+        java.util.Map<UUID, String> imagenPrincipalMap = imagenesPrincipales.stream()
+            .collect(Collectors.toMap(
+                SenderoImagen::getSenderoId,
+                SenderoImagen::getUrlImagen,
+                (existing, replacement) -> existing // Si hay duplicados, mantener el primero
+            ));
+        
+        // Query 3: Obtener TODOS los conteos de imágenes en una sola query batch optimizada
+        List<Object[]> conteos = senderoImagenRepository.countBySenderoIdIn(senderoIds);
+        java.util.Map<UUID, Long> conteoImagenesMap = conteos.stream()
+            .collect(Collectors.toMap(
+                row -> (UUID) row[0],
+                row -> (Long) row[1]
+            ));
+        
+        System.out.println("✅ Obtenidos " + senderos.size() + " senderos activos");
+        System.out.println("✅ Obtenidas " + imagenPrincipalMap.size() + " imágenes principales");
+        System.out.println("✅ Obtenidos conteos para " + conteoImagenesMap.size() + " senderos");
+        
+        // Convertir a Response usando los mapas pre-cargados (sin queries adicionales)
+        return senderos.stream()
+            .map(sendero -> convertirEntidadAResponseOptimizado(sendero, imagenPrincipalMap, conteoImagenesMap))
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Versión optimizada de convertirEntidadAResponse que usa mapas pre-cargados
+     * Evita hacer queries individuales por cada sendero
+     */
+    private SenderoResponse convertirEntidadAResponseOptimizado(
+            Sendero sendero,
+            java.util.Map<UUID, String> imagenPrincipalMap,
+            java.util.Map<UUID, Long> conteoImagenesMap) {
+        
+        SenderoResponse response = new SenderoResponse();
+        response.setId(sendero.getId());
+        response.setNombre(sendero.getNombre());
+        response.setDescripcion(sendero.getDescripcion());
+        response.setDuracionHoras(sendero.getDuracionHoras());
+        response.setNivelDificultad(sendero.getNivelDificultad());
+        response.setCapacidadMaximaGrupo(sendero.getCapacidadMaximaGrupo());
+        response.setPrecioPorPersona(sendero.getPrecioPorPersona());
+        response.setUrlImagen(sendero.getUrlImagen());
+        
+        // Usar imagen principal del mapa (sin query adicional)
+        String imagenPrincipal = imagenPrincipalMap.get(sendero.getId());
+        if (imagenPrincipal != null && !imagenPrincipal.isEmpty()) {
+            response.setImagenPrincipal(imagenPrincipal);
+            response.setUrlImagen(imagenPrincipal); // También actualizar campo legacy
+        } else {
+            // Fallback a sendero.imagenPrincipal si no hay imagen principal en el mapa
+            response.setImagenPrincipal(sendero.getImagenPrincipal());
+        }
+        
+        response.setTieneGaleria(sendero.getGaleria() != null ? sendero.getGaleria() : false);
+        
+        // Usar conteo del mapa (sin query adicional)
+        Long imageCount = conteoImagenesMap.getOrDefault(sendero.getId(), 0L);
+        response.setTotalImagenes(imageCount.intValue());
+        
+        return response;
+    }
+
+    /**
      * Eliminar sendero (soft delete - desactivar)
      */
     public void eliminarSendero(UUID id) {
@@ -429,8 +556,11 @@ public class SenderoService {
     /**
      * Convierte una entidad Sendero a SenderoResponse DTO
      * Incluye información de imágenes si están disponibles
+     * FIXED: Now queries sendero_imagenes table for the actual principal image
      */
     private SenderoResponse convertirEntidadAResponse(Sendero sendero) {
+        System.out.println("🔍 Converting Sendero to Response: " + sendero.getNombre() + " (ID: " + sendero.getId() + ")");
+        
         SenderoResponse response = new SenderoResponse();
         response.setId(sendero.getId());
         response.setNombre(sendero.getNombre());
@@ -441,13 +571,32 @@ public class SenderoService {
         response.setPrecioPorPersona(sendero.getPrecioPorPersona());
         response.setUrlImagen(sendero.getUrlImagen());
         
-        // Add new image-related fields
-        response.setImagenPrincipal(sendero.getImagenPrincipal());
+        System.out.println("   - sendero.imagenPrincipal: " + sendero.getImagenPrincipal());
+        System.out.println("   - sendero.urlImagen: " + sendero.getUrlImagen());
+        
+        // FIXED: Query sendero_imagenes table for the actual principal image
+        Optional<SenderoImagen> principalImageOpt = senderoImagenRepository.findBySenderoIdAndEsPrincipalTrue(sendero.getId());
+        System.out.println("   - Principal image found in DB: " + principalImageOpt.isPresent());
+        
+        if (principalImageOpt.isPresent()) {
+            String principalUrl = principalImageOpt.get().getUrlImagen();
+            System.out.println("   - Principal image URL: " + principalUrl);
+            // Use the image marked as principal in sendero_imagenes table
+            response.setImagenPrincipal(principalUrl);
+            response.setUrlImagen(principalUrl); // Also set legacy field
+        } else {
+            // Fallback to sendero.imagenPrincipal if no principal image found in sendero_imagenes
+            System.out.println("   - Using fallback: sendero.imagenPrincipal");
+            response.setImagenPrincipal(sendero.getImagenPrincipal());
+        }
+        
         response.setTieneGaleria(sendero.getGaleria() != null ? sendero.getGaleria() : false);
         
         // Get image count
         long imageCount = senderoImagenRepository.countBySenderoId(sendero.getId());
         response.setTotalImagenes((int) imageCount);
+        
+        System.out.println("   ✅ Final response.imagenPrincipal: " + response.getImagenPrincipal());
         
         return response;
     }

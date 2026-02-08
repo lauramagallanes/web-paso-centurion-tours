@@ -3,13 +3,13 @@ package com.tinambu.tours.entity.reserva;
 import com.tinambu.tours.entity.alojamiento.Alojamiento;
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -18,10 +18,40 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-@EqualsAndHashCode(callSuper = true)
-@PrimaryKeyJoinColumn(name = "id")
-public class AlojamientoReserva extends Reserva {
+@Builder
+public class AlojamientoReserva {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(name = "codigo_reserva", unique = true, nullable = false)
+    private String codigoReserva;
+
+    @Column(name = "email_contacto", nullable = false)
+    private String emailContacto;
+
+    @Column(name = "nombre_contacto", nullable = false)
+    private String nombreContacto;
+
+    @Column(name = "telefono_contacto")
+    private String telefonoContacto;
+
+    @Column(name = "estado", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private EstadoReserva estado = EstadoReserva.PENDIENTE;
+
+    @Column(name = "precio_total", nullable = false, precision = 12, scale = 2)
+    private BigDecimal precioTotal;
+
+    @Column(name = "observaciones", columnDefinition = "TEXT")
+    private String observaciones;
+
+    @Column(name = "fecha_creacion", nullable = false)
+    private LocalDateTime fechaCreacion = LocalDateTime.now();
+
+    @Column(name = "fecha_actualizacion")
+    private LocalDateTime fechaActualizacion;
 
     @Column(name = "alojamiento_id", nullable = false)
     private UUID alojamientoId;
@@ -68,10 +98,9 @@ public class AlojamientoReserva extends Reserva {
         return fechaCheckIn.isBefore(fechaCheckOut);
     }
 
-    @Override
     public BigDecimal calcularPrecioTotal() {
         if (alojamiento == null) {
-            return super.getPrecioTotal();
+            return this.precioTotal != null ? this.precioTotal : BigDecimal.ZERO;
         }
         
         int noches = calcularNumeroNoches();
@@ -79,7 +108,10 @@ public class AlojamientoReserva extends Reserva {
             return BigDecimal.ZERO;
         }
         
-        return alojamiento.calcularPrecioTotal(noches, numeroHuespedes);
+        // Simple calculation: price per night * nights * guests
+        BigDecimal precioPorNoche = alojamiento.getPrecioPorNoche();
+        return precioPorNoche.multiply(BigDecimal.valueOf(noches))
+                            .multiply(BigDecimal.valueOf(numeroHuespedes));
     }
 
     public boolean estaEnRango(LocalDate fecha) {

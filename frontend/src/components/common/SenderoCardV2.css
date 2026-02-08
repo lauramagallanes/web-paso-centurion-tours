@@ -1,0 +1,261 @@
+/* SenderoCardV2 - Airbnb-style Card Design */
+.sendero-card-v2 {
+  background: var(--color-surface);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  overflow: hidden;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+}
+
+.sendero-card-v2:hover {
+  box-shadow: 0 4px 16px var(--color-shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--color-border-medium);
+}
+
+/* Image Container */
+.sendero-card-v2-image-container {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  overflow: hidden;
+  background: var(--color-surface-variant);
+}
+
+.sendero-card-v2-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.sendero-card-v2:hover .sendero-card-v2-image {
+  transform: scale(1.03);
+}
+
+/* Placeholder for when no image is available */
+.sendero-card-v2-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-primary-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sendero-card-v2-placeholder-icon {
+  font-size: 64px;
+  color: var(--color-text-inverse);
+  opacity: 0.7;
+}
+
+/* Gallery Navigation Arrows */
+.sendero-card-v2-nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--color-text);
+  transition: all 0.2s ease;
+  z-index: 5;
+  opacity: 0;
+}
+
+.sendero-card-v2:hover .sendero-card-v2-nav-arrow {
+  opacity: 1;
+}
+
+.sendero-card-v2-nav-arrow:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-primary);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 2px 8px var(--color-shadow);
+}
+
+.sendero-card-v2-nav-arrow.prev {
+  left: 12px;
+}
+
+.sendero-card-v2-nav-arrow.next {
+  right: 12px;
+}
+
+/* Favorite Button */
+.sendero-card-v2-favorite {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  color: #222;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.sendero-card-v2-favorite:hover {
+  background: #fff;
+  transform: scale(1.1);
+}
+
+.sendero-card-v2-favorite.active {
+  color: #ff385c;
+}
+
+/* Content Section - Minimal Design */
+.sendero-card-v2-content {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sendero-card-v2-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  margin: 0;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Footer with Icon, Price and "Per Person" */
+.sendero-card-v2-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.sendero-card-v2-icon {
+  font-size: 16px;
+  color: #717171;
+}
+
+.sendero-card-v2-price {
+  font-weight: 600;
+  color: #222;
+}
+
+.sendero-card-v2-per-person {
+  color: #717171;
+  font-weight: 400;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sendero-card-v2 {
+    max-width: 100%;
+  }
+  
+  .sendero-card-v2-image-container {
+    height: 280px;
+  }
+  
+  .sendero-card-v2-content {
+    padding: 14px 16px;
+  }
+  
+  .sendero-card-v2-title {
+    font-size: 15px;
+  }
+
+  .sendero-card-v2-nav-arrow {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+  }
+
+  .sendero-card-v2-favorite {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sendero-card-v2-image-container {
+    height: 240px;
+  }
+
+  .sendero-card-v2-nav-arrow {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+  }
+
+  .sendero-card-v2-nav-arrow.prev {
+    left: 8px;
+  }
+
+  .sendero-card-v2-nav-arrow.next {
+    right: 8px;
+  }
+}
+
+/* Dark Theme Adjustments */
+[data-theme="dark"] .sendero-card-v2 {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .sendero-card-v2:hover {
+  border-color: var(--color-border-medium);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .sendero-card-v2-title {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .sendero-card-v2-price {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .sendero-card-v2-per-person {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .sendero-card-v2-icon {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .sendero-card-v2-favorite {
+  background: rgba(42, 42, 42, 0.95);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .sendero-card-v2-favorite:hover {
+  background: rgba(42, 42, 42, 1);
+}
+
+[data-theme="dark"] .sendero-card-v2-favorite.active {
+  color: #ff385c;
+}

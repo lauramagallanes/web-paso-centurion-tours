@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '../../utils/routes';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -14,10 +14,12 @@ const MainNavbar: React.FC = () => {
   const { state, logout } = useAuth();
   const { theme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const navbarRef = useRef<HTMLDivElement>(null);
 
   const handleLoginSuccess = () => {
     setShowLoginModal(false);
@@ -47,11 +49,27 @@ const MainNavbar: React.FC = () => {
     setActiveDropdown(null);
   };
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navbarRef.current && !navbarRef.current.contains(event.target as Node)) {
+        setActiveDropdown(null);
+      }
+    };
+
+    if (activeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeDropdown]);
 
 
   return (
     <>
-      <nav className="main-navbar" role="navigation" aria-label="Main navigation">
+      <nav className="main-navbar" role="navigation" aria-label="Main navigation" ref={navbarRef}>
         <div className="navbar-container">
           {/* Logo/Brand */}
           <div className="navbar-brand">
@@ -67,7 +85,7 @@ const MainNavbar: React.FC = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="navbar-nav desktop-nav" onClick={closeDropdowns}>
+          <div className="navbar-nav desktop-nav">
             <Link
               to={routes.home}
               className={`nav-link ${isActiveRoute(routes.home) ? 'active' : ''}`}
@@ -81,7 +99,8 @@ const MainNavbar: React.FC = () => {
                 className={`nav-link dropdown-toggle ${activeDropdown === 'alojamiento' ? 'active' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleDropdownToggle('alojamiento');
+                  navigate(routes.alojamientos);
+                  closeDropdowns();
                 }}
                 onMouseEnter={() => setActiveDropdown('alojamiento')}
               >
@@ -96,13 +115,13 @@ const MainNavbar: React.FC = () => {
                   className="dropdown-menu"
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
-                  <Link to={routes.accomodations} className="dropdown-item" onClick={closeDropdowns}>
+                  <Link to={routes.alojamientos} className="dropdown-item" onClick={closeDropdowns}>
                     Ver Alojamientos
                   </Link>
-                  <Link to={routes.accomodations + '?type=cabanas'} className="dropdown-item" onClick={closeDropdowns}>
+                  <Link to={routes.alojamientos + '?type=cabanas'} className="dropdown-item" onClick={closeDropdowns}>
                     Cabañas Ecológicas
                   </Link>
-                  <Link to={routes.accomodations + '?type=habitaciones'} className="dropdown-item" onClick={closeDropdowns}>
+                  <Link to={routes.alojamientos + '?type=habitaciones'} className="dropdown-item" onClick={closeDropdowns}>
                     Habitaciones Premium
                   </Link>
                   <Link to={routes.book + '?service=accommodation'} className="dropdown-item" onClick={closeDropdowns}>
@@ -117,7 +136,8 @@ const MainNavbar: React.FC = () => {
                 className={`nav-link dropdown-toggle ${activeDropdown === 'senderismo' ? 'active' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleDropdownToggle('senderismo');
+                  navigate(routes.activities);
+                  closeDropdowns();
                 }}
                 onMouseEnter={() => setActiveDropdown('senderismo')}
               >
@@ -153,35 +173,36 @@ const MainNavbar: React.FC = () => {
             
             <div className="nav-dropdown">
               <button
-                className={`nav-link dropdown-toggle ${activeDropdown === 'nosotros' ? 'active' : ''}`}
+                className={`nav-link dropdown-toggle ${activeDropdown === 'birding' ? 'active' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleDropdownToggle('nosotros');
+                  navigate(routes.birdwatching);
+                  closeDropdowns();
                 }}
-                onMouseEnter={() => setActiveDropdown('nosotros')}
+                onMouseEnter={() => setActiveDropdown('birding')}
               >
-                <span className="nav-label">Nosotros</span>
-                <span className={`dropdown-arrow ${activeDropdown === 'nosotros' ? 'open' : ''}`}>
+                <span className="nav-label">Birding</span>
+                <span className={`dropdown-arrow ${activeDropdown === 'birding' ? 'open' : ''}`}>
                   ▼
                 </span>
               </button>
               
-              {activeDropdown === 'nosotros' && (
+              {activeDropdown === 'birding' && (
                 <div 
                   className="dropdown-menu"
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
-                  <Link to={routes.about} className="dropdown-item" onClick={closeDropdowns}>
-                    Sobre Nosotros
+                  <Link to={routes.birdwatching} className="dropdown-item" onClick={closeDropdowns}>
+                    Todas las Aves
                   </Link>
-                  <Link to={routes.about + '#team'} className="dropdown-item" onClick={closeDropdowns}>
-                    Nuestro Equipo
+                  <Link to={routes.birdwatching + '?habitat=bosque'} className="dropdown-item" onClick={closeDropdowns}>
+                    Aves de Bosque
                   </Link>
-                  <Link to={routes.about + '#gallery'} className="dropdown-item" onClick={closeDropdowns}>
-                    Galería
+                  <Link to={routes.birdwatching + '?habitat=humedal'} className="dropdown-item" onClick={closeDropdowns}>
+                    Aves de Humedal
                   </Link>
-                  <Link to={routes.about + '#contact'} className="dropdown-item" onClick={closeDropdowns}>
-                    Contacto
+                  <Link to={routes.activities} className="dropdown-item" onClick={closeDropdowns}>
+                    Reservar Tour de Avistamiento
                   </Link>
                 </div>
               )}
@@ -190,7 +211,10 @@ const MainNavbar: React.FC = () => {
 
           {/* Desktop Actions */}
           <div className="navbar-actions desktop-actions">
-            <CartButton />
+            <ThemeToggle />
+            
+            {/* Carrito - solo visible si está autenticado */}
+            {state.isAuthenticated && <CartButton />}
             
             {/* ADMIN PANEL BUTTON - ALWAYS VISIBLE WHEN AUTHENTICATED */}
             {state.isAuthenticated && (
@@ -207,16 +231,6 @@ const MainNavbar: React.FC = () => {
                   <span className="nav-label">Mis Reservas</span>
                 </Link>
                 
-                {/* Debug info */}
-                {console.log('🔍 Debug MainNavbar:', { 
-                  isAuthenticated: state.isAuthenticated,
-                  userTipo: state.user?.tipo,
-                  fullUser: state.user 
-                })}
-                
-                {/* Original admin check */}
-                {state.user?.tipo === 'ADMIN' && console.log('👑 Admin user detected!')}
-                
                 <div className="user-info">
                   <span className="user-greeting">Hola, {state.user?.nombreCompleto}</span>
                   <button 
@@ -229,19 +243,52 @@ const MainNavbar: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="auth-buttons">
-                <button 
-                  className="btn btn-outline"
-                  onClick={() => setShowLoginModal(true)}
+              <div className="nav-dropdown user-dropdown">
+                <button
+                  className={`nav-link user-menu-toggle ${activeDropdown === 'user' ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('User button clicked! Current dropdown:', activeDropdown);
+                    handleDropdownToggle('user');
+                  }}
+                  aria-label="Menú de usuario"
+                  type="button"
                 >
-                  Iniciar Sesión
+                  <i className="bi bi-person-circle" style={{ fontSize: '1.5rem' }}></i>
                 </button>
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => setShowSignupModal(true)}
-                >
-                  Registrarse
-                </button>
+                
+                {activeDropdown === 'user' && (
+                  <div 
+                    className="dropdown-menu user-dropdown-menu"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button 
+                      className="dropdown-item"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowLoginModal(true);
+                        closeDropdowns();
+                      }}
+                      type="button"
+                    >
+                      <i className="bi bi-box-arrow-in-right"></i>
+                      Iniciar Sesión
+                    </button>
+                    <button 
+                      className="dropdown-item"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowSignupModal(true);
+                        closeDropdowns();
+                      }}
+                      type="button"
+                    >
+                      <i className="bi bi-person-plus"></i>
+                      Registrarse
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -275,8 +322,8 @@ const MainNavbar: React.FC = () => {
               </Link>
               
               <Link
-                to={routes.accomodations}
-                className={`mobile-nav-link ${isActiveRoute(routes.accomodations) ? 'active' : ''}`}
+                to={routes.alojamientos}
+                className={`mobile-nav-link ${isActiveRoute(routes.alojamientos) ? 'active' : ''}`}
                 onClick={closeMobileMenu}
               >
                 <span className="nav-icon">🏨</span>

@@ -1,0 +1,106 @@
+/* Theme Toggle Button */
+.theme-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
+}
+
+/* Icon animation */
+.theme-toggle i {
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover i {
+  transform: rotate(20deg);
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .theme-toggle {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Mobile theme toggle (with text) */
+.mobile-theme-toggle .theme-toggle {
+  width: auto;
+  height: auto;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 8px;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.mobile-theme-toggle .theme-toggle:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-hover);
+}
+
+.mobile-theme-toggle .theme-toggle-text {
+  display: inline;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+}
+
+/* Desktop theme toggle (icon only) */
+.desktop-actions .theme-toggle .theme-toggle-text {
+  display: none;
+}
+
+/* Accessibility */
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Smooth transition for icon change */
+@keyframes iconFadeIn {
+  from {
+    opacity: 0;
+    transform: rotate(-180deg) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+}
+
+.theme-toggle i {
+  animation: iconFadeIn 0.3s ease;
+}
+
+
+
+
+
+
+
+

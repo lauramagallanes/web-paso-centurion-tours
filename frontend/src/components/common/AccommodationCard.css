@@ -10,17 +10,23 @@
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
   border: 1px solid #e2e8f0;
   height: 100%;
   display: flex;
   flex-direction: column;
+  /* Optimize scroll performance */
+  contain: layout style paint;
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .accommodation-card:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 25px var(--color-shadow-md);
+  transform: translateY(-2px) translateZ(0);
+  border-color: var(--color-border-medium);
 }
 
 /* Image Section */
@@ -29,6 +35,9 @@
   width: 100%;
   height: 200px;
   overflow: hidden;
+  /* Optimize scroll performance */
+  contain: layout style paint;
+  transform: translateZ(0);
 }
 
 .accommodation-card__image {
@@ -36,18 +45,22 @@
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
+  /* Optimize scroll performance */
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .accommodation-card:hover .accommodation-card__image {
-  transform: scale(1.05);
+  transform: scale(1.05) translateZ(0);
 }
 
 .accommodation-card__gallery-indicator {
   position: absolute;
   top: 12px;
   left: 12px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
+  background: var(--color-overlay);
+  color: var(--color-text-inverse);
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 12px;
@@ -58,8 +71,8 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 50%;
   width: 36px;
   height: 36px;
@@ -67,18 +80,25 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  /* Remove backdrop-filter for better performance - use solid background instead */
+  background: rgba(255, 255, 255, 0.95);
+  /* Optimize scroll performance */
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .accommodation-card__favorite-btn:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: scale(1.1);
+  background: var(--color-surface-hover);
+  border-color: var(--color-error);
+  transform: scale(1.1) translateZ(0);
 }
 
 .accommodation-card__favorite-btn.active {
-  background: #ef4444;
+  background: var(--color-error);
   color: white;
+  border-color: var(--color-error);
 }
 
 .heart-icon {
@@ -101,17 +121,18 @@
 
 /* Content Section */
 .accommodation-card__content {
-  padding: 16px;
+  padding: 20px;
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: white;
 }
 
 .accommodation-card__title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2d3436;
   margin: 0;
   line-height: 1.3;
   display: -webkit-box;
@@ -125,7 +146,7 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #64748b;
+  color: #636e72;
 }
 
 .accommodation-card__capacity,
@@ -143,7 +164,7 @@
 
 .accommodation-card__location {
   font-size: 13px;
-  color: #64748b;
+  color: #636e72;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -152,8 +173,8 @@
 /* Price Section */
 .accommodation-card__price-section {
   margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid #f1f5f9;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
 }
 
 .accommodation-card__price {
@@ -163,16 +184,17 @@
 }
 
 .price-amount {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
-  color: #16a34a;
+  color: #6B792E;
   line-height: 1.2;
 }
 
 .price-period {
-  font-size: 12px;
-  color: #64748b;
-  margin-top: 2px;
+  font-size: 13px;
+  color: #636e72;
+  margin-top: 4px;
+  font-weight: 500;
 }
 
 /* Responsive Design */
@@ -218,31 +240,67 @@
 }
 
 /* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .accommodation-card {
-    background: #1e293b;
-    border-color: #334155;
-  }
-  
-  .accommodation-card__title {
-    color: #f8fafc;
-  }
-  
-  .accommodation-card__info-row {
-    color: #94a3b8;
-  }
-  
-  .accommodation-card__location {
-    color: #94a3b8;
-  }
-  
-  .accommodation-card__price-section {
-    border-top-color: #334155;
-  }
-  
-  .price-period {
-    color: #94a3b8;
-  }
+[data-theme="dark"] .accommodation-card {
+  background: #1e293b;
+  border-color: #475569;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .accommodation-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  border-color: #64748b;
+}
+
+[data-theme="dark"] .accommodation-card__content {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .accommodation-card__title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .accommodation-card__info-row {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .accommodation-card__capacity .icon,
+[data-theme="dark"] .accommodation-card__beds .icon {
+  color: #a3d9a5;
+}
+
+[data-theme="dark"] .accommodation-card__location {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .accommodation-card__price-section {
+  border-top-color: #475569;
+}
+
+[data-theme="dark"] .price-amount {
+  color: #a3d9a5;
+}
+
+[data-theme="dark"] .price-period {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .accommodation-card__favorite-btn {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: #475569;
+}
+
+[data-theme="dark"] .accommodation-card__favorite-btn:hover {
+  background: rgba(30, 41, 59, 1);
+  border-color: #ef4444;
+}
+
+[data-theme="dark"] .heart-icon {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .accommodation-card__gallery-indicator {
+  background: rgba(0, 0, 0, 0.7);
+  color: #f8fafc;
 }
 
 /* Loading state */

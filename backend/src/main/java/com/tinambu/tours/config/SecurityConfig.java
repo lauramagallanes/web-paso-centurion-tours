@@ -98,7 +98,13 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health").permitAll()
                 
                 // Endpoints administrativos PRIMERO (más específicos)
+                .requestMatchers("/dashboard/admin/**").hasRole("ADMIN")
                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/alojamientos/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/alojamientos/admin").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/alojamientos/admin").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/alojamientos/admin/**").hasRole("ADMIN")
+                .requestMatchers("/habitaciones/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/habitaciones/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/habitaciones/admin").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/habitaciones/admin/**").hasRole("ADMIN")

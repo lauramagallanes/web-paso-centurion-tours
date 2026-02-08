@@ -140,15 +140,10 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                   </button>
                 </div>
                 
-                {/* Caption */}
-                {showCaptions && (photo.title || photo.description) && (
+                {/* Caption - Always show title on hover */}
+                {photo.title && (
                   <div className="photo-item-caption">
-                    {photo.title && (
-                      <h4 className="photo-caption-title">{photo.title}</h4>
-                    )}
-                    {photo.description && (
-                      <p className="photo-caption-description">{photo.description}</p>
-                    )}
+                    <h4 className="photo-caption-title">{photo.title}</h4>
                   </div>
                 )}
               </div>

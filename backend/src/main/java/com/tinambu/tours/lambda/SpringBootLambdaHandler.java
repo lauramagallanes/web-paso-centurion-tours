@@ -27,43 +27,45 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
     private static RequestMappingHandlerMapping handlerMapping;
     private static RequestMappingHandlerAdapter handlerAdapter;
     private static boolean initialized = false;
+    private static final Object initLock = new Object();
 
-    static {
-        initializeSpringBoot();
-    }
+    // Lazy initialization - don't initialize in static block to avoid INIT timeout
+    // Initialize on first request instead
 
     private static String determineProfile() {
-        // Primero, verificar si ya hay un perfil configurado en SPRING_PROFILES_ACTIVE
-        String activeProfile = System.getenv("SPRING_PROFILES_ACTIVE");
-        if (activeProfile != null && !activeProfile.isEmpty()) {
-            System.out.println("Using explicit profile from SPRING_PROFILES_ACTIVE: " + activeProfile);
-            return activeProfile;
-        }
-        
-        // Si no hay perfil explícito, determinar automáticamente
+        // Verificar si hay variables de base de datos disponibles
         String dbHost = System.getenv("DB_HOST");
-        String dbUser = System.getenv("DB_USERNAME"); // Corregido: DB_USERNAME en lugar de DB_USER
+        String dbUser = System.getenv("DB_USER"); // Usar DB_USER (no DB_USERNAME)
         String dbName = System.getenv("DB_NAME");
-        String jwtSecretParam = System.getenv("JWT_SECRET_PARAM");
+        String jwtSecretParam = System.getenv("SSM_JWT_SECRET"); // Usar SSM_JWT_SECRET (no JWT_SECRET_PARAM)
 
+        // Si hay variables de base de datos, siempre usar lambda-with-db (incluso si SPRING_PROFILES_ACTIVE está configurado como "lambda")
         if (dbHost != null && !dbHost.isEmpty() &&
             dbUser != null && !dbUser.isEmpty() &&
             dbName != null && !dbName.isEmpty() &&
             jwtSecretParam != null && !jwtSecretParam.isEmpty()) {
             System.out.println("Database environment variables found, using lambda-with-db profile");
             System.out.println("DB_HOST: " + dbHost);
-            System.out.println("DB_USERNAME: " + dbUser);
+            System.out.println("DB_USER: " + dbUser);
             System.out.println("DB_NAME: " + dbName);
-            System.out.println("JWT_SECRET_PARAM: " + jwtSecretParam);
+            System.out.println("SSM_JWT_SECRET: " + jwtSecretParam);
             return "lambda-with-db";
-        } else {
-            System.out.println("Database connection not available, using lambda-no-db profile");
-            System.out.println("DB_HOST: " + (dbHost != null ? "present" : "missing"));
-            System.out.println("DB_USERNAME: " + (dbUser != null ? "present" : "missing"));
-            System.out.println("DB_NAME: " + (dbName != null ? "present" : "missing"));
-            System.out.println("JWT_SECRET_PARAM: " + (jwtSecretParam != null ? "present" : "missing"));
-            return "lambda-no-db";
         }
+        
+        // Si no hay variables de base de datos, verificar SPRING_PROFILES_ACTIVE
+        String activeProfile = System.getenv("SPRING_PROFILES_ACTIVE");
+        if (activeProfile != null && !activeProfile.isEmpty() && !activeProfile.equals("lambda")) {
+            System.out.println("Using explicit profile from SPRING_PROFILES_ACTIVE: " + activeProfile);
+            return activeProfile;
+        }
+        
+        // Por defecto, usar lambda-no-db
+        System.out.println("Database connection not available, using lambda-no-db profile");
+        System.out.println("DB_HOST: " + (dbHost != null ? "present" : "missing"));
+        System.out.println("DB_USER: " + (dbUser != null ? "present" : "missing"));
+        System.out.println("DB_NAME: " + (dbName != null ? "present" : "missing"));
+        System.out.println("SSM_JWT_SECRET: " + (jwtSecretParam != null ? "present" : "missing"));
+        return "lambda-no-db";
     }
 
     private static void initializeSpringBoot() {
@@ -76,14 +78,10 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
             // Determine and configure profile
             String profile = determineProfile();
             
-            // Solo configurar perfil adicional si no hay SPRING_PROFILES_ACTIVE configurado
-            String activeProfile = System.getenv("SPRING_PROFILES_ACTIVE");
-            if (activeProfile == null || activeProfile.isEmpty()) {
-                app.setAdditionalProfiles(profile);
-                System.out.println("Setting additional profile: " + profile);
-            } else {
-                System.out.println("Using profile from environment: " + activeProfile);
-            }
+            // Siempre usar el perfil determinado automáticamente (prioriza lambda-with-db si hay DB)
+            app.setAdditionalProfiles(profile);
+            System.setProperty("spring.profiles.active", profile);
+            System.out.println("Setting Spring profile to: " + profile);
             
             System.out.println("Starting Spring Boot application context...");
             applicationContext = app.run();
@@ -221,6 +219,16 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
         if (event.getRequestContext() != null && event.getRequestContext().getHttp() != null) {
             System.out.println("HTTP Path from context: " + event.getRequestContext().getHttp().getPath());
         }
+        // Lazy initialization - initialize on first request to avoid INIT timeout
+        if (!initialized) {
+            synchronized (initLock) {
+                if (!initialized) {
+                    System.out.println("Initializing Spring Boot on first request...");
+                    initializeSpringBoot();
+                }
+            }
+        }
+
         System.out.println("Initialized: " + initialized);
 
         // Fallback if Spring Boot failed to initialize
@@ -234,15 +242,45 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
             servletRequest.setMethod(httpMethod.equals("UNKNOWN") ? "GET" : httpMethod);
             servletRequest.setRequestURI(path.equals("UNKNOWN") ? "/ping" : path);
             servletRequest.setQueryString(event.getRawQueryString());
+            
+            // Parse and add query parameters individually (required for @RequestParam to work)
+            if (event.getQueryStringParameters() != null && !event.getQueryStringParameters().isEmpty()) {
+                event.getQueryStringParameters().forEach((key, value) -> {
+                    servletRequest.addParameter(key, value);
+                    System.out.println("🔧 Added query param: " + key + " = " + value);
+                });
+            }
 
             // Set headers
             if (event.getHeaders() != null) {
                 event.getHeaders().forEach(servletRequest::addHeader);
             }
+            
+            // Ensure Content-Type header is set correctly for multipart
+            String contentType = event.getHeaders() != null ? event.getHeaders().get("content-type") : null;
+            if (contentType != null && contentType.startsWith("multipart/form-data")) {
+                servletRequest.setContentType(contentType);
+                System.out.println("🔧 Set multipart Content-Type: " + contentType);
+            }
 
             // Set body and Content-Type
+            byte[] bodyBytes = null;
             if (event.getBody() != null && !event.getBody().isEmpty()) {
-                servletRequest.setContent(event.getBody().getBytes());
+                
+                // Handle base64 encoded body (for multipart/form-data)
+                if (Boolean.TRUE.equals(event.getIsBase64Encoded())) {
+                    System.out.println("🔄 Decoding base64 body for multipart data...");
+                    bodyBytes = java.util.Base64.getDecoder().decode(event.getBody());
+                    System.out.println("📊 Decoded body size: " + bodyBytes.length + " bytes");
+                    
+                    // Log first few bytes to verify multipart format
+                    String preview = new String(bodyBytes, 0, Math.min(200, bodyBytes.length));
+                    System.out.println("📝 Body preview: " + preview);
+                } else {
+                    bodyBytes = event.getBody().getBytes();
+                }
+                
+                servletRequest.setContent(bodyBytes);
                 
                 // Ensure Content-Type is set for JSON requests
                 if (servletRequest.getContentType() == null && 
@@ -252,6 +290,46 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
             }
 
             MockHttpServletResponse servletResponse = new MockHttpServletResponse();
+            
+            // Process multipart request manually for Lambda
+            if (contentType != null && contentType.startsWith("multipart/form-data")) {
+                try {
+                    System.out.println("🔧 Processing multipart request manually for Lambda");
+                    
+                    // Parse the multipart boundary
+                    String boundary = null;
+                    if (contentType.contains("boundary=")) {
+                        boundary = contentType.substring(contentType.indexOf("boundary=") + 9);
+                        System.out.println("📝 Extracted boundary: " + boundary);
+                    }
+                    
+                    if (boundary != null && bodyBytes != null) {
+                        System.out.println("🔍 Parsing multipart body with custom parser");
+                        
+                        // Use custom multipart parser
+                        java.util.List<org.springframework.web.multipart.MultipartFile> files = 
+                            MultipartParser.parseMultipartData(bodyBytes, boundary);
+                        
+                        if (!files.isEmpty()) {
+                            System.out.println("✅ Successfully parsed " + files.size() + " file(s)");
+                            
+                            // Store the files in request attributes for the controller to access
+                            servletRequest.setAttribute("lambda.multipart.files", files);
+                            servletRequest.setAttribute("lambda.multipart.processed", true);
+                            
+                            // Also add as parameters for Spring's parameter resolution
+                            for (org.springframework.web.multipart.MultipartFile file : files) {
+                                System.out.println("📁 File available: " + file.getOriginalFilename() + " (size: " + file.getSize() + ")");
+                            }
+                        } else {
+                            System.out.println("⚠️ No files found in multipart data");
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("❌ Error processing multipart request manually: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
 
             System.out.println("Processing request through Spring MVC components...");
             System.out.println("Request details:");

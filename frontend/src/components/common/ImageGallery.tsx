@@ -346,14 +346,16 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
     );
   }
 
+  const shouldUseCollage = className && (className.includes('details') || className.includes('activity') || className.includes('accommodation'));
+  
   return (
     <>
       <div className={`image-gallery ${className} ${showControls ? 'admin-mode' : ''}`}>
-        <div className="gallery-grid">
+        <div className={`gallery-grid ${shouldUseCollage ? 'gallery-grid-collage' : ''}`}>
           {visibleImages.map((image, index) => (
             <div
               key={image.id}
-              className={`gallery-item ${index === 0 ? 'main-item' : ''} ${image.esPrincipal ? 'is-main' : ''}`}
+              className={`gallery-item ${index === 0 ? 'main-item' : ''} ${image.esPrincipal ? 'is-main' : ''} gallery-item-${index}`}
               draggable={showControls}
               onDragStart={(e) => handleDragStart(e, index)}
               onDragOver={handleDragOver}

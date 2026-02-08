@@ -1,99 +1,220 @@
 /* Tinambú Tours - Color System */
-/* Based on Figma design analysis */
+/* Design System basado en paleta de marca */
 
 :root {
-  /* Primary Colors - Dark theme base */
-  --color-primary: #191919;
-  --color-primary-hover: #202020;
-  --color-primary-active: #2c2c2c;
+  /* ============================================
+     BRAND COLORS - LIGHT THEME (DEFAULT)
+     ============================================ */
   
-  /* Secondary Colors */
-  --color-secondary: #6b792e;
-  --color-secondary-hover: #5a6626;
-  --color-secondary-active: #4a5420;
+  /* Primary Brand Color - Verde Oliva */
+  --color-primary: #6b792e;
+  --color-primary-hover: #7a8935;
+  --color-primary-active: #5a6626;
+  --color-primary-light: #8a9d4a;
+  --color-primary-dark: #4a5420;
   
-  /* Accent Colors */
-  --color-accent-blue: #3b88c3;
-  --color-accent-blue-hover: #2d6ea3;
-  --color-accent-salmon: #d99e82;
-  --color-accent-green: #aabe50;
+  /* Secondary Brand Color - Verde Oliva Claro (Botones Off) */
+  --color-secondary: #8a9d4a;
+  --color-secondary-hover: #9aad5a;
+  --color-secondary-active: #7a8935;
+  --color-secondary-light: #9aad5a;
+  --color-secondary-dark: #6b792e;
   
-  /* Neutral Colors */
-  --color-neutral-100: #faf0e8;
-  --color-neutral-200: #fff5eb;
-  --color-neutral-300: #e7e5e5;
-  --color-neutral-400: #d4d4d4;
-  --color-neutral-500: #807a75;
-  --color-neutral-600: #5b5b5b;
-  --color-neutral-700: #444444;
-  --color-neutral-800: #202020;
-  --color-neutral-900: #191919;
+  /* ============================================
+     NEUTRAL PALETTE - LIGHT THEME
+     ============================================ */
   
-  /* Semantic Colors - Light Theme */
-  --color-background: #fefcfb;
-  --color-surface: #ffffff;
-  --color-surface-variant: #fff9f4;
-  --color-text: #191919;
-  --color-text-secondary: #444444;
-  --color-text-muted: #5b5b5b;
+  /* Backgrounds */
+  --color-background: #faf0e8;        /* Fondo general beige claro */
+  --color-background-alt: #fff9f4;    /* Fondo alternativo crema */
+  --color-surface: #ffffff;           /* Superficie de cards/modales */
+  --color-surface-variant: #fff9f4;   /* Variante de superficie */
+  --color-surface-hover: #fff5eb;     /* Hover en superficies */
   
-  /* Interactive Colors */
-  --color-link: #3b88c3;
-  --color-link-hover: #2d6ea3;
-  --color-link-visited: #33829d;
-  
-  /* Status Colors */
-  --color-success: #aabe50;
-  --color-success-bg: #f0f4e8;
-  --color-warning: #d99e82;
-  --color-warning-bg: #fdf5f1;
-  --color-error: #c53030;
-  --color-error-bg: #fed7d7;
-  --color-info: #3b88c3;
-  --color-info-bg: #e6f3ff;
+  /* Text Colors */
+  --color-text: #191919;              /* Texto principal negro */
+  --color-text-secondary: #444444;    /* Texto secundario gris oscuro */
+  --color-text-muted: #807a75;        /* Texto atenuado gris medio */
+  --color-text-disabled: #d4d4d4;     /* Texto deshabilitado */
+  --color-text-inverse: #ffffff;      /* Texto invertido (sobre fondos oscuros) */
   
   /* Border Colors */
-  --color-border: #d4d4d4;
-  --color-border-hover: #5b5b5b;
-  --color-border-focus: #3b88c3;
+  --color-border: #e7e5e5;            /* Borde suave */
+  --color-border-medium: #d4d4d4;     /* Borde medio */
+  --color-border-strong: #807a75;     /* Borde fuerte */
+  --color-border-hover: #5b5b5b;      /* Borde en hover */
+  --color-border-focus: #6b792e;      /* Borde en focus (primary) */
   
-  /* Shadow Colors */
+  /* ============================================
+     INTERACTIVE COLORS - LIGHT THEME
+     ============================================ */
+  
+  /* Links */
+  --color-link: #6b792e;
+  --color-link-hover: #7a8935;
+  --color-link-visited: #5a6626;
+  
+  /* Buttons */
+  --color-button-primary-bg: #6b792e;
+  --color-button-primary-text: #ffffff;
+  --color-button-primary-hover: #7a8935;
+  --color-button-primary-active: #5a6626;
+  
+  --color-button-secondary-bg: #8a9d4a;
+  --color-button-secondary-text: #ffffff;
+  --color-button-secondary-hover: #9aad5a;
+  --color-button-secondary-active: #7a8935;
+  
+  --color-button-outline-border: #6b792e;
+  --color-button-outline-text: #6b792e;
+  --color-button-outline-hover-bg: rgba(107, 121, 46, 0.1);
+  
+  /* ============================================
+     STATUS COLORS - LIGHT THEME
+     ============================================ */
+  
+  --color-success: #6b792e;
+  --color-success-bg: rgba(107, 121, 46, 0.1);
+  --color-success-border: #8a9d4a;
+  
+  --color-warning: #8a9d4a;
+  --color-warning-bg: rgba(138, 157, 74, 0.1);
+  --color-warning-border: #9aad5a;
+  
+  --color-error: #dc6b6b;
+  --color-error-bg: rgba(220, 107, 107, 0.1);
+  --color-error-border: #e58a8a;
+  
+  --color-info: #6b8fb5;
+  --color-info-bg: rgba(107, 143, 181, 0.1);
+  --color-info-border: #8ba9c7;
+  
+  /* ============================================
+     SHADOWS - LIGHT THEME
+     ============================================ */
+  
+  --color-shadow-sm: rgba(25, 25, 25, 0.05);
   --color-shadow: rgba(25, 25, 25, 0.1);
   --color-shadow-md: rgba(25, 25, 25, 0.15);
   --color-shadow-lg: rgba(25, 25, 25, 0.2);
+  --color-shadow-xl: rgba(25, 25, 25, 0.25);
+  
+  /* ============================================
+     ADDITIONAL UTILITY COLORS
+     ============================================ */
+  
+  --color-overlay: rgba(25, 25, 25, 0.5);
+  --color-backdrop: rgba(25, 25, 25, 0.3);
+  --color-divider: #e7e5e5;
+  --color-skeleton: #f0f0f0;
 }
 
-/* Dark Theme */
+/* ============================================
+   DARK THEME
+   ============================================ */
+
 [data-theme="dark"] {
-  /* Primary Colors remain the same for dark theme */
-  --color-primary: #191919;
-  --color-primary-hover: #202020;
-  --color-primary-active: #2c2c2c;
+  /* Primary Brand Color - permanece igual pero más brillante en dark */
+  --color-primary: #7a8935;
+  --color-primary-hover: #8a9d4a;
+  --color-primary-active: #6b792e;
+  --color-primary-light: #9aad5a;
+  --color-primary-dark: #5a6626;
   
-  /* Backgrounds for dark theme */
-  --color-background: #0d0d0b;
-  --color-surface: #191919;
-  --color-surface-variant: #202020;
+  /* Secondary Brand Color - Verde Oliva Claro (Botones Off) */
+  --color-secondary: #9aad5a;
+  --color-secondary-hover: #aabd6a;
+  --color-secondary-active: #8a9d4a;
+  --color-secondary-light: #aabd6a;
+  --color-secondary-dark: #7a8935;
   
-  /* Text colors for dark theme */
-  --color-text: #fefcfb;
-  --color-text-secondary: #e7e5e5;
-  --color-text-muted: #d4d4d4;
+  /* ============================================
+     NEUTRAL PALETTE - DARK THEME
+     ============================================ */
   
-  /* Borders for dark theme */
-  --color-border: #444444;
-  --color-border-hover: #5b5b5b;
+  /* Backgrounds */
+  --color-background: #0d0d0b;        /* Fondo general negro profundo */
+  --color-background-alt: #151513;    /* Fondo alternativo negro suave */
+  --color-surface: #1a1a18;           /* Superficie de cards/modales gris muy oscuro */
+  --color-surface-variant: #242422;   /* Variante de superficie */
+  --color-surface-hover: #2a2a28;     /* Hover en superficies */
   
-  /* Shadows for dark theme */
+  /* Text Colors */
+  --color-text: #fefcfb;              /* Texto principal blanco crema */
+  --color-text-secondary: #e7e5e5;    /* Texto secundario gris claro */
+  --color-text-muted: #b8b5b2;        /* Texto atenuado gris medio */
+  --color-text-disabled: #5b5b5b;     /* Texto deshabilitado */
+  --color-text-inverse: #191919;      /* Texto invertido (sobre fondos claros) */
+  
+  /* Border Colors */
+  --color-border: #2a2a28;            /* Borde suave */
+  --color-border-medium: #3a3a38;     /* Borde medio */
+  --color-border-strong: #5b5b5b;     /* Borde fuerte */
+  --color-border-hover: #807a75;      /* Borde en hover */
+  --color-border-focus: #7a8935;      /* Borde en focus (primary) */
+  
+  /* ============================================
+     INTERACTIVE COLORS - DARK THEME
+     ============================================ */
+  
+  /* Links */
+  --color-link: #8a9d4a;
+  --color-link-hover: #9aad5a;
+  --color-link-visited: #7a8935;
+  
+  /* Buttons */
+  --color-button-primary-bg: #7a8935;
+  --color-button-primary-text: #0d0d0b;
+  --color-button-primary-hover: #8a9d4a;
+  --color-button-primary-active: #6b792e;
+  
+  --color-button-secondary-bg: #9aad5a;
+  --color-button-secondary-text: #0d0d0b;
+  --color-button-secondary-hover: #aabd6a;
+  --color-button-secondary-active: #8a9d4a;
+  
+  --color-button-outline-border: #7a8935;
+  --color-button-outline-text: #8a9d4a;
+  --color-button-outline-hover-bg: rgba(138, 157, 74, 0.15);
+  
+  /* ============================================
+     STATUS COLORS - DARK THEME
+     ============================================ */
+  
+  --color-success: #8a9d4a;
+  --color-success-bg: rgba(138, 157, 74, 0.15);
+  --color-success-border: #9aad5a;
+  
+  --color-warning: #9aad5a;
+  --color-warning-bg: rgba(154, 173, 90, 0.15);
+  --color-warning-border: #aabd6a;
+  
+  --color-error: #e58a8a;
+  --color-error-bg: rgba(229, 138, 138, 0.15);
+  --color-error-border: #f0a0a0;
+  
+  --color-info: #8ba9c7;
+  --color-info-bg: rgba(139, 169, 199, 0.15);
+  --color-info-border: #a0b9d3;
+  
+  /* ============================================
+     SHADOWS - DARK THEME
+     ============================================ */
+  
+  --color-shadow-sm: rgba(0, 0, 0, 0.2);
   --color-shadow: rgba(0, 0, 0, 0.3);
   --color-shadow-md: rgba(0, 0, 0, 0.4);
   --color-shadow-lg: rgba(0, 0, 0, 0.5);
+  --color-shadow-xl: rgba(0, 0, 0, 0.6);
   
-  /* Status backgrounds for dark theme */
-  --color-success-bg: rgba(170, 190, 80, 0.1);
-  --color-warning-bg: rgba(217, 158, 130, 0.1);
-  --color-error-bg: rgba(197, 48, 48, 0.1);
-  --color-info-bg: rgba(59, 136, 195, 0.1);
+  /* ============================================
+     ADDITIONAL UTILITY COLORS
+     ============================================ */
+  
+  --color-overlay: rgba(0, 0, 0, 0.7);
+  --color-backdrop: rgba(0, 0, 0, 0.5);
+  --color-divider: #2a2a28;
+  --color-skeleton: #242422;
 }
 
 /* Utility Classes */

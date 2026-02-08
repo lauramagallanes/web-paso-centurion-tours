@@ -4,8 +4,9 @@ import { apiService } from '../../services/apiService';
 import { imageStorageService } from '../../services/imageStorageService';
 import { fixArrayEncoding } from '../../utils/encodingFixer';
 import { useCart } from '../../contexts/CartContext';
-import SenderoCard from '../../components/common/SenderoCard';
+import SenderoCardV2 from '../../components/common/SenderoCardV2';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import ImageGridGallery from '../../components/common/ImageGridGallery';
 import './ActivityDetails.css';
 
 interface SenderoDetails {
@@ -55,8 +56,6 @@ const ActivityDetails: React.FC = () => {
   const [participantsCount, setParticipantsCount] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   
-  // Gallery modal state
-  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -78,16 +77,20 @@ const ActivityDetails: React.FC = () => {
           const sendero = fixedData.find((s: any) => s.id === id);
           
           if (sendero) {
-            // Get images from API instead of localStorage
-            let senderoImages: any[] = [];
-            try {
-              const imagesResponse = await apiService.getSenderoImages(sendero.id);
-              senderoImages = Array.isArray(imagesResponse) ? imagesResponse : [];
-              console.log('📸 Loaded images from API:', senderoImages.length);
-            } catch (error) {
-              console.error('Error loading images from API:', error);
-              senderoImages = [];
-            }
+            // OPTIMIZACIÓN: Cargar imágenes en paralelo con el procesamiento
+            const imagesPromise = apiService.getSenderoImages(sendero.id)
+              .then(imagesResponse => Array.isArray(imagesResponse) ? imagesResponse : [])
+              .catch(error => {
+                console.error('Error loading images from API:', error);
+                return [];
+              });
+            
+            // Mientras se cargan las imágenes, preparar senderos relacionados en segundo plano
+            loadRelatedSenderos(fixedData);
+            
+            // Esperar solo por las imágenes
+            let senderoImages = await imagesPromise;
+            console.log('📸 Loaded images from API:', senderoImages.length);
             
             // If no images from API, use urlImagen from sendero
             if (senderoImages.length === 0 && sendero.urlImagen) {
@@ -121,58 +124,6 @@ const ActivityDetails: React.FC = () => {
             };
             
             setSendero(transformedSendero);
-            
-            // Load related senderos
-            const relatedSenderos: RelatedSendero[] = fixedData
-              .filter((s: any) => s.id !== id)
-              .slice(0, 3)
-              .map((s: any) => {
-                const difficultyMap: Record<string, string> = {
-                  'FACIL': 'Fácil',
-                  'MODERADO': 'Moderado', 
-                  'DIFICIL': 'Difícil'
-                };
-                
-                // EMERGENCY FIX: Always prioritize imagenPrincipal (most reliable field)
-                let imagenPrincipal = '/placeholder-sendero.svg';
-                
-                // Priority 1: imagenPrincipal (most reliable)
-                if (s.imagenPrincipal && s.imagenPrincipal.trim() !== '') {
-                  imagenPrincipal = s.imagenPrincipal.trim();
-                  console.log('✅ EMERGENCY: Using imagenPrincipal for', s.nombre);
-                } 
-                // Priority 2: urlImagen (fallback)
-                else if (s.urlImagen && s.urlImagen.trim() !== '') {
-                  imagenPrincipal = s.urlImagen.trim();
-                  console.log('✅ EMERGENCY: Using urlImagen for', s.nombre);
-                }
-                // Priority 3: placeholder
-                else {
-                  console.log('❌ EMERGENCY: No image found for', s.nombre, '- using placeholder');
-                }
-                
-                console.log('🚨 EMERGENCY DEBUG:', s.nombre);
-                console.log('🚨 urlImagen:', JSON.stringify(s.urlImagen));
-                console.log('🚨 imagenPrincipal:', JSON.stringify(s.imagenPrincipal));
-                console.log('🚨 FINAL IMAGE:', imagenPrincipal);
-                
-                return {
-                  id: s.id,
-                  nombre: s.nombre,
-                  descripcion: s.descripcion,
-                  imagenPrincipal: imagenPrincipal,
-                  duracion: `${s.duracionHoras} hora${s.duracionHoras !== 1 ? 's' : ''}`,
-                  dificultad: difficultyMap[s.nivelDificultad] || 'Moderado',
-                  precio: s.precioPorPersona,
-                  moneda: 'UYU',
-                  maxParticipantes: s.capacidadMaximaGrupo,
-                  incluye: ['Guía especializado', 'Equipo básico'],
-                  tieneGaleria: s.galeria || false,
-                  totalImagenes: s.galeria ? 1 : 0
-                };
-              });
-            
-            setRelatedSenderos(relatedSenderos);
           } else {
             setError('Sendero no encontrado');
           }
@@ -185,6 +136,44 @@ const ActivityDetails: React.FC = () => {
       } finally {
         setIsLoading(false);
       }
+    };
+
+    // OPTIMIZACIÓN: Cargar senderos relacionados en segundo plano (no bloquea render principal)
+    const loadRelatedSenderos = (allSenderos: any[]) => {
+      setTimeout(() => {
+        const relatedSenderos: RelatedSendero[] = allSenderos
+          .filter((s: any) => s.id !== id)
+          .slice(0, 3)
+          .map((s: any) => {
+            const difficultyMap: Record<string, string> = {
+              'FACIL': 'Fácil',
+              'MODERADO': 'Moderado', 
+              'DIFICIL': 'Difícil'
+            };
+            
+            let imagenPrincipal = '/placeholder-sendero.svg';
+            
+            if (s.imagenPrincipal && s.imagenPrincipal.trim() !== '') {
+              imagenPrincipal = s.imagenPrincipal.trim();
+            } else if (s.urlImagen && s.urlImagen.trim() !== '') {
+              imagenPrincipal = s.urlImagen.trim();
+            }
+            
+            return {
+              id: s.id,
+              nombre: s.nombre,
+              descripcion: s.descripcion,
+              duracion: `${s.duracionHoras}h`,
+              dificultad: difficultyMap[s.dificultad] || s.dificultad,
+              precio: s.precioPorPersona,
+              moneda: 'UYU',
+              imagenPrincipal: imagenPrincipal,
+              totalImagenes: 0
+            };
+          });
+        
+        setRelatedSenderos(relatedSenderos);
+      }, 0);
     };
 
     loadSenderoDetails();
@@ -256,13 +245,6 @@ const ActivityDetails: React.FC = () => {
     navigate(`/actividades/${senderoId}`);
   };
 
-  const handleOpenGallery = () => {
-    setIsGalleryModalOpen(true);
-  };
-
-  const handleCloseGallery = () => {
-    setIsGalleryModalOpen(false);
-  };
 
   const totalPrice = sendero ? sendero.precio * participantsCount : 0;
 
@@ -291,15 +273,14 @@ const ActivityDetails: React.FC = () => {
     );
   }
 
-  // Get up to 5 images for gallery
-  const galleryImages = sendero.imagenes.slice(0, 5);
-  while (galleryImages.length < 5) {
-    galleryImages.push({
-      id: `placeholder-${galleryImages.length}`,
-      url: '/placeholder-sendero.svg',
-      descripcion: 'Imagen del sendero'
-    });
-  }
+  // Prepare images for ImageGallery
+  const galleryImages = sendero.imagenes.map((img, index) => ({
+    id: img.id || `img-${index}`,
+    url: img.url,
+    descripcion: img.descripcion || sendero.nombre,
+    orden: index,
+    esPrincipal: index === 0,
+  }));
 
   return (
     <div className="activity-details-page">
@@ -318,61 +299,16 @@ const ActivityDetails: React.FC = () => {
           <div className="details-main-content">
             {/* Image Gallery */}
             <div className="details-image-gallery">
-              <div className="gallery-grid">
-                <div className="gallery-main-image">
-                  <img 
-                    src={galleryImages[0]?.url} 
-                    alt={sendero.nombre}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder-sendero.svg';
-                    }}
-                  />
-                </div>
-                <div className="gallery-small-image">
-                  <img 
-                    src={galleryImages[1]?.url} 
-                    alt={sendero.nombre}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder-sendero.svg';
-                    }}
-                  />
-                </div>
-                <div className="gallery-small-image">
-                  <img 
-                    src={galleryImages[2]?.url} 
-                    alt={sendero.nombre}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder-sendero.svg';
-                    }}
-                  />
-                </div>
-                <div className="gallery-small-image">
-                  <img 
-                    src={galleryImages[3]?.url} 
-                    alt={sendero.nombre}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder-sendero.svg';
-                    }}
-                  />
-                </div>
-                <div className="gallery-small-image">
-                  <img 
-                    src={galleryImages[4]?.url} 
-                    alt={sendero.nombre}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder-sendero.svg';
-                    }}
-                  />
-                </div>
-              </div>
-
-              {sendero.imagenes.length > 1 && (
-                <button className="view-all-photos" onClick={handleOpenGallery}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22,16V4A2,2 0 0,0 20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16M16,10L13.5,13L11,10.5L8,14H20L16,10M2,6V20A2,2 0 0,0 4,22H18V20H4V6H2Z" />
-                  </svg>
-                  Ver todas las fotos
-                </button>
+              {galleryImages.length > 0 ? (
+                <ImageGridGallery
+                  images={galleryImages}
+                  altText={sendero.nombre}
+                />
+              ) : (
+                <img 
+                  src="/placeholder-sendero.svg" 
+                  alt={sendero.nombre}
+                />
               )}
 
               {/* Favorite Button */}
@@ -528,12 +464,12 @@ const ActivityDetails: React.FC = () => {
             </h2>
             <div className="related-grid">
               {relatedSenderos.map((related) => (
-                <SenderoCard
+                <SenderoCardV2
                   key={related.id}
                   id={related.id}
                   nombre={related.nombre}
                   descripcion={related.descripcion}
-                  imagenPrincipal={related.imagenPrincipal}
+                  imagenUrl={related.imagenPrincipal || ''} // Convert to simple string
                   duracion={related.duracion}
                   dificultad={related.dificultad as 'Fácil' | 'Moderado' | 'Difícil'}
                   precio={related.precio}
@@ -546,35 +482,6 @@ const ActivityDetails: React.FC = () => {
           </div>
         )}
 
-        {/* Gallery Modal */}
-        {isGalleryModalOpen && (
-          <div className="gallery-modal-overlay" onClick={handleCloseGallery}>
-            <div className="gallery-modal-content" onClick={(e) => e.stopPropagation()}>
-              <button className="gallery-modal-close" onClick={handleCloseGallery}>
-                ✕
-              </button>
-              <div className="gallery-modal-header">
-                <h3>{sendero.nombre}</h3>
-                <button className="gallery-availability-btn">
-                  Comprobar disponibilidad
-                </button>
-              </div>
-              <div className="gallery-modal-grid">
-                {sendero.imagenes.map((imagen, index) => (
-                  <div key={imagen.id} className="gallery-modal-item">
-                    <img 
-                      src={imagen.url} 
-                      alt={`${sendero.nombre} - Imagen ${index + 1}`}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder-sendero.svg';
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

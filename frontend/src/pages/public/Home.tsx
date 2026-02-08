@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
 import { imageStorageService } from '../../services/imageStorageService';
 import { fixArrayEncoding } from '../../utils/encodingFixer';
-import HeroSlider, { HeroSlide } from '../../components/common/HeroSlider';
+import { getReviewsSummary, ReviewsSummary } from '../../services/reviewsService';
+import HeroSliderV2, { HeroSlide } from '../../components/common/HeroSliderV2';
 
-import ActivityCard from '../../components/common/ActivityCard';
-import AccommodationCard from '../../components/common/AccommodationCard';
+import SenderoCardV2 from '../../components/common/SenderoCardV2';
+import ReviewsSlider from '../../components/common/ReviewsSlider';
 import Button from '../../components/common/Button';
 import { routes } from '../../utils/routes';
 import backgroundImage from '../../assets/illustrations/Foto home  conocenos.svg';
@@ -35,6 +36,10 @@ const Home: React.FC = () => {
   // State for featured activities
   const [featuredActivities, setFeaturedActivities] = useState<FeaturedActivity[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
+  
+  // State for reviews
+  const [reviews, setReviews] = useState<ReviewsSummary | null>(null);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
   useEffect(() => {
     // Apply background image to CTA section
@@ -42,9 +47,23 @@ const Home: React.FC = () => {
       ctaRef.current.style.setProperty('--mapa-background', `url(${mapaImage})`);
     }
     
-    // Load featured activities
+    // Load featured activities and reviews
     loadFeaturedActivities();
+    loadReviews();
   }, []);
+  
+  const loadReviews = async () => {
+    try {
+      console.log('📊 Cargando reviews reales...');
+      const reviewsData = await getReviewsSummary();
+      setReviews(reviewsData);
+      console.log('✅ Reviews cargadas:', reviewsData);
+    } catch (error) {
+      console.error('Error loading reviews:', error);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
 
   const loadFeaturedActivities = async () => {
     try {
@@ -60,9 +79,6 @@ const Home: React.FC = () => {
         
         // Transform API data and take first 3 as featured with REAL data
         const transformedActivities = fixedData.slice(0, 3).map((sendero: any) => {
-          // Get real images from localStorage
-          const imageStats = imageStorageService.getSenderoImageStats(sendero.id);
-          
           // Map difficulty levels
           const difficultyMap: Record<string, string> = {
             'FACIL': 'Fácil',
@@ -71,31 +87,39 @@ const Home: React.FC = () => {
             'EXPERTO': 'Experto'
           };
           
+          // SIMPLE and ROBUST image selection - Priority: imagenPrincipal > urlImagen (legacy)
+          let imagenUrl = '';
+          if (sendero.imagenPrincipal && sendero.imagenPrincipal.trim() !== '') {
+            imagenUrl = sendero.imagenPrincipal.trim();
+          } else if (sendero.urlImagen && sendero.urlImagen.trim() !== '') {
+            imagenUrl = sendero.urlImagen.trim();
+          }
+          // If both are empty, imagenUrl stays empty and component will show placeholder
+          
           console.log(`🏠 Featured sendero ${sendero.nombre}:`, {
-            realPrice: sendero.precioPorPersona,
-            realDuration: sendero.duracionHoras,
-            realDifficulty: sendero.nivelDificultad,
-            hasRealImages: imageStats.total > 0,
-            principalImage: imageStats.principal?.url
+            id: sendero.id,
+            urlImagen: sendero.urlImagen,
+            imagenPrincipal: sendero.imagenPrincipal,
+            finalImageUrl: imagenUrl,
+            hasImage: imagenUrl !== '',
+            isEmpty: imagenUrl === '',
+            isCorrupt: imagenUrl && imagenUrl.length < 100, // Likely corrupt if very short
+            urlImagenLength: sendero.urlImagen ? sendero.urlImagen.length : 0,
+            imagenPrincipalLength: sendero.imagenPrincipal ? sendero.imagenPrincipal.length : 0,
+            urlImagenType: typeof sendero.urlImagen,
+            imagenPrincipalType: typeof sendero.imagenPrincipal
           });
           
           return {
             id: sendero.id,
-            name: sendero.nombre,
-            description: sendero.descripcion,
-            imagenPrincipal: imageStats.principal?.url || sendero.imagenPrincipal || 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=500&h=300&fit=crop',
-            totalImagenes: imageStats.total,
-            tieneGaleria: imageStats.total > 1,
-            duration: `${sendero.duracionHoras} hora${sendero.duracionHoras !== 1 ? 's' : ''}`,
-            difficulty: difficultyMap[sendero.nivelDificultad] || 'Moderado',
-            price: sendero.precioPorPersona,
-            currency: 'UYU',
-            maxParticipants: sendero.capacidadMaximaGrupo,
-            includes: [
-              'Guía especializado',
-              'Equipo básico de seguridad',
-              'Refrigerio natural'
-            ]
+            nombre: sendero.nombre,
+            descripcion: sendero.descripcion,
+            imagenUrl: imagenUrl, // Simple string, empty if no image
+            duracion: `${sendero.duracionHoras} hora${sendero.duracionHoras !== 1 ? 's' : ''}`,
+            dificultad: difficultyMap[sendero.nivelDificultad] || 'Moderado',
+            precio: sendero.precioPorPersona,
+            moneda: 'UYU',
+            maxParticipants: sendero.capacidadMaximaGrupo
           };
         });
         
@@ -131,9 +155,10 @@ const Home: React.FC = () => {
     {
       id: 'tinambu',
       type: 'tinambu',
-      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/1737064268866.jpg',
+      image: 'https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/slider/slide-tinambu.jpg',
       title: 'Tinambú',
-      description: 'Alojamiento familiar en Paso Centurión. Aventura, descanso y naturaleza en un entorno protegido, con senderismo guiado, observación de aves y alojamiento sustentable, avalado por organismos ambientales y turísticos.',
+      subtitle: 'Ecolodge familiar en Paso Centurión',
+      description: 'Aventura, descanso y naturaleza en un entorno protegido, con senderismo guiado, observación de aves y alojamiento sustentable, avalado por organismos ambientales y turísticos.',
       ctaText: 'Conocenos',
       ctaAction: () => navigate(routes.about),
       overlay: 'dark',
@@ -145,122 +170,29 @@ const Home: React.FC = () => {
     {
       id: 'birdwatching',
       type: 'birds',
-      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN4949+(2).jpg',
+      image: 'https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/slider/slide-aves.jpg',
       title: 'Avistamiento de aves',
-      description: 'Más de 200 especies en hábitats diversos. Observación guiada para amantes de las aves, la fotografía y la biodiversidad.',
+      subtitle: 'Más de 280 especies en hábitats diversos',
+      description: 'Observación guiada para amantes de las aves, la fotografía y la biodiversidad.',
       ctaText: 'Descubre',
       ctaAction: () => navigate(routes.activities),
       overlay: 'dark',
       gallery: [
-        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN2227.JPG',
-        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN2401.jpg',
-        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN6884.JPG'
+        'https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/slider/ave-1.jpg',
+        'https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/slider/ave-2.jpg',
+        'https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/slider/ave-3.jpg'
       ]
     },
     {
       id: 'hiking',
       type: 'hiking',
-      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN0810.JPG',
+      image: 'https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/slider/slide-senderismo.jpg',
       title: 'Senderismo guiado',
-      description: 'Tenemos 7 Senderos para que escojas, caminatas guiadas por naturaleza virgen. Explora bosques, quebradas y miradores junto a nuestros guías locales. Observa la flora, fauna y aves únicas en Uruguay.',
+      subtitle: 'Tenemos 7 Senderos para que escojas',
+      description: 'Caminatas guiadas por naturaleza virgen. Explora bosques, quebradas y miradores junto a nuestros guías locales. Observa la flora, fauna y aves únicas en Uruguay.',
       ctaText: 'Reserva ahora',
       ctaAction: () => navigate(routes.book),
       overlay: 'dark'
-    },
-    {
-      id: 'accommodation',
-      type: 'accommodation',
-      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/1737064268866.jpg',
-      title: 'Alojamiento',
-      description: 'Dos habitaciones en bioconstrucción con todo el confort, inmersas en naturaleza. Ideal para descansar, reconectar y observar aves.',
-      ctaText: 'Reserva ahora',
-      ctaAction: () => navigate(routes.accomodations),
-      overlay: 'dark',
-      gallery: [
-        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN7425.JPG',
-        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/1737064268783.jpg'
-      ]
-    },
-    {
-      id: 'birdwatching',
-      type: 'birds',
-      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN5964.JPG',
-      title: 'Avistamiento de aves',
-      description: 'Más de 200 especies en hábitats diversos. Observación guiada para amantes de las aves, la fotografía y la biodiversidad.',
-      ctaText: 'Descubre',
-      ctaAction: () => navigate(routes.activities),
-      overlay: 'dark',
-      gallery: [
-        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN1985.JPG',
-        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN4993.JPG',
-        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN5172.JPG'
-      ]
-    },
-    {
-      id: 'hiking',
-      type: 'hiking',
-      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN0683.JPG',
-      title: 'Senderismo guiado',
-      description: 'Tenemos 7 Senderos para que escojas, caminatas guiadas por naturaleza virgen. Explora bosques, quebradas y miradores junto a nuestros guías locales. Observa la flora, fauna y aves únicas en Uruguay.',
-      ctaText: 'Reserva ahora',
-      ctaAction: () => navigate(routes.book),
-      overlay: 'dark'
-    },
-    {
-      id: 'accommodation',
-      type: 'accommodation',
-      image: 'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/1737064268866.jpg',
-      title: 'Alojamiento',
-      description: 'Dos habitaciones en bioconstrucción con todo el confort, inmersas en naturaleza. Ideal para descansar, reconectar y observar aves.',
-      ctaText: 'Reserva ahora',
-      ctaAction: () => navigate(routes.accomodations),
-      overlay: 'dark',
-      gallery: [
-        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/DSCN0710.JPG',
-        'https://imagenespasocenturion.s3.us-east-1.amazonaws.com/1737064268800.jpg'
-      ]
-    }
-  ];
-
-
-  // Sample accommodations data
-  const featuredAccommodations = [
-    {
-      id: 'forest-cabin',
-      name: 'Cabaña Ecológica Premium',
-      description: 'Refugio sustentable construido con materiales locales, integrado al bosque nativo. Arquitectura bioclimática con todas las comodidades modernas.',
-      image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-      capacity: { min: 2, max: 6 },
-      price: 4500,
-      currency: 'UYU',
-      amenities: [
-        'Cocina gourmet equipada',
-        'Wi-Fi Starlink de alta velocidad',
-        'Parrilla y deck privado',
-        'Vista 360° al bosque nativo',
-        'Estacionamiento cubierto',
-        'Calefacción a leña ecológica'
-      ],
-      availability: true,
-      rating: 4.9
-    },
-    {
-      id: 'nature-room',
-      name: 'Suite Vista Panorámica',
-      description: 'Habitación de lujo con ventanales de piso a techo y terraza privada. Diseño minimalista que realza la conexión con la naturaleza circundante.',
-      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-      capacity: { min: 1, max: 2 },
-      price: 2800,
-      currency: 'UYU',
-      amenities: [
-        'Baño spa con productos naturales',
-        'Climatización inteligente',
-        'Minibar con productos regionales',
-        'Terraza privada con hamaca',
-        'Servicio de desayuno en habitación'
-      ],
-      availability: true,
-      rating: 4.7
     }
   ];
 
@@ -268,22 +200,14 @@ const Home: React.FC = () => {
     navigate(`${routes.book}?activity=${id}`);
   };
 
-  const handleBookAccommodation = (id: string) => {
-    navigate(`${routes.book}?accommodation=${id}`);
-  };
-
   const handleViewActivityDetails = (id: string) => {
     navigate(`/actividades/${id}`);
-  };
-
-  const handleViewAccommodationDetails = (id: string) => {
-    navigate(`${routes.accomodations}/${id}`);
   };
 
   return (
     <div className="home-page">
       {/* Hero Section */}
-      <HeroSlider 
+      <HeroSliderV2 
         slides={heroSlides}
         autoPlay={true}
         autoPlayInterval={6000}
@@ -292,59 +216,112 @@ const Home: React.FC = () => {
         className="home-hero"
       />
 
-      {/* Welcome Section */}
-      <section className="home-welcome">
+      {/* Intro Section */}
+      <section className="home-intro">
         <div className="container">
-          <div className="welcome-content">
-            <div className="welcome-text">
-              <div className="welcome-badge">
-                <span className="badge-icon">🍃</span>
-                <span className="badge-text">Explora, descansa y desconecta en un solo lugar</span>
-              </div>
-              <h2 className="welcome-title">Bienvenidos a Tinambú</h2>
-              <p className="welcome-description">
-                Sumérgete en el corazón de Paso Centurión, donde cada sendero cuenta una historia 
-                y cada especie de ave te invita a descubrir la biodiversidad única del Uruguay. 
-                Nuestra pasión por la naturaleza se convierte en experiencias auténticas que 
-                conectan tu alma con la tierra.
-              </p>
-              <div className="welcome-features">
-                <div className="feature-item">
-                  <span className="feature-icon">🦅</span>
-                  <div className="feature-content">
-                    <h4>Observación de Aves</h4>
-                    <p>Más de 200 especies registradas</p>
+          <div className="intro-content">
+            {/* Images Side */}
+            <div className="intro-images">
+              <div className="intro-image-group">
+                <div className="intro-image-container first">
+                  <div className="decorative-badge top">Birding</div>
+                  <div className="image-circle">
+                    <img 
+                      src="https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/intro/image-1.jpg" 
+                      alt="Birding en Paso Centurión"
+                    />
                   </div>
+                  <div className="decorative-accent accent-1"></div>
                 </div>
-                <div className="feature-item">
-                  <span className="feature-icon">🏡</span>
-                  <div className="feature-content">
-                    <h4>Alojamiento Rural</h4>
-                    <p>Cabañas sustentables en la naturaleza</p>
+                
+                <div className="intro-image-container second">
+                  <div className="decorative-badge bottom">Ecoturismo</div>
+                  <div className="image-circle">
+                    <img 
+                      src="https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/intro/image-2.jpg" 
+                      alt="Ecoturismo en Paso Centurión"
+                    />
                   </div>
-                </div>
-                <div className="feature-item">
-                  <span className="feature-icon">🥾</span>
-                  <div className="feature-content">
-                    <h4>Senderismo Guiado</h4>
-                    <p>Recorridos con guías especializados</p>
-                  </div>
+                  <div className="decorative-accent accent-2"></div>
                 </div>
               </div>
             </div>
-            <div className="welcome-image">
-              <div className="image-container">
-                <img 
-                  src={backgroundImage} 
-                  alt="Naturaleza de Paso Centurión"
-                  className="welcome-img"
-                />
-                <div className="image-overlay">
-                  <div className="overlay-content">
-                    <span className="overlay-text">Paso Centurión, Cerro Largo</span>
-                    <span className="overlay-subtext">Uruguay</span>
-                  </div>
-                </div>
+
+            {/* Text Side */}
+            <div className="intro-text">
+              <h2 className="intro-title">Explora, descubre y descansa en un solo lugar</h2>
+              <p className="intro-description">
+                Ubicado en el corazón de Paso Centurión, Tinambú es un santuario ecológico donde 
+                puedes conectarte con la naturaleza, recorrer senderos, observar aves y descansar 
+                en cabañas sustentables. Es el destino ideal para quienes aman el aire libre, la 
+                tranquilidad y la aventura.
+              </p>
+              <Button 
+                variant="primary" 
+                size="lg"
+                onClick={() => navigate(routes.about)}
+                className="intro-cta"
+              >
+                Conocenos →
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Welcome Section */}
+      <section className="home-welcome">
+        <div className="container">
+          <div className="welcome-header">
+            <h2 className="welcome-title">Empieza a planear tu aventura</h2>
+          </div>
+
+          <div className="welcome-experiences">
+            <div 
+              className="experience-card experience-hiking"
+              onClick={() => navigate(routes.activities)}
+              style={{
+                backgroundImage: `url(https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/home/senderismo.jpg)`
+              }}
+            >
+              <div className="experience-overlay"></div>
+              <div className="experience-content">
+                <p className="experience-subtitle">Senderos únicos en Paso Centurión</p>
+                <h3 className="experience-title">
+                  Senderismo guiado <span className="arrow">→</span>
+                </h3>
+              </div>
+            </div>
+
+            <div 
+              className="experience-card experience-accommodation"
+              onClick={() => navigate(routes.alojamientos)}
+              style={{
+                backgroundImage: `url(https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/home/alojamiento.jpg)`
+              }}
+            >
+              <div className="experience-overlay"></div>
+              <div className="experience-content">
+                <p className="experience-subtitle">Bioconstrucción con Techo Vivo</p>
+                <h3 className="experience-title">
+                  Alojamiento <span className="arrow">→</span>
+                </h3>
+              </div>
+            </div>
+
+            <div 
+              className="experience-card experience-birdwatching"
+              onClick={() => navigate(routes.activities)}
+              style={{
+                backgroundImage: `url(https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/home/avistamiento.jpg)`
+              }}
+            >
+              <div className="experience-overlay"></div>
+              <div className="experience-content">
+                <p className="experience-subtitle">Más de 150 especies en un entorno protegido</p>
+                <h3 className="experience-title">
+                  Avistamiento de aves <span className="arrow">🔍</span>
+                </h3>
               </div>
             </div>
           </div>
@@ -383,21 +360,17 @@ const Home: React.FC = () => {
               ))
             ) : (
               featuredActivities.map((activity) => (
-                <ActivityCard
+                <SenderoCardV2
                   key={activity.id}
                   id={activity.id}
-                  name={activity.name}
-                  description={activity.description}
-                  imagenPrincipal={activity.imagenPrincipal}
-                  totalImagenes={activity.totalImagenes}
-                  tieneGaleria={activity.tieneGaleria}
-                  duration={activity.duration}
-                  difficulty={activity.difficulty}
-                  price={activity.price}
-                  currency={activity.currency}
+                  nombre={activity.nombre}
+                  descripcion={activity.descripcion}
+                  imagenUrl={activity.imagenUrl}
+                  duracion={activity.duracion}
+                  dificultad={activity.dificultad}
+                  precio={activity.precio}
+                  moneda={activity.moneda}
                   maxParticipants={activity.maxParticipants}
-                  includes={activity.includes}
-                  onBook={handleBookActivity}
                   onViewDetails={handleViewActivityDetails}
                 />
               ))
@@ -406,139 +379,63 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Featured Accommodations */}
-      <section className="home-accommodations">
+      {/* Testimonials Section */}
+      <section className="home-testimonials">
         <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">Alojamiento Rural</h2>
-            <p className="section-subtitle">
-              Descanso confortable en plena naturaleza
-            </p>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate(routes.accomodations)}
-              rightIcon="→"
-            >
-              Ver Todos los Alojamientos
-            </Button>
-          </div>
+          <h2 className="testimonials-main-title">Lo que opinan de nosotros</h2>
           
-          <div className="accommodations-grid">
-            {featuredAccommodations.map((accommodation) => (
-              <AccommodationCard
-                key={accommodation.id}
-                {...accommodation}
-                onBook={handleBookAccommodation}
-                onViewDetails={handleViewAccommodationDetails}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Team Section */}
-      <section className="home-team">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">Lo que opinan de nosotros</h2>
-            <p className="section-subtitle">
-              Conocé a nuestro equipo y las experiencias de quienes ya nos visitaron
-            </p>
-          </div>
-          
-          <div className="team-grid">
-            <div className="team-member">
-              <div className="member-avatar">
-                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face" alt="Guía especializado" />
-              </div>
-              <div className="member-info">
-                <h4 className="member-name">Carlos Mendoza</h4>
-                <p className="member-role">Guía Ornitólogo</p>
-                <p className="member-description">
-                  &ldquo;Cada salida es una aventura nueva. Ver la emoción en los ojos de los visitantes 
-                  cuando descubren una especie por primera vez es lo que me motiva cada día.&rdquo;
-                </p>
-              </div>
-            </div>
-            
-            <div className="team-member">
-              <div className="member-avatar">
-                <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face" alt="Especialista en ecoturismo" />
-              </div>
-              <div className="member-info">
-                <h4 className="member-name">Ana Rodríguez</h4>
-                <p className="member-role">Especialista en Ecoturismo</p>
-                <p className="member-description">
-                  &ldquo;Trabajamos para que cada huésped viva una experiencia auténtica, 
-                  respetando siempre nuestro entorno natural.&rdquo;
-                </p>
-              </div>
-            </div>
-            
-            <div className="team-member">
-              <div className="member-avatar">
-                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face" alt="Coordinador de actividades" />
-              </div>
-              <div className="member-info">
-                <h4 className="member-name">Diego Silva</h4>
-                <p className="member-role">Coordinador de Actividades</p>
-                <p className="member-description">
-                  &ldquo;La naturaleza de Paso Centurión es nuestro mayor tesoro. 
-                  Cada actividad está diseñada para conectarte profundamente con ella.&rdquo;
-                </p>
-              </div>
-            </div>
-            
-            <div className="team-member">
-              <div className="member-avatar">
-                <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face" alt="Especialista en alojamiento" />
-              </div>
-              <div className="member-info">
-                <h4 className="member-name">María González</h4>
-                <p className="member-role">Especialista en Alojamiento</p>
-                <p className="member-description">
-                  &ldquo;Nuestras cabañas son un refugio perfecto donde el confort se encuentra 
-                  con la sostenibilidad y la belleza natural.&rdquo;
-                </p>
-              </div>
-            </div>
-            
-            <div className="team-member">
-              <div className="member-avatar">
-                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face" alt="Guía de senderismo" />
-              </div>
-              <div className="member-info">
-                <h4 className="member-name">Roberto Fernández</h4>
-                <p className="member-role">Guía de Senderismo</p>
-                <p className="member-description">
-                  &ldquo;Cada sendero tiene su propia magia. Mi trabajo es ayudarte a descubrir 
-                  los secretos que la naturaleza guarda en cada rincón.&rdquo;
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="testimonials-section">
-            <h3 className="testimonials-title">Reseñas de Google y Facebook</h3>
-            <div className="social-proof">
-              <div className="rating-item">
-                <div className="rating-platform">
-                  <span className="platform-icon">📘</span>
-                  <span className="platform-name">Facebook</span>
+          {reviewsLoading ? (
+            <div className="testimonials-loading">Cargando opiniones...</div>
+          ) : reviews ? (
+            <>
+              <div className="testimonials-cards-wrapper">
+                {/* Google Reviews Card */}
+                <div className="testimonial-card google-card">
+                  <div className="testimonial-logo">Google</div>
+                  <div className="testimonial-stars">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span 
+                        key={star} 
+                        className={`star ${star <= Math.round(reviews.google.rating) ? 'filled' : 'empty'}`}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                  <p className="testimonial-based-on">
+                    Basado en {reviews.google.totalReviews} opiniones
+                  </p>
                 </div>
-                <div className="rating-stars">⭐⭐⭐⭐⭐</div>
-                <div className="rating-score">4.8/5</div>
-              </div>
-              <div className="rating-item">
-                <div className="rating-platform">
-                  <span className="platform-icon">🔍</span>
-                  <span className="platform-name">Google</span>
+                
+                {/* Facebook Reviews Card */}
+                <div className="testimonial-card facebook-card">
+                  <div className="testimonial-logo">facebook</div>
+                  <div className="testimonial-stars">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span 
+                        key={star} 
+                        className={`star ${star <= Math.round(reviews.facebook.rating) ? 'filled' : 'empty'}`}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                  <p className="testimonial-based-on">
+                    Basado en {reviews.facebook.totalReviews} opiniones
+                  </p>
                 </div>
-                <div className="rating-stars">⭐⭐⭐⭐⭐</div>
-                <div className="rating-score">4.9/5</div>
               </div>
-            </div>
-          </div>
+              
+              {/* Individual Reviews Slider */}
+              {reviews.google.reviews && reviews.google.reviews.length > 0 && (
+                <div className="individual-reviews-section">
+                  <ReviewsSlider reviews={reviews.google.reviews} />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="testimonials-error">Error al cargar opiniones</div>
+          )}
         </div>
       </section>
 

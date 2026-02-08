@@ -95,3 +95,7 @@ aws ec2 delete-vpc --vpc-id $VPC_ID 2>&1 && echo "✅ VPC eliminada exitosamente
 echo ""
 echo "=== Limpieza completada ==="
 
+
+
+
+

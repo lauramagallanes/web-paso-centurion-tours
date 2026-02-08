@@ -2,10 +2,9 @@ package com.tinambu.tours.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import lombok.Builder;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -14,9 +13,19 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-@EqualsAndHashCode(callSuper = true)
-public class AlojamientoReservaRequest extends ReservaRequest {
+@Builder
+public class AlojamientoReservaRequest {
+
+    @NotBlank(message = "Email de contacto es obligatorio")
+    @Email(message = "Email debe tener formato válido")
+    private String emailContacto;
+
+    @NotBlank(message = "Nombre de contacto es obligatorio")
+    private String nombreContacto;
+
+    private String telefonoContacto;
+
+    private String observaciones;
 
     @NotNull(message = "El ID del alojamiento es obligatorio")
     private UUID alojamientoId;

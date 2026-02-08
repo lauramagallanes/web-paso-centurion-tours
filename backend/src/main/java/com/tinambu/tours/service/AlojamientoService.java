@@ -5,8 +5,20 @@ import com.tinambu.tours.dto.response.*;
 import com.tinambu.tours.entity.alojamiento.*;
 import com.tinambu.tours.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+// S3 imports for image management
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import java.time.Duration;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -30,6 +42,15 @@ public class AlojamientoService {
     
     @Autowired
     private AlojamientoReservaRepository reservaRepository;
+    
+    @Autowired(required = false)
+    private S3Client s3Client;
+    
+    @Autowired(required = false)
+    private S3Presigner s3Presigner;
+    
+    @Value("${S3_PUBLIC_ASSETS_BUCKET:tinambu-public-assets-dev}")
+    private String s3BucketName;
 
     // Core CRUD Operations
 
@@ -84,6 +105,11 @@ public class AlojamientoService {
         alojamiento.setHoraLlegada(request.getHoraLlegada());
         alojamiento.setHoraSalida(request.getHoraSalida());
         alojamiento.setPrecioPorNoche(request.getPrecioPorNoche());
+        
+        // Actualizar estado activo si se proporciona
+        if (request.getActiva() != null) {
+            alojamiento.setActivo(request.getActiva());
+        }
 
         alojamiento = alojamientoRepository.save(alojamiento);
         System.out.println("✅ Alojamiento actualizado exitosamente: " + id);
@@ -102,6 +128,16 @@ public class AlojamientoService {
     }
 
     @Transactional(readOnly = true)
+    public List<AlojamientoResponse> obtenerTodosLosAlojamientos() {
+        System.out.println("📋 Obteniendo TODOS los alojamientos (admin)");
+        
+        List<Alojamiento> alojamientos = alojamientoRepository.findAll();
+        return alojamientos.stream()
+                .map(this::convertirAResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public AlojamientoResponse obtenerAlojamientoPorId(UUID id) {
         System.out.println("🔍 Obteniendo alojamiento por ID: " + id);
         
@@ -114,7 +150,8 @@ public class AlojamientoService {
     public void eliminarAlojamiento(UUID id) {
         System.out.println("🗑️ Eliminando alojamiento con ID: " + id);
         
-        Alojamiento alojamiento = alojamientoRepository.findByIdAndActivoTrue(id)
+        // Buscar alojamiento sin importar si está activo o no
+        Alojamiento alojamiento = alojamientoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado: " + id));
 
         // Check for active reservations
@@ -123,10 +160,11 @@ public class AlojamientoService {
             throw new IllegalStateException("No se puede eliminar el alojamiento. Tiene reservas activas.");
         }
 
-        alojamiento.setActivo(false);
-        alojamientoRepository.save(alojamiento);
+        // Eliminar el alojamiento físicamente
+        // Las imágenes y disponibilidades se eliminarán automáticamente por cascade = CascadeType.ALL
+        alojamientoRepository.delete(alojamiento);
         
-        System.out.println("✅ Alojamiento eliminado exitosamente: " + id);
+        System.out.println("✅ Alojamiento y datos relacionados eliminados exitosamente (cascade): " + id);
     }
 
     // Availability Methods
@@ -265,5 +303,309 @@ public class AlojamientoService {
                 .fechaFin(disponibilidad.getFechaFin())
                 .activo(disponibilidad.getActivo())
                 .build();
+    }
+
+    // Image Management Methods
+
+    public List<AlojamientoImagenResponse> addImagesToAlojamiento(UUID alojamientoId, MultipartFile[] files, String[] descriptions) {
+        // Check if S3 is available
+        if (s3Client == null) {
+            throw new IllegalStateException("S3 service not available. Check AWS configuration.");
+        }
+        
+        // Validate alojamiento exists
+        Alojamiento alojamiento = alojamientoRepository.findByIdAndActivoTrue(alojamientoId)
+                .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado: " + alojamientoId));
+        
+        // Get current image count for ordering
+        Long countLong = alojamientoImagenRepository.countByAlojamientoId(alojamientoId);
+        int currentOrder = countLong != null ? countLong.intValue() : 0;
+        
+        List<AlojamientoImagenResponse> uploadedImages = new ArrayList<>();
+        
+        for (int i = 0; i < files.length; i++) {
+            MultipartFile file = files[i];
+            String description = (descriptions != null && i < descriptions.length) ? descriptions[i] : null;
+            
+            // Validate file
+            validateImageFile(file);
+            
+            try {
+                // Generate unique filename
+                String fileName = generateUniqueFileName(file.getOriginalFilename());
+                String s3Key = "alojamientos/" + alojamientoId + "/" + fileName;
+                
+                // Upload to S3
+                PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(s3BucketName)
+                    .key(s3Key)
+                    .contentType(file.getContentType())
+                    .build();
+                
+                s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+                
+                // Create image URL
+                String imageUrl = String.format("https://%s.s3.us-east-1.amazonaws.com/%s", s3BucketName, s3Key);
+                
+                // Save to database
+                AlojamientoImagen alojamientoImagen = AlojamientoImagen.builder()
+                        .alojamientoId(alojamientoId)
+                        .urlImagen(imageUrl)
+                        .descripcion(description)
+                        .orden(currentOrder + i + 1)
+                        .esPrincipal(false)
+                        .build();
+                
+                // Set as principal if it's the first image for this alojamiento OR if alojamiento has no imagenPrincipal yet
+                boolean isFirstImage = (currentOrder == 0 && i == 0);
+                boolean needsMainImage = (alojamiento.getImagenPrincipalUrl() == null || alojamiento.getImagenPrincipalUrl().isEmpty());
+                
+                if (isFirstImage || (i == 0 && needsMainImage)) {
+                    alojamientoImagen.marcarComoPrincipal();
+                    // Update alojamiento with main image URL
+                    alojamiento.setImagenPrincipal(imageUrl);
+                    alojamientoRepository.save(alojamiento);
+                }
+                
+                alojamientoImagen = alojamientoImagenRepository.save(alojamientoImagen);
+                uploadedImages.add(convertirAImagenResponse(alojamientoImagen));
+                
+                System.out.println("✅ Imagen subida: " + imageUrl);
+                
+            } catch (Exception e) {
+                System.err.println("❌ Error uploading image: " + e.getMessage());
+                e.printStackTrace();
+                throw new RuntimeException("Error subiendo imagen: " + e.getMessage(), e);
+            }
+        }
+        
+        return uploadedImages;
+    }
+
+    public boolean removeImageFromAlojamiento(UUID imagenId) {
+        // Check if S3 is available
+        if (s3Client == null) {
+            throw new IllegalStateException("S3 service not available. Check AWS configuration.");
+        }
+        
+        Optional<AlojamientoImagen> imagenOpt = alojamientoImagenRepository.findById(imagenId);
+        if (imagenOpt.isEmpty()) {
+            return false;
+        }
+        
+        AlojamientoImagen imagen = imagenOpt.get();
+        
+        try {
+            // Delete from S3
+            String s3Key = extractS3KeyFromUrl(imagen.getUrlImagen());
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(s3BucketName)
+                    .key(s3Key)
+                    .build();
+            
+            s3Client.deleteObject(deleteObjectRequest);
+            
+            // If this was the principal image, unset it from alojamiento
+            if (imagen.getEsPrincipal()) {
+                Alojamiento alojamiento = alojamientoRepository.findByIdAndActivoTrue(imagen.getAlojamientoId())
+                        .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
+                alojamiento.setImagenPrincipal(null);
+                alojamientoRepository.save(alojamiento);
+            }
+            
+            // Delete from database
+            alojamientoImagenRepository.delete(imagen);
+            
+            System.out.println("✅ Imagen eliminada: " + imagenId);
+            return true;
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error deleting image: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error eliminando imagen: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean setMainImage(UUID imagenId) {
+        Optional<AlojamientoImagen> imagenOpt = alojamientoImagenRepository.findById(imagenId);
+        if (imagenOpt.isEmpty()) {
+            return false;
+        }
+        
+        AlojamientoImagen nuevaPrincipal = imagenOpt.get();
+        UUID alojamientoId = nuevaPrincipal.getAlojamientoId();
+        
+        // Remove principal flag from other images
+        List<AlojamientoImagen> imagenes = alojamientoImagenRepository.findByAlojamientoIdOrderByOrden(alojamientoId);
+        for (AlojamientoImagen img : imagenes) {
+            if (img.getEsPrincipal() && !img.getId().equals(imagenId)) {
+                img.desmarcarComoPrincipal();
+                alojamientoImagenRepository.save(img);
+            }
+        }
+        
+        // Set new principal image
+        nuevaPrincipal.marcarComoPrincipal();
+        alojamientoImagenRepository.save(nuevaPrincipal);
+        
+        // Update alojamiento
+        Alojamiento alojamiento = alojamientoRepository.findByIdAndActivoTrue(alojamientoId)
+                .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
+        alojamiento.setImagenPrincipal(nuevaPrincipal.getUrlImagen());
+        alojamientoRepository.save(alojamiento);
+        
+        System.out.println("✅ Imagen principal actualizada: " + imagenId);
+        return true;
+    }
+
+    public long getImageCount(UUID alojamientoId) {
+        return alojamientoImagenRepository.countByAlojamientoId(alojamientoId);
+    }
+
+    public List<AlojamientoImagenResponse> getAlojamientoImages(UUID alojamientoId) {
+        List<AlojamientoImagen> imagenes = alojamientoImagenRepository.findByAlojamientoIdOrderByOrden(alojamientoId);
+        return imagenes.stream()
+                .map(this::convertirAImagenResponse)
+                .collect(Collectors.toList());
+    }
+
+    public boolean existsById(UUID alojamientoId) {
+        return alojamientoRepository.existsById(alojamientoId);
+    }
+
+    // Helper methods for image processing
+
+    private void validateImageFile(MultipartFile file) {
+        // Validate file is not empty
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("El archivo está vacío");
+        }
+        
+        // Validate file size (max 10MB)
+        long maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.getSize() > maxSize) {
+            throw new IllegalArgumentException("El archivo es demasiado grande. Tamaño máximo: 10MB");
+        }
+        
+        // Validate content type
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("El archivo debe ser una imagen");
+        }
+        
+        // Validate allowed image types
+        List<String> allowedTypes = Arrays.asList("image/jpeg", "image/jpg", "image/png", "image/webp");
+        if (!allowedTypes.contains(contentType.toLowerCase())) {
+            throw new IllegalArgumentException("Tipo de imagen no permitido. Use: JPEG, PNG o WebP");
+        }
+    }
+
+    private String generateUniqueFileName(String originalFilename) {
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        String uuid = UUID.randomUUID().toString();
+        String extension = "";
+        
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+        
+        return timestamp + "_" + uuid + extension;
+    }
+
+    private String extractS3KeyFromUrl(String imageUrl) {
+        // Extract key from URL like: https://bucket.s3.region.amazonaws.com/key
+        String[] parts = imageUrl.split(".amazonaws.com/");
+        if (parts.length > 1) {
+            return parts[1];
+        }
+        throw new IllegalArgumentException("Invalid S3 URL: " + imageUrl);
+    }
+
+    // ================== PRESIGNED URL METHODS FOR DIRECT S3 UPLOAD ==================
+
+    /**
+     * Generate a presigned URL for uploading an image directly to S3
+     * This bypasses API Gateway/Lambda size limits
+     */
+    public Map<String, String> generatePresignedUploadUrl(UUID alojamientoId, String filename, String contentType) {
+        if (s3Presigner == null) {
+            throw new IllegalStateException("S3 Presigner not available. Check AWS configuration.");
+        }
+
+        // Validate alojamiento exists
+        if (!alojamientoRepository.existsById(alojamientoId)) {
+            throw new IllegalArgumentException("Alojamiento no encontrado: " + alojamientoId);
+        }
+
+        // Check current image count
+        Long count = alojamientoImagenRepository.countByAlojamientoId(alojamientoId);
+        if (count != null && count >= 10) {
+            throw new IllegalArgumentException("Máximo 10 imágenes por habitación alcanzado");
+        }
+
+        // Generate unique filename and S3 key
+        String uniqueFilename = generateUniqueFileName(filename);
+        String s3Key = "alojamientos/" + alojamientoId + "/" + uniqueFilename;
+
+        // Create presigned PUT request
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(s3BucketName)
+                .key(s3Key)
+                .contentType(contentType != null ? contentType : "image/jpeg")
+                .build();
+
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(15)) // URL valid for 15 minutes
+                .putObjectRequest(putObjectRequest)
+                .build();
+
+        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("uploadUrl", presignedRequest.url().toString());
+        response.put("s3Key", s3Key);
+        response.put("filename", uniqueFilename);
+        response.put("imageUrl", String.format("https://%s.s3.us-east-1.amazonaws.com/%s", s3BucketName, s3Key));
+
+        System.out.println("✅ Generated presigned URL for: " + s3Key);
+        return response;
+    }
+
+    /**
+     * Register an image in the database after it has been uploaded directly to S3
+     * Called by frontend after successful S3 upload
+     */
+    public AlojamientoImagenResponse registerUploadedImage(UUID alojamientoId, String imageUrl, String descripcion) {
+        // Validate alojamiento exists
+        Alojamiento alojamiento = alojamientoRepository.findByIdAndActivoTrue(alojamientoId)
+                .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado: " + alojamientoId));
+
+        // Get current image count for ordering
+        Long countLong = alojamientoImagenRepository.countByAlojamientoId(alojamientoId);
+        int currentOrder = countLong != null ? countLong.intValue() : 0;
+
+        // Create image record
+        AlojamientoImagen alojamientoImagen = AlojamientoImagen.builder()
+                .alojamientoId(alojamientoId)
+                .urlImagen(imageUrl)
+                .descripcion(descripcion)
+                .orden(currentOrder + 1)
+                .esPrincipal(false)
+                .build();
+
+        // Set as principal if it's the first image
+        boolean isFirstImage = (currentOrder == 0);
+        boolean needsMainImage = (alojamiento.getImagenPrincipalUrl() == null || alojamiento.getImagenPrincipalUrl().isEmpty());
+
+        if (isFirstImage || needsMainImage) {
+            alojamientoImagen.marcarComoPrincipal();
+            alojamiento.setImagenPrincipal(imageUrl);
+            alojamientoRepository.save(alojamiento);
+        }
+
+        alojamientoImagen = alojamientoImagenRepository.save(alojamientoImagen);
+
+        System.out.println("✅ Registered uploaded image: " + imageUrl);
+        return convertirAImagenResponse(alojamientoImagen);
     }
 }

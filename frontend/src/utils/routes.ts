@@ -8,6 +8,8 @@ export const routes = {
     activities: "/activities",
     activityDetails: "/actividades/:id",
     birdDetail: "/bird/:id",
+    birding: "/birding",
+    birdwatching: "/birdwatching",
     book: "/book",
     bookings: "/bookings",
     myBookings: "/my-bookings",

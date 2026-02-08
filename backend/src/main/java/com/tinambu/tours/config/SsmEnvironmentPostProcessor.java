@@ -48,8 +48,8 @@ public class SsmEnvironmentPostProcessor implements EnvironmentPostProcessor {
                 if (dbHost.contains(":")) {
                     hostOnly = dbHost.substring(0, dbHost.lastIndexOf(":"));
                 }
-                // Construir JDBC URL con parámetros SSL y timeout
-                String jdbcUrl = String.format("jdbc:postgresql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&sslmode=require&connectTimeout=10&socketTimeout=30", hostOnly, dbPort, dbName);
+                // Construir JDBC URL con parámetros SSL y timeout aumentados para Lambda cold start
+                String jdbcUrl = String.format("jdbc:postgresql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&sslmode=require&connectTimeout=30&socketTimeout=60", hostOnly, dbPort, dbName);
                 ssmProperties.put("spring.datasource.url", jdbcUrl);
                 ssmProperties.put("spring.datasource.username", dbUser);
                 System.out.println("🔗 Configurando datasource: " + jdbcUrl + " con usuario: " + dbUser);

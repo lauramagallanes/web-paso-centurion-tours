@@ -1,8 +1,21 @@
 /* AccommodationDetails.css */
 .accommodation-details-page {
   min-height: 100vh;
-  background: #f8fafc;
+  background: linear-gradient(135deg, #faf6f1 0%, #f5e9dc 50%, #ede3d5 100%);
   padding: 20px 0;
+  position: relative;
+  width: 100%;
+  margin: 0;
+}
+
+/* IMPORTANT: Dark mode must come AFTER the base styles */
+[data-theme="dark"] .accommodation-details-page {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%) !important;
+  position: relative !important;
+  min-height: 100vh !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 20px 0 !important;
 }
 
 .container {
@@ -120,6 +133,8 @@
   object-fit: cover;
 }
 
+/* Limpieza: todas las reglas del grid ahora están en ImageGridGallery.css */
+
 .gallery-btn {
   position: absolute;
   bottom: 16px;
@@ -233,6 +248,14 @@
   color: #64748b;
 }
 
+[data-theme="dark"] .period {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .price {
+  color: #a3d9a5;
+}
+
 /* Booking Form */
 .booking-form {
   padding: 24px;
@@ -251,6 +274,10 @@
   font-size: 14px;
   font-weight: 500;
   color: #1e293b;
+}
+
+[data-theme="dark"] .form-group label {
+  color: #f8fafc;
 }
 
 .date-selector {
@@ -371,7 +398,7 @@
 }
 
 .reserve-btn {
-  background: #16a34a;
+  background: var(--color-primary, #6b792e);
   color: white;
   border: none;
   border-radius: 8px;
@@ -383,7 +410,7 @@
 }
 
 .reserve-btn:hover:not(:disabled) {
-  background: #15803d;
+  background: var(--color-primary-hover, #7a8935);
 }
 
 .reserve-btn:disabled {
@@ -397,8 +424,8 @@
   justify-content: center;
   gap: 8px;
   background: white;
-  color: #16a34a;
-  border: 1px solid #16a34a;
+  color: var(--color-secondary, #8a9d4a);
+  border: 1px solid var(--color-secondary, #8a9d4a);
   border-radius: 8px;
   padding: 12px;
   font-size: 14px;
@@ -408,7 +435,7 @@
 }
 
 .cart-btn:hover:not(:disabled) {
-  background: #f0fdf4;
+  background: var(--color-background-alt, #fff9f4);
 }
 
 .cart-btn:disabled {
@@ -480,6 +507,8 @@
     height: 300px;
   }
   
+  /* El layout collage se mantiene en móvil */
+  
   .details-left {
     gap: 24px;
   }
@@ -511,6 +540,8 @@
     border-radius: 12px;
   }
   
+  /* El layout collage se mantiene en móvil */
+  
   .booking-card {
     border-radius: 12px;
   }
@@ -524,107 +555,131 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .accommodation-details-page {
-    background: #0f172a;
-  }
-  
-  .title-left h1 {
-    color: #f8fafc;
-  }
-  
-  .breadcrumb span:last-child {
-    color: #f8fafc;
-  }
-  
-  .location-info {
-    color: #94a3b8;
-  }
-  
-  .favorite-btn,
-  .booking-card,
-  .feature-item {
-    background: #1e293b;
-    border-color: #334155;
-    color: #f8fafc;
-  }
-  
-  .favorite-btn:hover {
-    border-color: #ef4444;
-    color: #ef4444;
-  }
-  
-  .booking-header {
-    border-bottom-color: #334155;
-  }
-  
-  .info-section h2 {
-    color: #f8fafc;
-  }
-  
-  .info-section p {
-    color: #94a3b8;
-  }
-  
-  .feature-item strong {
-    color: #f8fafc;
-  }
-  
-  .feature-item span {
-    color: #94a3b8;
-  }
-  
-  .date-selector,
-  .guest-selector {
-    background: #334155;
-    border-color: #475569;
-    color: #f8fafc;
-  }
-  
-  .date-selector:hover {
-    border-color: #16a34a;
-    background: #064e3b;
-  }
-  
-  .guest-btn {
-    background: #475569;
-    border-color: #64748b;
-    color: #94a3b8;
-  }
-  
-  .guest-count {
-    color: #f8fafc;
-  }
-  
-  .price-breakdown {
-    border-top-color: #334155;
-  }
-  
-  .price-line {
-    color: #94a3b8;
-  }
-  
-  .price-total {
-    color: #f8fafc;
-    border-top-color: #334155;
-  }
-  
-  .cart-btn {
-    background: #1e293b;
-    border-color: #16a34a;
-    color: #16a34a;
-  }
-  
-  .cart-btn:hover:not(:disabled) {
-    background: #064e3b;
-  }
-  
-  .error-state h2 {
-    color: #f8fafc;
-  }
-  
-  .error-state p {
-    color: #94a3b8;
-  }
+/* Dark mode support - Remove duplicate, already handled above */
+
+[data-theme="dark"] .accommodation-details-page .container,
+[data-theme="dark"] .accommodation-details-page .details-content,
+[data-theme="dark"] .accommodation-details-page .details-left,
+[data-theme="dark"] .accommodation-details-page .details-right,
+[data-theme="dark"] .accommodation-details-page .accommodation-info,
+[data-theme="dark"] .accommodation-details-page .details-header {
+  background: transparent !important;
+}
+
+[data-theme="dark"] .title-left h1 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .breadcrumb {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .breadcrumb a {
+  color: #a3d9a5;
+}
+
+[data-theme="dark"] .breadcrumb span:last-child {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .location-info {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .favorite-btn,
+[data-theme="dark"] .booking-card,
+[data-theme="dark"] .feature-item {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .favorite-btn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+[data-theme="dark"] .booking-header {
+  border-bottom-color: #334155;
+}
+
+[data-theme="dark"] .info-section h2 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .info-section p {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .feature-item strong {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .feature-item span {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .date-selector,
+[data-theme="dark"] .guest-selector {
+  background: #334155;
+  border-color: #475569;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .date-selector:hover {
+  border-color: #16a34a;
+  background: #064e3b;
+}
+
+[data-theme="dark"] .guest-btn {
+  background: #475569;
+  border-color: #64748b;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .guest-count {
+  color: #f8fafc !important;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .guest-selector {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
+
+[data-theme="dark"] .guest-selector span,
+[data-theme="dark"] .guest-selector .guest-count {
+  color: #f8fafc !important;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .price-breakdown {
+  border-top-color: #334155;
+}
+
+[data-theme="dark"] .price-line {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .price-total {
+  color: #f8fafc;
+  border-top-color: #334155;
+}
+
+[data-theme="dark"] .cart-btn {
+  background: #1e293b;
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+[data-theme="dark"] .cart-btn:hover:not(:disabled) {
+  background: #064e3b;
+}
+
+[data-theme="dark"] .error-state h2 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .error-state p {
+  color: #94a3b8;
 }

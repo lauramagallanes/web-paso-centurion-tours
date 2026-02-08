@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import './styles/globals.css'
-import { BrowserRouter } from 'react-router-dom'
+import { HashRouter } from 'react-router-dom'
 import Context from './contexts/Context'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { CartProvider } from './contexts/CartContext'
@@ -13,7 +13,7 @@ import { initializeErrorHandlers } from './utils/errorHandlers'
 initializeErrorHandlers();
 
 createRoot(document.getElementById('root')!).render(
-  <BrowserRouter>
+  <HashRouter>
     <ThemeProvider>
       <FavoritesProvider>
         <CartProvider>
@@ -23,5 +23,5 @@ createRoot(document.getElementById('root')!).render(
         </CartProvider>
       </FavoritesProvider>
     </ThemeProvider>
-  </BrowserRouter>
+  </HashRouter>
 ) 

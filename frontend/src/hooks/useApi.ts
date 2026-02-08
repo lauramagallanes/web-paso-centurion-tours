@@ -15,7 +15,9 @@ export function useApi<T = any>() {
       const response = await fetch(`${apiService.apiBaseURL}${endpoint}`, {
         ...options,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
+          'Accept-Charset': 'utf-8',
           ...options?.headers,
           ...(apiService.getAuthHeaders())
         }
@@ -25,7 +27,11 @@ export function useApi<T = any>() {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result = await response.json();
+      // Handle empty responses (like DELETE 204 No Content)
+      const contentType = response.headers.get('content-type');
+      const hasContent = response.status !== 204 && contentType?.includes('application/json');
+      
+      const result = hasContent ? await response.json() : null;
       setData(result);
       return result;
     } catch (err) {
@@ -43,9 +49,9 @@ export function useApi<T = any>() {
   return { data, loading, error, execute, clearError, clearData };
 }
 
-// Hook específico para habitaciones
+// Hook específico para habitaciones (alojamientos)
 export function useHabitaciones() {
-  return useApi('/habitaciones');
+  return useApi('/alojamientos');
 }
 
 // Hook específico para senderos

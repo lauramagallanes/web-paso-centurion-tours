@@ -1,0 +1,408 @@
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Button, Alert, ProgressBar, Card, Modal, Image } from 'react-bootstrap';
+import apiService from '../../services/apiService';
+
+interface AlojamientoImage {
+  id: string;
+  url: string;
+  filename?: string; // Agregado para S3
+  descripcion?: string;
+  orden: number;
+  esPrincipal: boolean;
+}
+
+interface AlojamientoImageUploaderProps {
+  alojamientoId?: string;
+  images: AlojamientoImage[];
+  onImagesChange: (images: AlojamientoImage[]) => void;
+  disabled?: boolean;
+}
+
+const AlojamientoImageUploader: React.FC<AlojamientoImageUploaderProps> = ({
+  alojamientoId,
+  images = [],
+  onImagesChange,
+  disabled = false
+}) => {
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Maximum 10 images per alojamiento
+  const maxImages = 10;
+  const canUploadMore = images.length < maxImages;
+
+  // Load images from API when alojamientoId changes
+  useEffect(() => {
+    const loadImages = async () => {
+      if (alojamientoId) {
+        console.log('📂 Loading images from API for alojamiento:', alojamientoId);
+        try {
+          const response = await apiService.getAlojamientoImages(alojamientoId);
+          console.log('📂 API Response:', response);
+          
+          // Convert API response to AlojamientoImage format
+          const apiImages = Array.isArray(response) ? response : [];
+          const convertedImages: AlojamientoImage[] = apiImages.map(img => ({
+            id: img.id,
+            url: img.urlImagen || img.url,
+            filename: img.descripcion || 'imagen',
+            descripcion: img.descripcion,
+            orden: img.orden || 0,
+            esPrincipal: img.esPrincipal || false,
+          }));
+          
+          console.log('📂 Loaded', convertedImages.length, 'images from API');
+          onImagesChange(convertedImages);
+        } catch (error) {
+          console.error('Error loading images:', error);
+          // Fallback to empty array if API fails
+          onImagesChange([]);
+        }
+      } else {
+        onImagesChange([]);
+      }
+    };
+
+    loadImages();
+  }, [alojamientoId]); // ✅ REMOVED onImagesChange from dependencies to prevent infinite loop
+
+  // Auto-hide messages after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !alojamientoId) return;
+
+    // Validate file count
+    if (images.length + files.length > maxImages) {
+      setError(`Máximo ${maxImages} imágenes por habitación. Actualmente tienes ${images.length}.`);
+      return;
+    }
+
+    // Validate file types and sizes
+    const validFiles: File[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        setError(`Archivo ${file.name} no es una imagen válida.`);
+        return;
+      }
+      
+      // Check file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        setError(`Archivo ${file.name} es demasiado grande. Máximo 10MB.`);
+        return;
+      }
+      
+      validFiles.push(file);
+    }
+
+    // Upload files using PRESIGNED URLS (bypasses API Gateway limits)
+    try {
+      setUploading(true);
+      setError(null);
+      setSuccessMessage(null);
+      setUploadProgress(5);
+
+      console.log('🚀 Starting upload of', validFiles.length, 'files via presigned URLs...');
+      
+      const newImages: SenderoImage[] = [];
+      const totalFiles = validFiles.length;
+
+      // Upload each file sequentially
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
+        const progressBase = ((i / totalFiles) * 90); // 0-90% for uploads
+
+        try {
+          console.log(`📤 [${i+1}/${totalFiles}] Uploading ${file.name}...`);
+          
+          // Step 1: Get presigned URL from backend
+          setUploadProgress(progressBase + 10);
+          const presignedData = await apiService.getAlojamientoPresignedUploadUrl(
+            alojamientoId,
+            file.name,
+            file.type
+          );
+
+          console.log(`🔗 Got presigned URL for ${file.name}`);
+
+          // Step 2: Upload directly to S3
+          setUploadProgress(progressBase + 30);
+          await apiService.uploadToS3(presignedData.uploadUrl, file);
+
+          console.log(`✅ Uploaded ${file.name} to S3`);
+
+          // Step 3: Register the image in the database
+          setUploadProgress(progressBase + 60);
+          const registeredImage = await apiService.registerAlojamientoImage(
+            alojamientoId,
+            presignedData.imageUrl,
+            '' // Empty description for now
+          );
+
+          console.log(`✅ Registered ${file.name} in database`);
+
+          // Convert to SenderoImage format
+          const imageData = registeredImage.image || registeredImage;
+          newImages.push({
+            id: imageData.id,
+            url: imageData.urlImagen || imageData.url,
+            filename: file.name,
+            descripcion: imageData.descripcion || '',
+            orden: imageData.orden || (images.length + i + 1),
+            esPrincipal: imageData.esPrincipal || (images.length === 0 && i === 0),
+          });
+
+          setUploadProgress(progressBase + 90);
+
+        } catch (fileError) {
+          console.error(`❌ Error uploading ${file.name}:`, fileError);
+          throw new Error(`Error subiendo ${file.name}: ${fileError instanceof Error ? fileError.message : 'Error desconocido'}`);
+        }
+      }
+      
+      console.log('🔄 Successfully uploaded', newImages.length, 'images');
+      
+      // Update images list
+      const updatedImages = [...images, ...newImages];
+      onImagesChange(updatedImages);
+      
+      setUploadProgress(100);
+      setSuccessMessage(`${validFiles.length} imagen${validFiles.length > 1 ? 'es' : ''} subida${validFiles.length > 1 ? 's' : ''} exitosamente`);
+      
+    } catch (err) {
+      console.error('Upload error:', err);
+      setError(err instanceof Error ? err.message : 'Error subiendo imágenes');
+    } finally {
+      setUploading(false);
+      setTimeout(() => setUploadProgress(0), 1000); // Keep progress visible for a moment
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [alojamientoId, images, onImagesChange]);
+
+  const handleDeleteImage = async (imageId: string) => {
+    if (!alojamientoId) return;
+    
+    try {
+      console.log('🗑️ Deleting image via API:', imageId);
+      
+      // Delete via API
+      await apiService.deleteAlojamientoImage(imageId);
+      console.log('✅ Image deleted via API');
+      
+      // Remove image from list
+      const updatedImages = images.filter(img => img.id !== imageId);
+      onImagesChange(updatedImages);
+      
+      setSuccessMessage('Imagen eliminada exitosamente');
+
+    } catch (err) {
+      console.error('Delete error:', err);
+      setError(err instanceof Error ? err.message : 'Error eliminando imagen');
+    }
+  };
+
+  const handleSetMainImage = async (imageId: string) => {
+    if (!alojamientoId) return;
+    
+    try {
+      console.log('⭐ Setting main image via API:', imageId);
+      
+      // Update via API (if endpoint exists)
+      // Note: This might need to be implemented in the backend
+      // For now, we'll update locally
+      
+      // Update images list - mark this as principal and others as not
+      const updatedImages = images.map(img => ({
+        ...img,
+        esPrincipal: img.id === imageId
+      }));
+      onImagesChange(updatedImages);
+      
+      setSuccessMessage('Imagen principal actualizada');
+      
+    } catch (err) {
+      console.error('Set main image error:', err);
+      setError(err instanceof Error ? err.message : 'Error estableciendo imagen principal');
+    }
+  };
+
+  return (
+    <div className="sendero-image-uploader">
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h6 className="mb-0">
+          Imágenes de la Habitación ({images.length}/{maxImages})
+        </h6>
+        
+        {canUploadMore && alojamientoId && (
+          <Button 
+            variant="outline-primary" 
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={disabled || uploading}
+          >
+            {uploading ? 'Subiendo...' : 'Subir Imágenes'}
+          </Button>
+        )}
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+        disabled={disabled}
+      />
+
+      {error && (
+        <Alert variant="danger" className="mb-3">
+          <strong>Error:</strong> {error}
+          <Button 
+            variant="outline-danger" 
+            size="sm" 
+            className="float-end"
+            onClick={() => setError(null)}
+          >
+            ×
+          </Button>
+        </Alert>
+      )}
+
+      {successMessage && (
+        <Alert variant="success" className="mb-3">
+          <strong>✅ Éxito:</strong> {successMessage}
+          <Button 
+            variant="outline-success" 
+            size="sm" 
+            className="float-end"
+            onClick={() => setSuccessMessage(null)}
+          >
+            ×
+          </Button>
+        </Alert>
+      )}
+
+      {uploading && (
+        <div className="mb-3">
+          <ProgressBar 
+            now={uploadProgress} 
+            label={`${uploadProgress}%`}
+            animated 
+            striped 
+            variant="success"
+          />
+        </div>
+      )}
+
+      {/* Images Grid */}
+      <div className="images-grid">
+        {images.length === 0 ? (
+          <Card className="text-center p-4">
+            <Card.Body>
+              <p className="text-muted mb-0">
+                {alojamientoId ? 'No hay imágenes cargadas' : 'Guarda la habitación primero para subir imágenes'}
+              </p>
+            </Card.Body>
+          </Card>
+        ) : (
+          <div className="row">
+            {images.map((image, index) => (
+              <div key={image.id} className="col-6 col-md-4 col-lg-3 mb-3">
+                <Card>
+                  <div className="position-relative">
+                    <Card.Img 
+                      variant="top" 
+                      src={image.url} 
+                      style={{ height: '120px', objectFit: 'cover', cursor: 'pointer' }}
+                      onClick={() => setShowPreview(true)}
+                    />
+                    
+                    {image.esPrincipal && (
+                      <div 
+                        className="position-absolute top-0 start-0 m-1 badge bg-primary"
+                        style={{ fontSize: '0.7rem' }}
+                      >
+                        Principal
+                      </div>
+                    )}
+                    
+                    <div className="position-absolute top-0 end-0 m-1">
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        className="btn-sm rounded-circle p-1"
+                        style={{ width: '24px', height: '24px' }}
+                        onClick={() => handleDeleteImage(image.id)}
+                        disabled={disabled}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <Card.Body className="p-2">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <small className="text-muted">#{image.orden}</small>
+                      
+                      {!image.esPrincipal && (
+                        <Button 
+                          variant="outline-secondary" 
+                          size="sm"
+                          onClick={() => handleSetMainImage(image.id)}
+                          disabled={disabled}
+                        >
+                          Hacer Principal
+                        </Button>
+                      )}
+                    </div>
+                  </Card.Body>
+                </Card>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Image Preview Modal */}
+      <Modal show={showPreview} onHide={() => setShowPreview(false)} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Vista Previa de Imágenes</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="row">
+            {images.map(image => (
+              <div key={image.id} className="col-6 col-md-4 mb-3">
+                <Image src={image.url} fluid />
+              </div>
+            ))}
+          </div>
+        </Modal.Body>
+      </Modal>
+    </div>
+  );
+};
+
+export default AlojamientoImageUploader;

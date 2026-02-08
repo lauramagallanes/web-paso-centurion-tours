@@ -1,0 +1,70 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PublicReadForSenderos",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::tinambu-public-assets-dev/senderos/*"
+    },
+    {
+      "Sid": "PublicReadForAlojamientos",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::tinambu-public-assets-dev/alojamientos/*"
+    },
+    {
+      "Sid": "PublicReadForHome",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::tinambu-public-assets-dev/home/*"
+    },
+    {
+      "Sid": "PublicReadForSlider",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::tinambu-public-assets-dev/slider/*"
+    },
+    {
+      "Sid": "PublicReadForIntro",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::tinambu-public-assets-dev/intro/*"
+    },
+    {
+      "Sid": "PublicReadForAves",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::tinambu-public-assets-dev/aves/*"
+    },
+    {
+      "Sid": "PublicReadForActivities",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::tinambu-public-assets-dev/activities/*"
+    },
+    {
+      "Sid": "PublicReadForBirding",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::tinambu-public-assets-dev/birding/*"
+    },
+    {
+      "Sid": "PublicReadForAccommodations",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::tinambu-public-assets-dev/accommodations/*"
+    }
+  ]
+}
+
+

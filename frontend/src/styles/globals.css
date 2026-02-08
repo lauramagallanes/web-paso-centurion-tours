@@ -7,7 +7,7 @@
 @import './layout.css';
 
 /* Additional component-specific styles will be imported here */
-@import '../assets/styles/Home.css';
+/* @import '../assets/styles/Home.css'; - DISABLED: Causes yellow background on cards */
 @import '../assets/styles/Footer.css';
 @import '../assets/styles/PhotoGallery.css';
 
@@ -42,6 +42,10 @@ body {
   background-color: var(--color-background);
   color: var(--color-text);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="dark"] body {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%) !important;
 }
 
 /* Focus Styles */

@@ -33,25 +33,16 @@ resource "aws_security_group" "rds" {
   description = "Security group for RDS PostgreSQL database - Lambda access only"
   vpc_id      = data.aws_vpc.default.id
 
-  # Inbound from AWS Lambda IP ranges (us-east-1)
-  # Security layers: IP restriction + SSL required + Strong passwords
+  # Inbound from anywhere (Lambda without VPC needs public access)
+  # Security layers: SSL required + Strong passwords + Security Group still provides some protection
+  # Note: Lambda without VPC uses AWS public IPs that can change
+  # For production, consider moving Lambda to VPC for better security
   ingress {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    description = "PostgreSQL from AWS Lambda (us-east-1)"
-    # AWS Lambda IP ranges for us-east-1
-    # If connection fails, check AWS IP ranges: https://docs.aws.amazon.com/general/latest/gr/aws-ip-ranges.html
-    cidr_blocks = [
-      "3.5.140.0/22",   # AWS Lambda us-east-1
-      "52.70.0.0/15",   # AWS Lambda us-east-1
-      "52.144.0.0/14",  # AWS Lambda us-east-1
-      "54.144.0.0/14",  # AWS Lambda us-east-1
-      "54.152.0.0/16",  # AWS Lambda us-east-1
-      "54.226.0.0/15",  # AWS Lambda us-east-1
-      "18.206.0.0/15",  # AWS Lambda us-east-1 (additional range)
-      "18.232.0.0/14",  # AWS Lambda us-east-1 (additional range)
-    ]
+    description = "PostgreSQL from Lambda (public access - SSL required)"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow from anywhere, but SSL is required
   }
 
   tags = {

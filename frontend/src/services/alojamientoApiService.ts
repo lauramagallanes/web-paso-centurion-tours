@@ -54,33 +54,92 @@ interface AlojamientoDisponibilidadRequest {
 
 // Extended API service with accommodation methods
 const alojamientoApiService = {
+  // Get base URL
+  getBaseURL(): string {
+    return import.meta.env.VITE_API_BASE_URL || 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com';
+  },
+
+  // Get auth token
+  getToken(): string | null {
+    return localStorage.getItem('accessToken');
+  },
+
   // Public endpoints
-  async getAlojamientos(): Promise<AlojamientoResponse[]> {
-    try {
-      const response = await fetch(`${apiService.baseURL}/alojamientos`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Error fetching accommodations: ${response.status}`);
+  async getAlojamientos(retries = 1, delay = 1000): Promise<AlojamientoResponse[]> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`🔄 Reintentando getAlojamientos (intento ${attempt + 1}/${retries + 1})...`);
+          // Backoff exponencial: 1s, 2s
+          await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
+        }
+        
+        console.log('🔍 Llamando a:', `${this.getBaseURL()}/alojamientos`);
+        
+        // Crear un AbortController para timeout más corto
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+        
+        try {
+          const response = await fetch(`${this.getBaseURL()}/alojamientos`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json; charset=utf-8',
+              'Accept': 'application/json; charset=utf-8',
+            },
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          console.log('📡 Respuesta recibida:', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Error fetching accommodations: ${response.status}`);
+          }
+          
+          return await response.json();
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          
+          if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+            // Si es el último intento, lanzar el error
+            if (attempt === retries) {
+              throw new Error('La solicitud tardó demasiado tiempo. Por favor, intenta nuevamente.');
+            }
+            // Si no es el último intento, continuar con el siguiente retry
+            continue;
+          }
+          throw fetchError;
+        }
+      } catch (error) {
+        // Si es el último intento, lanzar el error
+        if (attempt === retries) {
+          console.error('❌ Error en getAlojamientos después de todos los intentos:', error);
+          if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+            throw new Error('Error de conexión: No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+          }
+          throw error;
+        }
+        // Si no es el último intento, continuar con el siguiente retry
+        console.warn(`⚠️ Intento ${attempt + 1} falló, reintentando...`, error);
       }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching accommodations:', error);
-      throw error;
     }
+    // Este código nunca debería ejecutarse, pero TypeScript lo requiere
+    throw new Error('Error desconocido al cargar alojamientos');
   },
 
   async getAlojamientoById(id: string): Promise<AlojamientoResponse> {
     try {
-      const response = await fetch(`${apiService.baseURL}/alojamientos/${id}`, {
+      const response = await fetch(`${this.getBaseURL()}/alojamientos/${id}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
         },
       });
       
@@ -102,7 +161,7 @@ const alojamientoApiService = {
         checkOut
       });
       
-      const response = await fetch(`${apiService.baseURL}/alojamientos/${id}/verificar-disponibilidad?${params}`, {
+      const response = await fetch(`${this.getBaseURL()}/alojamientos/${id}/verificar-disponibilidad?${params}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -124,11 +183,12 @@ const alojamientoApiService = {
   // Admin endpoints
   async createAlojamiento(data: AlojamientoRequest): Promise<AlojamientoResponse> {
     try {
-      const response = await fetch(`${apiService.baseURL}/alojamientos`, {
+      const response = await fetch(`${this.getBaseURL()}/alojamientos`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiService.getToken()}`,
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
+          'Authorization': `Bearer ${this.getToken()}`,
         },
         body: JSON.stringify(data),
       });
@@ -146,11 +206,12 @@ const alojamientoApiService = {
 
   async updateAlojamiento(id: string, data: AlojamientoRequest): Promise<AlojamientoResponse> {
     try {
-      const response = await fetch(`${apiService.baseURL}/alojamientos/${id}`, {
+      const response = await fetch(`${this.getBaseURL()}/alojamientos/${id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiService.getToken()}`,
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
+          'Authorization': `Bearer ${this.getToken()}`,
         },
         body: JSON.stringify(data),
       });
@@ -168,10 +229,10 @@ const alojamientoApiService = {
 
   async deleteAlojamiento(id: string): Promise<void> {
     try {
-      const response = await fetch(`${apiService.baseURL}/alojamientos/${id}`, {
+      const response = await fetch(`${this.getBaseURL()}/alojamientos/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${apiService.getToken()}`,
+          'Authorization': `Bearer ${this.getToken()}`,
         },
       });
       
@@ -186,11 +247,11 @@ const alojamientoApiService = {
 
   async createAvailability(data: AlojamientoDisponibilidadRequest): Promise<any> {
     try {
-      const response = await fetch(`${apiService.baseURL}/alojamientos/${data.alojamientoId}/disponibilidad`, {
+      const response = await fetch(`${this.getBaseURL()}/alojamientos/${data.alojamientoId}/disponibilidad`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiService.getToken()}`,
+          'Authorization': `Bearer ${this.getToken()}`,
         },
         body: JSON.stringify(data),
       });

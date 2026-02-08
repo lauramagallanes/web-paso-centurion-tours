@@ -118,14 +118,28 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  // ========== MÉTODOS DE HABITACIONES ==========
+  // ========== MÉTODOS DE ALOJAMIENTOS ==========
 
   async getHabitaciones() {
-    const response = await fetch(`${this.baseURL}/habitaciones`, {
+    const response = await fetch(`${this.baseURL}/alojamientos`, {
       headers: this.getHeaders(),
     });
 
     return this.handleResponse(response);
+  }
+
+  async getAlojamientoById(id: string) {
+    const response = await fetch(`${this.baseURL}/alojamientos/${id}`, {
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      return { success: false, error: `Error ${response.status}: ${response.statusText}` };
+    }
+
+    const data = await response.json();
+    // El backend devuelve el objeto directamente, no envuelto en { success, data }
+    return { success: true, data };
   }
 
   async getHabitacionesDisponibles(fechaInicio: string, fechaFin: string, numeroPersonas: number) {
@@ -135,7 +149,7 @@ class ApiService {
       numeroPersonas: numeroPersonas.toString(),
     });
 
-    const response = await fetch(`${this.baseURL}/habitaciones/disponibles?${params}`, {
+    const response = await fetch(`${this.baseURL}/alojamientos/disponibles?${params}`, {
       headers: this.getHeaders(),
     });
 
@@ -143,7 +157,7 @@ class ApiService {
   }
 
   async getHabitacion(id: string) {
-    const response = await fetch(`${this.baseURL}/habitaciones/${id}`, {
+    const response = await fetch(`${this.baseURL}/alojamientos/${id}`, {
       headers: this.getHeaders(),
     });
 
@@ -152,12 +166,73 @@ class ApiService {
 
   // ========== MÉTODOS DE SENDEROS ==========
 
-  async getSenderos() {
-    const response = await fetch(`${this.baseURL}/senderos`, {
-      headers: this.getHeaders(),
-    });
+  async getSenderos(retries = 3, delay = 3000) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`🔄 Reintentando (intento ${attempt + 1}/${retries + 1})...`);
+          // Backoff exponencial: 2s, 4s, 8s
+          await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
+        }
+        
+        console.log('🔍 Llamando a:', `${this.baseURL}/senderos`);
+        
+        // Crear un AbortController para timeout más largo para cold start
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 segundos timeout
+        
+        try {
+          const response = await fetch(`${this.baseURL}/senderos`, {
+            headers: this.getHeaders(),
+            method: 'GET',
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          console.log('📡 Respuesta recibida:', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            headers: Object.fromEntries(response.headers.entries())
+          });
 
-    return this.handleResponse(response);
+          // Si es un error 503 (Service Unavailable), reintentar automáticamente
+          if (response.status === 503) {
+            if (attempt === retries) {
+              throw new Error('El servidor no está disponible temporalmente. Por favor, intenta nuevamente en unos momentos.');
+            }
+            console.warn(`⚠️ Servicio no disponible (503), reintentando... (intento ${attempt + 1}/${retries + 1})`);
+            continue;
+          }
+
+          return this.handleResponse(response);
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          
+          if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+            // Si es el último intento, lanzar el error
+            if (attempt === retries) {
+              throw new Error('La solicitud tardó demasiado tiempo. Por favor, intenta nuevamente.');
+            }
+            // Si no es el último intento, continuar con el siguiente retry
+            continue;
+          }
+          throw fetchError;
+        }
+      } catch (error) {
+        // Si es el último intento, lanzar el error
+        if (attempt === retries) {
+          console.error('❌ Error en getSenderos después de todos los intentos:', error);
+          if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+            throw new Error('Error de conexión: No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+          }
+          throw error;
+        }
+        // Si no es el último intento, continuar con el siguiente retry
+        console.warn(`⚠️ Intento ${attempt + 1} falló, reintentando...`, error);
+      }
+    }
   }
 
   async getSendero(id: string) {
@@ -183,24 +258,26 @@ class ApiService {
     // Convert FileList to Array if needed
     const fileArray = Array.isArray(files) ? files : Array.from(files);
     
-    // Convert files to base64 for API Gateway compatibility
-    const filesData = await Promise.all(
-      fileArray.map(async (file, index) => {
-        const base64 = await this.fileToBase64(file);
-        return {
-          filename: file.name,
-          contentType: file.type,
-          size: file.size,
-          content: base64,
-          descripcion: descriptions?.[index] || ''
-        };
-      })
-    );
+    // Create FormData for multipart/form-data upload
+    const formData = new FormData();
+    
+    // Add files to FormData
+    fileArray.forEach((file, index) => {
+      formData.append('files', file);
+    });
+    
+    // Add descriptions if provided
+    if (descriptions && descriptions.length > 0) {
+      descriptions.forEach((desc, index) => {
+        if (desc) {
+          formData.append('descriptions', desc);
+        }
+      });
+    }
 
     const token = localStorage.getItem('accessToken');
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json'
-    };
+    const headers: HeadersInit = {};
+    // DON'T set Content-Type for FormData - let browser set it with boundary
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -208,9 +285,7 @@ class ApiService {
     const response = await fetch(`${this.baseURL}/images/senderos/${senderoId}`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        files: filesData
-      }),
+      body: formData, // Send FormData instead of JSON
     });
 
     return this.handleResponse(response);
@@ -320,6 +395,135 @@ class ApiService {
     const response = await fetch(`${this.baseURL}/images/${imageId}/principal`, {
       method: 'PUT',
       headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // ============ ALOJAMIENTO IMAGES ============
+
+  // Upload images for an alojamiento
+  async uploadAlojamientoImages(alojamientoId: string, files: FileList | File[], descriptions?: string[]) {
+    // Convert FileList to Array if needed
+    const fileArray = Array.isArray(files) ? files : Array.from(files);
+    
+    // Create FormData for multipart/form-data upload
+    const formData = new FormData();
+    
+    // Add files to FormData
+    fileArray.forEach((file, index) => {
+      formData.append('files', file);
+    });
+    
+    // Add descriptions if provided
+    if (descriptions && descriptions.length > 0) {
+      descriptions.forEach((desc, index) => {
+        if (desc) {
+          formData.append('descriptions', desc);
+        }
+      });
+    }
+    
+    // Custom headers for multipart/form-data (don't set Content-Type, let browser set it with boundary)
+    const headers: Record<string, string> = {};
+    const token = localStorage.getItem('token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    console.log('🚀 Starting upload of', fileArray.length, 'files via API...');
+    
+    const response = await fetch(`${this.baseURL}/images/alojamientos/${alojamientoId}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    console.log('✅ API upload completed:', await response.clone().json());
+    
+    return this.handleResponse(response);
+  }
+
+  // Get images for an alojamiento
+  async getAlojamientoImages(alojamientoId: string) {
+    const response = await fetch(`${this.baseURL}/images/alojamientos/${alojamientoId}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Delete single image (same endpoint as senderos)
+  async deleteAlojamientoImage(imageId: string) {
+    const response = await fetch(`${this.baseURL}/images/${imageId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Set as main image (same endpoint as senderos)
+  async setAlojamientoMainImage(imageId: string) {
+    const response = await fetch(`${this.baseURL}/images/${imageId}/principal`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // ============ ALOJAMIENTO PRESIGNED URL METHODS (for large files >10MB) ============
+
+  /**
+   * Get a presigned URL for uploading directly to S3
+   * This bypasses API Gateway/Lambda size limits
+   */
+  async getAlojamientoPresignedUploadUrl(alojamientoId: string, filename: string, contentType: string) {
+    const params = new URLSearchParams({
+      filename,
+      contentType: contentType || 'image/jpeg'
+    });
+    
+    const response = await fetch(`${this.baseURL}/images/alojamientos/${alojamientoId}/presigned-url?${params}`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  /**
+   * Upload file directly to S3 using presigned URL
+   */
+  async uploadToS3(presignedUrl: string, file: File) {
+    console.log(`📤 Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB) directly to S3...`);
+    
+    const response = await fetch(presignedUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`S3 upload failed: ${response.status} ${response.statusText}`);
+    }
+
+    console.log(`✅ Successfully uploaded to S3`);
+    return response;
+  }
+
+  /**
+   * Register uploaded image in database after S3 upload
+   */
+  async registerAlojamientoImage(alojamientoId: string, imageUrl: string, descripcion?: string) {
+    const response = await fetch(`${this.baseURL}/images/alojamientos/${alojamientoId}/register`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify({ imageUrl, descripcion }),
     });
 
     return this.handleResponse(response);

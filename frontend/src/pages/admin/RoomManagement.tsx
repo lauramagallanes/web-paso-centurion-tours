@@ -3,6 +3,7 @@ import { Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge } fro
 import { useNavigate } from 'react-router-dom';
 import { useHabitacionesAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
+import AlojamientoImageUploader from '../../components/admin/AlojamientoImageUploader';
 import BackendError from '../../components/common/BackendError';
 
 interface Habitacion {
@@ -10,11 +11,16 @@ interface Habitacion {
   numero: string;
   nombre: string;
   descripcion?: string;
+  ubicacion?: string;
   capacidadMinima?: number;
   capacidadMaxima: number;
-  precioPorPersonaNoche: number;
+  cantidadCamasDobles?: number;
+  cantidadLiteras?: number;
+  precioPorNoche: number;
+  precioPorPersonaNoche?: number; // Legacy field for compatibility
   urlImagen?: string;
   activa: boolean;
+  activo?: boolean; // Alias para activa
   fechaCreacion?: string;
   fechaActualizacion?: string;
 }
@@ -40,13 +46,17 @@ const RoomManagement: React.FC = () => {
     numero: '',
     nombre: '',
     descripcion: '',
+    ubicacion: '',
     capacidadMinima: 1,
     capacidadMaxima: 2,
-    precioPorPersonaNoche: 1500,
+    cantidadCamasDobles: 1,
+    cantidadLiteras: 0,
+    precioPorNoche: 1500,
     urlImagen: '',
     activa: true
   });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [habitacionImages, setHabitacionImages] = useState<any[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -86,9 +96,12 @@ const RoomManagement: React.FC = () => {
       numero: '',
       nombre: '',
       descripcion: '',
+      ubicacion: '',
       capacidadMinima: 1,
       capacidadMaxima: 2,
-      precioPorPersonaNoche: 1500,
+      cantidadCamasDobles: 1,
+      cantidadLiteras: 0,
+      precioPorNoche: 1500,
       urlImagen: '',
       activa: true
     });
@@ -101,7 +114,19 @@ const RoomManagement: React.FC = () => {
     
     if (habitacion) {
       setSelectedHabitacion(habitacion);
-      setFormData({ ...habitacion });
+      // Asegurar que todos los campos estén presentes
+      setFormData({
+        ...habitacion,
+        numero: habitacion.numero || habitacion.nombre || '',
+        nombre: habitacion.nombre || '',
+        descripcion: habitacion.descripcion || '',
+        ubicacion: habitacion.ubicacion || '',
+        cantidadCamasDobles: habitacion.cantidadCamasDobles ?? 0,
+        cantidadLiteras: habitacion.cantidadLiteras ?? 0,
+        precioPorNoche: habitacion.precioPorNoche || habitacion.precioPorPersonaNoche || 1500,
+        activa: habitacion.activa ?? habitacion.activo ?? true,
+        urlImagen: habitacion.urlImagen || ''
+      });
     } else {
       resetForm();
     }
@@ -130,11 +155,11 @@ const RoomManagement: React.FC = () => {
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
 
-    if (!formData.numero.trim()) {
+    if (!formData.numero || !formData.numero.trim()) {
       newErrors.numero = 'Número de habitación es obligatorio';
     }
 
-    if (!formData.nombre.trim()) {
+    if (!formData.nombre || !formData.nombre.trim()) {
       newErrors.nombre = 'Nombre es obligatorio';
     }
 
@@ -150,8 +175,18 @@ const RoomManagement: React.FC = () => {
       newErrors.capacidadMaxima = 'Capacidad máxima debe ser mayor o igual a la mínima';
     }
 
-    if (formData.precioPorPersonaNoche <= 0) {
-      newErrors.precioPorPersonaNoche = 'Precio debe ser mayor a 0';
+    // Validar configuración de camas
+    const camasDobles = formData.cantidadCamasDobles || 0;
+    const literas = formData.cantidadLiteras || 0;
+    const capacidadCamas = (camasDobles * 2) + (literas * 2);
+    
+    if (capacidadCamas < formData.capacidadMaxima) {
+      newErrors.cantidadCamasDobles = 'La configuración de camas no alcanza para la capacidad máxima';
+      newErrors.cantidadLiteras = 'La configuración de camas no alcanza para la capacidad máxima';
+    }
+
+    if (formData.precioPorNoche <= 0) {
+      newErrors.precioPorNoche = 'Precio debe ser mayor a 0';
     }
 
     setErrors(newErrors);
@@ -168,7 +203,7 @@ const RoomManagement: React.FC = () => {
       if (modalMode === 'create') {
         await createHabitacion(formData);
       } else if (modalMode === 'edit' && formData.id) {
-        await updateHabitacion(parseInt(formData.id), formData);
+        await updateHabitacion(formData.id, formData);
       }
 
       // Recargar habitaciones
@@ -201,7 +236,7 @@ const RoomManagement: React.FC = () => {
     
     setActionLoading(true);
     try {
-      await toggleActive(parseInt(habitacion.id));
+      await toggleActive(habitacion.id);
       await loadHabitaciones();
     } catch (error) {
       console.error('Error cambiando estado:', error);
@@ -217,7 +252,7 @@ const RoomManagement: React.FC = () => {
 
     setActionLoading(true);
     try {
-      await deleteHabitacion(parseInt(habitacion.id));
+      await deleteHabitacion(habitacion.id);
       await loadHabitaciones();
     } catch (error) {
       console.error('Error eliminando habitación:', error);
@@ -301,11 +336,11 @@ const RoomManagement: React.FC = () => {
                       } personas
                     </td>
                     <td className="fw-bold">
-                      {formatPrice(habitacion.precioPorPersonaNoche)}
+                      {formatPrice(habitacion.precioPorNoche || habitacion.precioPorPersonaNoche || 0)}
                     </td>
                     <td>
-                      <Badge bg={habitacion.activa ? 'success' : 'danger'}>
-                        {habitacion.activa ? 'Activa' : 'Inactiva'}
+                      <Badge bg={(habitacion.activa ?? habitacion.activo) ? 'success' : 'danger'}>
+                        {(habitacion.activa ?? habitacion.activo) ? 'Activa' : 'Inactiva'}
                       </Badge>
                     </td>
                     <td>
@@ -329,13 +364,13 @@ const RoomManagement: React.FC = () => {
                         </Button>
                         
                         <Button
-                          variant={habitacion.activa ? 'outline-warning' : 'outline-success'}
+                          variant={(habitacion.activa ?? habitacion.activo) ? 'outline-warning' : 'outline-success'}
                           size="sm"
                           onClick={() => handleToggleActive(habitacion)}
-                          title={habitacion.activa ? 'Desactivar' : 'Activar'}
+                          title={(habitacion.activa ?? habitacion.activo) ? 'Desactivar' : 'Activar'}
                           disabled={actionLoading}
                         >
-                          <Icon name={habitacion.activa ? 'pause' : 'play'} size="xs" />
+                          <Icon name={(habitacion.activa ?? habitacion.activo) ? 'pause' : 'play'} size="xs" />
                         </Button>
                         
                         <Button
@@ -476,18 +511,52 @@ const RoomManagement: React.FC = () => {
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
+                  <Form.Label>Camas Dobles *</Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="0"
+                    value={formData.cantidadCamasDobles || 0}
+                    onChange={(e) => handleInputChange('cantidadCamasDobles', e.target.value ? parseInt(e.target.value) : 0)}
+                    disabled={modalMode === 'view'}
+                  />
+                  <Form.Text className="text-muted">
+                    Cantidad de camas matrimoniales (2 personas c/u)
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Literas *</Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="0"
+                    value={formData.cantidadLiteras || 0}
+                    onChange={(e) => handleInputChange('cantidadLiteras', e.target.value ? parseInt(e.target.value) : 0)}
+                    disabled={modalMode === 'view'}
+                  />
+                  <Form.Text className="text-muted">
+                    Cantidad de literas (2 personas c/u)
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
                   <Form.Label>Precio por Persona/Noche (UYU) *</Form.Label>
                   <Form.Control
                     type="number"
                     min="0"
                     step="100"
-                    value={formData.precioPorPersonaNoche}
-                    onChange={(e) => handleInputChange('precioPorPersonaNoche', e.target.value ? parseFloat(e.target.value) : 0)}
-                    isInvalid={!!errors.precioPorPersonaNoche}
+                    value={formData.precioPorNoche}
+                    onChange={(e) => handleInputChange('precioPorNoche', e.target.value ? parseFloat(e.target.value) : 0)}
+                    isInvalid={!!errors.precioPorNoche}
                     disabled={modalMode === 'view'}
                   />
                   <Form.Control.Feedback type="invalid">
-                    {errors.precioPorPersonaNoche}
+                    {errors.precioPorNoche}
                   </Form.Control.Feedback>
                 </Form.Group>
               </Col>
@@ -522,7 +591,7 @@ const RoomManagement: React.FC = () => {
             {modalMode === 'view' && selectedHabitacion && (
               <Row>
                 <Col md={6}>
-                  <p><strong>Estado:</strong> {selectedHabitacion.activa ? 'Activa' : 'Inactiva'}</p>
+                  <p><strong>Estado:</strong> {(selectedHabitacion.activa ?? selectedHabitacion.activo) ? 'Activa' : 'Inactiva'}</p>
                   <p><strong>Creada:</strong> {formatDate(selectedHabitacion.fechaCreacion)}</p>
                 </Col>
                 <Col md={6}>
@@ -531,6 +600,20 @@ const RoomManagement: React.FC = () => {
                   )}
                 </Col>
               </Row>
+            )}
+
+            {/* Galería de Imágenes */}
+            {(modalMode === 'edit' || modalMode === 'view') && formData.id && (
+              <div className="mt-4">
+                <hr />
+                <h5 className="mb-3">Galería de Imágenes</h5>
+                <AlojamientoImageUploader
+                  alojamientoId={formData.id}
+                  images={habitacionImages}
+                  onImagesChange={setHabitacionImages}
+                  disabled={modalMode === 'view'}
+                />
+              </div>
             )}
           </Modal.Body>
           

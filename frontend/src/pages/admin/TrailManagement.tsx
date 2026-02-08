@@ -5,6 +5,7 @@ import { useSenderosAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
 import BackendError from '../../components/common/BackendError';
 import SenderoImageUploader from '../../components/admin/SenderoImageUploader';
+import { apiService } from '../../services/apiService';
 
 interface Sendero {
   id?: string;
@@ -150,19 +151,8 @@ const TrailManagement: React.FC = () => {
 
   const loadSenderoImages = async (senderoId: string) => {
     try {
-      const response = await fetch(`/api/images/senderos/${senderoId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
-      });
-      
-      if (response.ok) {
-        const images = await response.json();
-        setSenderoImages(images || []);
-      } else {
-        console.error('Error loading images');
-        setSenderoImages([]);
-      }
+      const images = await apiService.getSenderoImages(senderoId);
+      setSenderoImages(Array.isArray(images) ? images : []);
     } catch (error) {
       console.error('Error loading sendero images:', error);
       setSenderoImages([]);

@@ -12,7 +12,7 @@ export const useHabitacionesDisponibles = () => {
       numeroPersonas: numeroPersonas.toString()
     });
     
-    return execute(`/habitaciones/disponibles?${params}`);
+    return execute(`/alojamientos/disponibles?${params}`);
   };
 
   return { data: data || [], loading, error, search };
@@ -94,31 +94,55 @@ export const useHabitacionesAdmin = () => {
 
   const loadHabitaciones = async () => {
     try {
-      const result = await execute('/habitaciones/admin');
+      const result = await execute('/alojamientos/admin');
       return result;
     } catch (err) {
-      console.error('Error loading habitaciones:', err);
+      console.error('Error loading alojamientos:', err);
       return null;
     }
   };
   
-  const createHabitacion = (habitacion: any) => 
-    execute('/habitaciones/admin', {
+  // Mapear datos del frontend al formato del backend
+  const mapToAlojamientoRequest = (habitacion: any) => {
+    const precio = habitacion.precioPorNoche || habitacion.precioPorPersonaNoche || 1500;
+    
+    return {
+      nombre: habitacion.nombre || habitacion.numero || '',
+      descripcion: habitacion.descripcion || '',
+      ubicacion: habitacion.ubicacion || '',
+      capacidadMinima: parseInt(habitacion.capacidadMinima) || 1,
+      capacidadMaxima: parseInt(habitacion.capacidadMaxima) || 2,
+      cantidadCamasDobles: parseInt(habitacion.cantidadCamasDobles) || 0,
+      cantidadLiteras: parseInt(habitacion.cantidadLiteras) || 0,
+      horaLlegada: habitacion.horaLlegada || '14:00:00',
+      horaSalida: habitacion.horaSalida || '10:00:00',
+      precioPorNoche: parseFloat(precio),  // Enviar como número, no string
+      activa: habitacion.activa ?? habitacion.activo ?? true  // Incluir estado activa
+    };
+  };
+  
+  const createHabitacion = (habitacion: any) => {
+    const mappedData = mapToAlojamientoRequest(habitacion);
+    console.log('🏠 Creando habitación con datos:', mappedData);
+    return execute('/alojamientos/admin', {
       method: 'POST',
-      body: JSON.stringify(habitacion)
+      body: JSON.stringify(mappedData)
     });
+  };
 
-  const updateHabitacion = (id: number, habitacion: any) => 
-    execute(`/habitaciones/admin/${id}`, {
+  const updateHabitacion = (id: string, habitacion: any) => {
+    const mappedData = mapToAlojamientoRequest(habitacion);
+    return execute(`/alojamientos/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(habitacion)
+      body: JSON.stringify(mappedData)
     });
+  };
 
-  const toggleActive = (id: number, currentState: boolean) => 
-    execute(`/habitaciones/admin/${id}/estado?activa=${!currentState}`, { method: 'PUT' });
+  const toggleActive = (id: string, currentState: boolean) => 
+    execute(`/alojamientos/${id}`, { method: 'DELETE' });
 
-  const deleteHabitacion = (id: number) => 
-    execute(`/habitaciones/admin/${id}`, { method: 'DELETE' });
+  const deleteHabitacion = (id: string) => 
+    execute(`/alojamientos/${id}`, { method: 'DELETE' });
 
   // Asegurar que data sea siempre un array válido
   const habitaciones = data?.success ? (data.data || []) : [];

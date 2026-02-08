@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/alojamientos")
+@RequestMapping("/alojamientos")
 @CrossOrigin(origins = "*")
 public class AlojamientoController {
 
@@ -63,15 +63,38 @@ public class AlojamientoController {
 
     // Admin Endpoints (secured in future with @PreAuthorize)
 
-    @PostMapping
+    @GetMapping("/admin")
+    public ResponseEntity<ApiResponse<List<AlojamientoResponse>>> obtenerAlojamientosAdmin() {
+        try {
+            System.out.println("📋 Obteniendo TODOS los alojamientos (admin)");
+            List<AlojamientoResponse> alojamientos = alojamientoService.obtenerTodosLosAlojamientos();
+            System.out.println("✅ Encontrados " + alojamientos.size() + " alojamientos");
+            return ResponseEntity.ok(ApiResponse.success(alojamientos));
+        } catch (Exception e) {
+            System.err.println("Error obteniendo alojamientos admin: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error al obtener alojamientos: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/admin")
     public ResponseEntity<AlojamientoResponse> crearAlojamiento(@Valid @RequestBody AlojamientoRequest request) {
         try {
+            System.out.println("🏠 Creando alojamiento con request: " + request.getNombre());
+            System.out.println("   - Capacidad min/max: " + request.getCapacidadMinima() + "/" + request.getCapacidadMaxima());
+            System.out.println("   - Camas dobles/literas: " + request.getCantidadCamasDobles() + "/" + request.getCantidadLiteras());
+            System.out.println("   - Precio: " + request.getPrecioPorNoche());
+            
             AlojamientoResponse response = alojamientoService.crearAlojamiento(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
+            System.err.println("Error de validación: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             System.err.println("Error creando alojamiento: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -83,10 +106,10 @@ public class AlojamientoController {
         try {
             AlojamientoResponse response = alojamientoService.actualizarAlojamiento(id, request);
             return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
             System.err.println("Error actualizando alojamiento: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -98,10 +121,10 @@ public class AlojamientoController {
         try {
             alojamientoService.eliminarAlojamiento(id);
             return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
             System.err.println("Error eliminando alojamiento: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

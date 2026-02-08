@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
-import ActivityCard from '../../components/common/ActivityCard';
+import SenderoCardV2 from '../../components/common/SenderoCardV2';
 import Button from '../../components/common/Button';
 import Card, { CardBody } from '../../components/common/Card';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { routes } from '../../utils/routes';
-import backgroundImage from '../../assets/illustrations/Foto home  conocenos.svg';
+// Imagen de fondo: foto específica para hero de actividades
+const heroBackgroundImage = 'https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/activities/hero-activities.jpg';
 import { imageStorageService } from '../../services/imageStorageService';
 import { fixArrayEncoding } from '../../utils/encodingFixer';
 import './Activities.css';
@@ -28,6 +29,8 @@ interface Activity {
   location?: string;
 }
 
+import ContactModal from '../../components/common/ContactModal';
+
 const Activities: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -38,76 +41,104 @@ const Activities: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'price' | 'duration' | 'difficulty'>('price');
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
-  // Load activities from API
+  // Cache key for activities
+  const CACHE_KEY = 'activities_cache';
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  // Load activities from API with cache
+  const fetchActivities = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Check cache first
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        const now = Date.now();
+        if (now - timestamp < CACHE_DURATION) {
+          console.log('📦 Usando datos en cache');
+          setActivities(data);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      console.log('🔍 Intentando cargar actividades...');
+      // Reducir retries para carga más rápida: 1 retry (2 intentos totales), delay inicial de 1s
+      const response = await apiService.getSenderos(1, 1000);
+      console.log('📡 Respuesta recibida:', response);
+      
+      if (response.success) {
+        console.log('📊 Raw backend data:', response.data);
+        
+        // Fix encoding issues first
+        const fixedData = fixArrayEncoding(response.data);
+        console.log('🔧 Fixed encoding data:', fixedData);
+        
+        // Transform API data to our format with REAL data
+        const transformedData = fixedData.map((sendero: any) => {
+          // Map difficulty levels
+          const difficultyMap: Record<string, string> = {
+            'FACIL': 'Fácil',
+            'MODERADO': 'Moderado', 
+            'DIFICIL': 'Difícil',
+            'EXPERTO': 'Experto'
+          };
+          
+          // SIMPLE and ROBUST image selection - Priority: imagenPrincipal > urlImagen (legacy)
+          let imagenUrl = '';
+          if (sendero.imagenPrincipal && sendero.imagenPrincipal.trim() !== '') {
+            imagenUrl = sendero.imagenPrincipal.trim();
+          } else if (sendero.urlImagen && sendero.urlImagen.trim() !== '') {
+            imagenUrl = sendero.urlImagen.trim();
+          }
+          // If both are empty, imagenUrl stays empty and component will show placeholder
+          
+          console.log(`📊 Sendero ${sendero.nombre}:`, {
+            urlImagen: sendero.urlImagen,
+            imagenPrincipal: sendero.imagenPrincipal,
+            finalImageUrl: imagenUrl,
+            hasImage: imagenUrl !== ''
+          });
+          
+          return {
+            id: sendero.id,
+            nombre: sendero.nombre,
+            descripcion: sendero.descripcion,
+            imagenUrl: imagenUrl, // Simple string, empty if no image
+            duracion: `${sendero.duracionHoras} hora${sendero.duracionHoras !== 1 ? 's' : ''}`,
+            dificultad: difficultyMap[sendero.nivelDificultad] || 'Moderado',
+            precio: sendero.precioPorPersona,
+            moneda: 'UYU',
+            maxParticipants: sendero.capacidadMaximaGrupo,
+            category: 'hiking' as const,
+            location: 'Paso Centurión'
+          };
+        });
+        setActivities(transformedData);
+        
+        // Save to cache
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          data: transformedData,
+          timestamp: Date.now()
+        }));
+      } else {
+        console.error('❌ Error en respuesta:', response.error);
+        setError(response.error || 'Error al cargar las actividades');
+      }
+    } catch (err) {
+      console.error('❌ Error fetching activities después de todos los reintentos:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error de conexión al cargar las actividades';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await apiService.getSenderos();
-        if (response.success) {
-          console.log('📊 Raw backend data:', response.data);
-          
-          // Fix encoding issues first
-          const fixedData = fixArrayEncoding(response.data);
-          console.log('🔧 Fixed encoding data:', fixedData);
-          
-          // Transform API data to our format with REAL data
-          const transformedData = fixedData.map((sendero: any) => {
-            // Get real images from localStorage
-            const imageStats = imageStorageService.getSenderoImageStats(sendero.id);
-            const senderoImages = imageStorageService.getSenderoImages(sendero.id);
-            
-            // Map difficulty levels
-            const difficultyMap: Record<string, string> = {
-              'FACIL': 'Fácil',
-              'MODERADO': 'Moderado', 
-              'DIFICIL': 'Difícil',
-              'EXPERTO': 'Experto'
-            };
-            
-            console.log(`📊 Sendero ${sendero.nombre}:`, {
-              hasImages: imageStats.total > 0,
-              imageCount: imageStats.total,
-              principalImage: imageStats.principal?.url
-            });
-            
-            return {
-              id: sendero.id,
-              name: sendero.nombre,
-              description: sendero.descripcion,
-              imagenPrincipal: imageStats.principal?.url || sendero.imagenPrincipal || 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=500&h=300&fit=crop',
-              totalImagenes: imageStats.total,
-              tieneGaleria: imageStats.total > 1,
-              duration: `${sendero.duracionHoras} hora${sendero.duracionHoras !== 1 ? 's' : ''}`,
-              difficulty: difficultyMap[sendero.nivelDificultad] || 'Moderado',
-              price: sendero.precioPorPersona,
-              currency: 'UYU',
-              maxParticipants: sendero.capacidadMaximaGrupo,
-              includes: [
-                'Guía especializado',
-                'Equipo básico de seguridad', 
-                'Refrigerio natural'
-              ],
-              category: 'hiking' as const,
-              location: 'Paso Centurión'
-            };
-          });
-          setActivities(transformedData);
-        } else {
-          setError(response.error || 'Error al cargar las actividades');
-        }
-      } catch (err) {
-        console.error('Error fetching activities:', err);
-        setError('Error de conexión al cargar las actividades');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchActivities();
   }, []);
 
@@ -166,11 +197,37 @@ const Activities: React.FC = () => {
   if (loading) {
     return (
       <div className="activities-page">
-        <div className="activities-hero">
+        <div className="activities-hero" style={{ backgroundImage: `url(${heroBackgroundImage})` }}>
+          <div className="hero-overlay"></div>
           <div className="container">
             <div className="hero-content">
-              <h1 className="hero-title">Actividades y Tours</h1>
-              <p className="hero-subtitle">Cargando experiencias naturales...</p>
+              <div className="hero-left">
+                <h1 className="hero-title">Actividades y Experiencias Naturales</h1>
+                <p className="hero-subtitle">
+                  Senderos guiados por el Paisaje Protegido Paso Centurión. Observación de aves, 
+                  reconocimiento de flora y fauna, e interpretación ambiental con guías especializados 
+                  en grupos pequeños.
+                </p>
+              </div>
+              <div className="hero-center">
+                {/* Bird image area - kept free in the middle */}
+              </div>
+              <div className="hero-right">
+                <div className="hero-highlights">
+                  <div className="highlight-item">
+                    <i className="bi bi-binoculars-fill highlight-icon"></i>
+                    <span className="highlight-text">280+ especies de aves</span>
+                  </div>
+                  <div className="highlight-item">
+                    <i className="bi bi-signpost-split highlight-icon"></i>
+                    <span className="highlight-text">Senderos guiados</span>
+                  </div>
+                  <div className="highlight-item">
+                    <i className="bi bi-person-walking highlight-icon"></i>
+                    <span className="highlight-text">Guías de naturaleza y observación de aves</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -205,9 +262,10 @@ const Activities: React.FC = () => {
                   <p className="error-description">{error}</p>
                   <Button 
                     variant="primary" 
-                    onClick={() => window.location.reload()}
+                    onClick={fetchActivities}
+                    disabled={loading}
                   >
-                    Reintentar
+                    {loading ? 'Cargando...' : 'Reintentar'}
                   </Button>
                 </div>
               </CardBody>
@@ -221,102 +279,36 @@ const Activities: React.FC = () => {
   return (
     <div className="activities-page">
       {/* Hero Section */}
-      <section className="activities-hero">
-        <div className="hero-background">
-          <img 
-            src={backgroundImage} 
-            alt="Actividades en la naturaleza"
-            className="hero-background-image"
-          />
-          <div className="hero-overlay" />
-        </div>
-        
+      <section className="activities-hero" style={{ backgroundImage: `url(${heroBackgroundImage})` }}>
+        <div className="hero-overlay"></div>
         <div className="container">
           <div className="hero-content">
-            <h1 className="hero-title">Actividades y Experiencias Naturales</h1>
-            <p className="hero-subtitle">
-              Sumérgete en la biodiversidad única de Paso Centurión. Desde observación 
-              de aves especializada hasta aventuras nocturnas, cada experiencia está 
-              diseñada para conectarte profundamente con la naturaleza.
-            </p>
-            <div className="hero-highlights">
-              <div className="highlight-item">
-                <span className="highlight-icon">🦅</span>
-                <span className="highlight-text">280+ especies de aves</span>
-              </div>
-              <div className="highlight-item">
-                <span className="highlight-icon">🥾</span>
-                <span className="highlight-text">7 senderos guiados</span>
-              </div>
-              <div className="highlight-item">
-                <span className="highlight-icon">👨‍🏫</span>
-                <span className="highlight-text">Guías especializados</span>
-              </div>
+            <div className="hero-left">
+              <h1 className="hero-title">Actividades y Experiencias Naturales</h1>
+              <p className="hero-subtitle">
+                Senderos guiados por el Paisaje Protegido Paso Centurión. Observación de aves, 
+                reconocimiento de flora y fauna, e interpretación ambiental con guías especializados 
+                en grupos pequeños.
+              </p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Filters Section */}
-      <section className="activities-filters">
-        <div className="container">
-          <div className="filters-container">
-            
-            {/* Category Filters */}
-            <div className="filter-group">
-              <h3 className="filter-title">Tipo de Actividad</h3>
-              <div className="filter-buttons">
-                {activityCategories.map(category => (
-                  <button
-                    key={category.value}
-                    className={`filter-button ${selectedCategory === category.value ? 'active' : ''}`}
-                    onClick={() => setSelectedCategory(category.value)}
-                  >
-                    <span className="filter-icon">{category.icon}</span>
-                    <span className="filter-label">{category.label}</span>
-                  </button>
-                ))}
-              </div>
+            <div className="hero-center">
+              {/* Bird image area - kept free in the middle */}
             </div>
-
-            {/* Difficulty Filters */}
-            <div className="filter-group">
-              <h3 className="filter-title">Nivel de Dificultad</h3>
-              <div className="filter-buttons">
-                {difficultyLevels.map(level => (
-                  <button
-                    key={level.value}
-                    className={`filter-button ${selectedDifficulty === level.value ? 'active' : ''}`}
-                    onClick={() => setSelectedDifficulty(level.value)}
-                  >
-                    <span className="filter-icon">{level.icon}</span>
-                    <span className="filter-label">{level.label}</span>
-                  </button>
-                ))}
+            <div className="hero-right">
+              <div className="hero-highlights">
+                <div className="highlight-item">
+                  <i className="bi bi-binoculars-fill highlight-icon"></i>
+                  <span className="highlight-text">280+ especies de aves</span>
+                </div>
+                <div className="highlight-item">
+                  <i className="bi bi-signpost-split highlight-icon"></i>
+                  <span className="highlight-text">Senderos guiados</span>
+                </div>
+                <div className="highlight-item">
+                  <i className="bi bi-person-walking highlight-icon"></i>
+                  <span className="highlight-text">Guías de naturaleza y observación de aves</span>
+                </div>
               </div>
-            </div>
-
-            {/* Sort Options */}
-            <div className="filter-group">
-              <h3 className="filter-title">Ordenar por</h3>
-              <div className="sort-controls">
-                <select 
-                  value={sortBy} 
-                  onChange={(e) => setSortBy(e.target.value as 'price' | 'duration' | 'difficulty')}
-                  className="sort-select"
-                >
-                  <option value="price">Precio (menor a mayor)</option>
-                  <option value="duration">Duración (menor a mayor)</option>
-                  <option value="difficulty">Dificultad (fácil a experto)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Results Count */}
-            <div className="results-info">
-              <span className="results-count">
-                {sortedActivities.length} actividad{sortedActivities.length !== 1 ? 'es' : ''} encontrada{sortedActivities.length !== 1 ? 's' : ''}
-              </span>
             </div>
           </div>
         </div>
@@ -328,21 +320,17 @@ const Activities: React.FC = () => {
           {sortedActivities.length > 0 ? (
             <div className="activities-grid">
               {sortedActivities.map((activity) => (
-                <ActivityCard
+                <SenderoCardV2
                   key={activity.id}
                   id={activity.id}
-                  name={activity.name}
-                  description={activity.description}
-                  imagenPrincipal={activity.imagenPrincipal}
-                  totalImagenes={activity.totalImagenes}
-                  tieneGaleria={activity.tieneGaleria}
-                  duration={activity.duration}
-                  difficulty={activity.difficulty}
-                  price={activity.price}
-                  currency={activity.currency}
+                  nombre={activity.nombre}
+                  descripcion={activity.descripcion}
+                  imagenUrl={activity.imagenUrl}
+                  duracion={activity.duracion}
+                  dificultad={activity.dificultad}
+                  precio={activity.precio}
+                  moneda={activity.moneda}
                   maxParticipants={activity.maxParticipants}
-                  includes={activity.includes}
-                  onBook={handleBookActivity}
                   onViewDetails={handleViewActivityDetails}
                 />
               ))}
@@ -382,11 +370,15 @@ const Activities: React.FC = () => {
             <Card variant="nature" size="md" className="info-card">
               <CardBody>
                 <div className="info-content">
-                  <div className="info-icon">🌟</div>
-                  <h4 className="info-title">Experiencias Auténticas</h4>
+                  <div className="info-icon">
+                    <i className="bi bi-signpost-split"></i>
+                  </div>
+                  <h4 className="info-title">Senderos Guiados</h4>
                   <p className="info-description">
-                    Todas nuestras actividades están diseñadas por expertos locales 
-                    para ofrecerte una conexión genuina con la naturaleza uruguaya.
+                    Contamos con una amplia variedad de senderos diseñados para diferentes 
+                    intereses. Algunos están más enfocados en la observación de aves, otros 
+                    en el reconocimiento de flora e interpretación ambiental. Hay opciones 
+                    para todos los gustos y niveles de experiencia.
                   </p>
                 </div>
               </CardBody>
@@ -395,7 +387,9 @@ const Activities: React.FC = () => {
             <Card variant="nature" size="md" className="info-card">
               <CardBody>
                 <div className="info-content">
-                  <div className="info-icon">👥</div>
+                  <div className="info-icon">
+                    <i className="bi bi-people"></i>
+                  </div>
                   <h4 className="info-title">Grupos Pequeños</h4>
                   <p className="info-description">
                     Limitamos el número de participantes para garantizar una 
@@ -408,11 +402,15 @@ const Activities: React.FC = () => {
             <Card variant="nature" size="md" className="info-card">
               <CardBody>
                 <div className="info-content">
-                  <div className="info-icon">🛡️</div>
-                  <h4 className="info-title">Seguridad Garantizada</h4>
+                  <div className="info-icon">
+                    <i className="bi bi-person-badge"></i>
+                  </div>
+                  <h4 className="info-title">Guías de Naturaleza</h4>
                   <p className="info-description">
-                    Todos nuestros guías están certificados y contamos con 
-                    protocolos de seguridad para cada tipo de actividad.
+                    Nuestros guías especializados están enfocados en brindar una experiencia 
+                    de conexión profunda con la naturaleza, educación ambiental, reconocimiento 
+                    de flora y fauna, y observación de aves. Cada recorrido es una oportunidad 
+                    de aprendizaje y descubrimiento.
                   </p>
                 </div>
               </CardBody>
@@ -424,10 +422,13 @@ const Activities: React.FC = () => {
       {/* Contact Section */}
       <section className="activities-contact">
         <div className="container">
-          <Card variant="booking" size="lg" className="contact-card">
+          <Card variant="nature" size="lg" className="contact-card">
             <CardBody>
               <div className="contact-content">
                 <div className="contact-text">
+                  <div className="contact-icon-wrapper">
+                    <i className="bi bi-chat-dots-fill"></i>
+                  </div>
                   <h3 className="contact-title">¿Tienes alguna pregunta?</h3>
                   <p className="contact-description">
                     Nuestros guías especializados están disponibles para ayudarte 
@@ -438,16 +439,18 @@ const Activities: React.FC = () => {
                   <Button 
                     variant="primary" 
                     size="lg"
-                    leftIcon="📞"
-                    onClick={() => window.open('tel:+59898394653')}
+                    onClick={() => setIsContactModalOpen(true)}
                   >
+                    <i className="bi bi-envelope-fill"></i>
                     Consultar Ahora
                   </Button>
                   <Button 
                     variant="outline" 
                     size="lg"
                     onClick={() => navigate(routes.about)}
+                    className="btn-outline-cream"
                   >
+                    <i className="bi bi-info-circle"></i>
                     Conocer Más
                   </Button>
                 </div>
@@ -456,6 +459,12 @@ const Activities: React.FC = () => {
           </Card>
         </div>
       </section>
+
+      {/* Contact Modal */}
+      <ContactModal 
+        isOpen={isContactModalOpen} 
+        onClose={() => setIsContactModalOpen(false)} 
+      />
     </div>
   );
 };

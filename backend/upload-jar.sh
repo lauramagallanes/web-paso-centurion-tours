@@ -22,7 +22,7 @@ echo "📊 JAR size: $(du -h $JAR_FILE | cut -f1)"
 
 # Subir a S3
 echo "📤 Uploading to S3..."
-aws s3 cp "$JAR_FILE" "s3://$S3_BUCKET/$S3_KEY"
+aws s3 cp "$JAR_FILE" "s3://$S3_BUCKET/$S3_KEY" --profile laura --region us-east-1
 
 if [ $? -eq 0 ]; then
     echo "✅ Successfully uploaded to S3"
@@ -32,7 +32,9 @@ if [ $? -eq 0 ]; then
     aws lambda update-function-code \
         --function-name "$LAMBDA_FUNCTION" \
         --s3-bucket "$S3_BUCKET" \
-        --s3-key "$S3_KEY"
+        --s3-key "$S3_KEY" \
+        --profile laura \
+        --region us-east-1
     
     if [ $? -eq 0 ]; then
         echo "✅ Lambda function updated successfully!"

@@ -58,6 +58,14 @@ resource "aws_iam_role_policy" "lambda_custom" {
         Resource = [
           "arn:aws:s3:::${var.s3_public_assets_bucket}/*"
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -75,9 +83,10 @@ resource "aws_lambda_function" "backend_api" {
   s3_bucket = var.s3_public_assets_bucket
   s3_key    = "lambda/tinambu-tours-lambda-spring.jar"
 
-  # Java requires more memory
-  memory_size = 1024 # Start with 1024MB, can increase to 1536MB if needed
-  timeout     = 30
+  # Java requires more memory - increased for better performance
+  # More memory = more CPU allocation = faster execution
+  memory_size = 2048 # Increased to 2048MB for better cold start performance
+  timeout     = 60   # Increased to 60s to handle cold starts + query execution
 
   # Publish versions for SnapStart
   publish = true
@@ -104,7 +113,7 @@ resource "aws_lambda_function" "backend_api" {
   # Environment variables from SSM Parameter Store
   environment {
     variables = {
-      SPRING_PROFILES_ACTIVE  = "lambda"
+      SPRING_PROFILES_ACTIVE  = "lambda-with-db"
       APP_REGION              = var.region
       ENVIRONMENT             = var.environment
       S3_PUBLIC_ASSETS_BUCKET = var.s3_public_assets_bucket
@@ -130,3 +139,6 @@ resource "aws_lambda_function" "backend_api" {
   }
 }
 
+# Note: Provisioned Concurrency is NOT compatible with SnapStart
+# SnapStart already provides significant cold start improvements
+# The increased memory (2048MB) and timeout (60s) will help with performance

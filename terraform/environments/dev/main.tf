@@ -55,8 +55,8 @@ module "database" {
 module "serverless" {
   source = "../../modules/serverless"
 
-  environment                         = var.environment
-  region                              = var.aws_region
+  environment = var.environment
+  region      = var.aws_region
   # VPC variables removed - Lambda runs without VPC
   db_endpoint                         = module.database.db_endpoint
   db_name                             = module.database.db_name
@@ -88,4 +88,21 @@ module "monitoring" {
   lambda_function_name   = module.serverless.lambda_function_name
   db_instance_identifier = module.database.db_name
   budget_limit           = var.environment == "dev" ? 15 : (var.environment == "staging" ? 30 : 100) # Reducido para dev optimizado
+}
+
+# SES Notifications Module - Bounce and Complaint Handling
+module "ses_notifications" {
+  source = "../../modules/ses-notifications"
+
+  environment         = var.environment
+  ses_domain_identity = var.ses_domain_identity
+  ses_email_identities = var.ses_email_identities
+}
+
+module "ses_email_forwarding" {
+  source = "../../modules/ses-email-forwarding"
+  
+  environment      = var.environment
+  destination_email = "pasocenturiontours@gmail.com"
+  from_email       = "noreply@pasocenturion.com.uy"
 }

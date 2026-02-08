@@ -46,6 +46,8 @@ public class AlojamientoRequest {
     @DecimalMax(value = "999999.99", message = "El precio por noche no puede exceder 999,999.99")
     private BigDecimal precioPorNoche;
 
+    private Boolean activa = true;
+
     // Constructors
     public AlojamientoRequest() {}
 
@@ -95,6 +97,9 @@ public class AlojamientoRequest {
 
     public BigDecimal getPrecioPorNoche() { return precioPorNoche; }
     public void setPrecioPorNoche(BigDecimal precioPorNoche) { this.precioPorNoche = precioPorNoche; }
+
+    public Boolean getActiva() { return activa; }
+    public void setActiva(Boolean activa) { this.activa = activa; }
 
     // Custom validation methods
     public boolean isCapacidadValida() {

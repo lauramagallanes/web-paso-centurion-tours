@@ -164,39 +164,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const data = await apiService.login(email, password);
 
-      if (data.status === 'success') {
+      if (data.success === true) {
         console.log('🔍 Debug Login Response:', {
           fullData: data,
-          userRole: data.user?.role,
-          userRoleType: typeof data.user?.role,
-          backendUser: data.user
+          usuario: data.data?.usuario,
+          userTipo: data.data?.usuario?.tipo,
+          backendUser: data.data?.usuario
         });
 
-        // Check for admin role with multiple possible values
-        const backendRole = data.user?.role;
-        const isAdminRole = backendRole && (
-          backendRole.toLowerCase() === 'admin' ||
-          backendRole.toUpperCase() === 'ADMIN' ||
-          backendRole === 'administrador' ||
-          backendRole === 'ADMINISTRADOR' ||
-          data.user.email === 'admin@pasocenturion.com.uy'  // Fallback for admin email
+        const usuario = data.data?.usuario;
+        if (!usuario) {
+          throw new Error('Datos de usuario no encontrados en la respuesta');
+        }
+
+        // Check for admin role
+        const backendTipo = usuario.tipo;
+        const isAdminRole = backendTipo && (
+          backendTipo.toLowerCase() === 'admin' ||
+          backendTipo.toUpperCase() === 'ADMIN' ||
+          usuario.email === 'admin@pasocenturion.com.uy'  // Fallback for admin email
         );
 
         console.log('🔍 ADMIN DETECTION DEBUG:', {
-          backendRole: backendRole,
-          backendRoleType: typeof backendRole,
+          backendTipo: backendTipo,
           isAdminRole: isAdminRole,
-          emailCheck: data.user.email === 'admin@pasocenturion.com.uy',
-          userEmail: data.user.email
+          emailCheck: usuario.email === 'admin@pasocenturion.com.uy',
+          userEmail: usuario.email
         });
 
         const mappedUser = {
-          id: data.user.id.toString(),
-          email: data.user.email,
-          nombreCompleto: data.user.name,
-          tipo: isAdminRole ? 'ADMIN' : 'VISITANTE',
-          activo: true,
-          fechaCreacion: new Date().toISOString(),
+          id: usuario.id.toString(),
+          email: usuario.email,
+          nombreCompleto: usuario.nombreCompleto,
+          tipo: usuario.tipo, // Use the backend tipo directly
+          activo: usuario.activo,
+          fechaCreacion: usuario.fechaCreacion,
         };
 
         console.log('🔍 Mapped User:', mappedUser);
@@ -206,8 +208,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           type: 'LOGIN_SUCCESS',
           payload: {
             user: mappedUser,
-            accessToken: data.token,
-            refreshToken: data.token, // Mock usa el mismo token
+            accessToken: data.data.accessToken,
+            refreshToken: data.data.refreshToken,
           },
         });
       } else {

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { routes } from '../../utils/routes';
 import { useTheme } from '../../contexts/ThemeContext';
 import Logo from './Logo';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 import './Footer.css';
 
 const Footer: React.FC = () => {
@@ -15,7 +16,7 @@ const Footer: React.FC = () => {
       links: [
         { label: 'Inicio', path: routes.home },
         { label: 'Sobre Nosotros', path: routes.about },
-        { label: 'Alojamiento', path: routes.accomodations },
+        { label: 'Alojamiento', path: routes.alojamientos },
         { label: 'Actividades', path: routes.activities },
         { label: 'Reservar', path: routes.book },
       ]
@@ -25,7 +26,7 @@ const Footer: React.FC = () => {
       links: [
         { label: 'Observación de Aves', path: routes.activities },
         { label: 'Senderismo Guiado', path: routes.activities },
-        { label: 'Alojamiento Rural', path: routes.accomodations },
+        { label: 'Alojamiento Rural', path: routes.alojamientos },
         { label: 'Tours Personalizados', path: routes.book },
       ]
     },
@@ -67,6 +68,27 @@ const Footer: React.FC = () => {
     }
   ];
 
+  const bookingPlatforms = [
+    {
+      name: 'Booking.com',
+      url: 'https://www.booking.com/hotel/uy/tinambu-paso-centurion-tours.es.html',
+      logo: '/logos/booking-logo.png',
+      color: '#003580'
+    },
+    {
+      name: 'TripAdvisor',
+      url: 'https://www.tripadvisor.com.ar/Hotel_Review-g612486-d33991485-Reviews-Tinambu_Paso_Centurion_Tours-Melo_Cerro_Largo_Department.html',
+      logo: '/logos/tripadvisor-logo.png',
+      color: '#00AF87'
+    },
+    {
+      name: 'Airbnb',
+      url: 'https://www.airbnb.mx/rooms/1542094179325264668',
+      logo: '/logos/airbnb-logo.png',
+      color: '#FF5A5F'
+    }
+  ];
+
   const contactInfo = [
     {
       icon: '📍',
@@ -95,130 +117,110 @@ const Footer: React.FC = () => {
   return (
     <footer className="main-footer" role="contentinfo">
       <div className="footer-container">
-        {/* Main Footer Content */}
-        <div className="footer-main">
-          {/* Brand Section */}
-          <div className="footer-brand">
-            <Logo 
-              variant="full" 
-              size="lg" 
-              color="light"
-              className="footer-logo"
-            />
-            <p className="footer-brand-tagline">
-              Tinambú
-            </p>
-            <p className="footer-description">
-              Descubre la belleza natural de Uruguay a través de experiencias únicas de 
-              ecoturismo, observación de aves y senderismo guiado en un entorno pristino.
-            </p>
-          </div>
-
-          {/* Links Sections */}
-          <div className="footer-links">
-            {footerLinks.map((section) => (
-              <div key={section.title} className="footer-section">
-                <h4 className="footer-section-title">{section.title}</h4>
-                <ul className="footer-section-links">
-                  {section.links.map((link) => (
-                    <li key={link.label}>
-                      <Link 
-                        to={link.path} 
-                        className="footer-link"
-                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+        
+        {/* Fila superior - Plataformas */}
+        <div className="footer-row-top">
+          <div className="footer-platforms">
+            <span className="platforms-label">Reserva en:</span>
+            {bookingPlatforms.map((platform) => (
+              <a
+                key={platform.name}
+                href={platform.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="platform-link"
+                aria-label={platform.name}
+              >
+                <img 
+                  src={platform.logo} 
+                  alt={platform.name}
+                  className="platform-img"
+                />
+              </a>
             ))}
           </div>
-
-          {/* Contact Section */}
-          <div className="footer-contact">
-            <h4 className="footer-section-title">Contacto</h4>
-            <div className="contact-info">
-              {contactInfo.map((info) => (
-                <div key={info.label} className="contact-item">
-                  <span className="contact-icon">{info.icon}</span>
-                  <div className="contact-details">
-                    <span className="contact-label">{info.label}</span>
-                    {info.link ? (
-                      <a 
-                        href={info.link} 
-                        className="contact-value contact-link"
-                        {...(info.link.startsWith('tel:') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
-                      >
-                        {info.value}
-                      </a>
-                    ) : (
-                      <span className="contact-value">{info.value}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          
+          {/* MINTUR - más grande y a la derecha */}
+          <a
+            href="https://www.gub.uy/ministerio-turismo/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mintur-link-large"
+          >
+            <img 
+              src="/logos/mintur-certificado.jpeg" 
+              alt="MINTUR"
+              className="mintur-img-large"
+            />
+          </a>
         </div>
 
-        {/* Social Links Section */}
-        <div className="footer-social-section">
-          <div className="social-container">
-            <h4 className="social-title">Síguenos en nuestras redes</h4>
-            <div className="social-links">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.name}
-                  href={social.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="social-link"
-                  aria-label={`Visitar nuestro ${social.name}`}
-                  title={social.name}
-                >
-                  <span className="social-icon">{social.icon}</span>
-                  <span className="social-name">{social.name}</span>
-                </a>
-              ))}
+        {/* Fila inferior - Logo, Legal y Contacto */}
+        <div className="footer-row-bottom">
+          
+          {/* Logo con ave encima (ave más grande) */}
+          <div className="footer-brand">
+            <img 
+              src="/logos/tinambu-ave.png" 
+              alt="Ave" 
+              className="brand-ave-large"
+            />
+            <img 
+              src="/logos/tinambu-texto.png" 
+              alt="Tinambú" 
+              className="brand-texto-small"
+            />
+            <span className="brand-subtitle-small">Paso centurion Tours</span>
+          </div>
+
+          {/* Links legales */}
+          <div className="footer-legal">
+            <span>Tinambú - Paso centurion tours ®</span>
+            <span className="sep">¥</span>
+            <Link to="/privacy">Políticas de privacidad</Link>
+            <span className="sep">¥</span>
+            <Link to="/terms">Términos y condiciones</Link>
+            <span className="sep">¥</span>
+            <Link to="/terms">Política de cookies</Link>
+          </div>
+
+          {/* Contacto horizontal con Bootstrap Icons */}
+          <div className="footer-contact-horizontal">
+            <h4>Contácto</h4>
+            <div className="social-icons-horizontal">
+              <a
+                href="https://www.facebook.com/tinambupasocenturion"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon-bs"
+                aria-label="Facebook"
+              >
+                <i className="bi bi-facebook"></i>
+              </a>
+              <a
+                href="https://instagram.com/tinambupasocenturion"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon-bs"
+                aria-label="Instagram"
+              >
+                <i className="bi bi-instagram"></i>
+              </a>
+              <a
+                href="https://wa.me/59898394653"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon-bs"
+                aria-label="WhatsApp"
+              >
+                <i className="bi bi-whatsapp"></i>
+              </a>
             </div>
           </div>
+
         </div>
 
-        {/* Footer Bottom */}
-        <div className="footer-bottom">
-          <div className="footer-bottom-content">
-            <div className="footer-copyright">
-              <p>© {currentYear} Tinambú - Paso Centurión Tours. Todos los derechos reservados.</p>
-            </div>
-            
-            <div className="footer-bottom-links">
-              <Link to="/privacy" className="footer-bottom-link">
-                Privacidad
-              </Link>
-              <span className="footer-divider">•</span>
-              <Link to="/terms" className="footer-bottom-link">
-                Términos
-              </Link>
-              <span className="footer-divider">•</span>
-              <Link to="/accessibility" className="footer-bottom-link">
-                Accesibilidad
-              </Link>
-            </div>
-          </div>
-        </div>
       </div>
-
-      {/* Back to Top Button */}
-      <button 
-        className="back-to-top"
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        aria-label="Volver arriba"
-        title="Volver arriba"
-      >
-        ↑
-      </button>
     </footer>
   );
 };

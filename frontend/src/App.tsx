@@ -8,10 +8,10 @@ import AdminLayout from './components/layout/AdminLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import ShoppingCart from './components/common/ShoppingCart';
 import Home from './pages/public/Home'
+import Birding from './pages/public/Birding'
 import About from './pages/public/About'
-import Accomodations from './pages/public/Accomodations'
 import Accommodations from './pages/public/Accommodations'
-import AccommodationDetails from './pages/public/AccommodationDetails'
+import RoomDetails from './pages/public/RoomDetails'
 import Activities from './pages/public/Activities'
 import ActivityDetails from './pages/public/ActivityDetails'
 import Book from './pages/public/Book';
@@ -44,9 +44,10 @@ const App: React.FC = () => {
           <Route path="/" element={<PublicLayout/>}>
             <Route index element={<Home/>}/>
             <Route path={routes.about} element={<About/>}/>
-            <Route path={routes.accomodations} element={<Accomodations/>}/>
+            <Route path={routes.birdwatching} element={<Birding/>}/>
             <Route path={routes.alojamientos} element={<Accommodations/>}/>
-            <Route path="/alojamientos/:id" element={<AccommodationDetails/>}/>
+            <Route path="/alojamientos/:id" element={<RoomDetails/>}/>
+            <Route path="/habitaciones/:id" element={<RoomDetails/>}/>
             <Route path={routes.activities} element={<Activities/>}/>
             <Route path="/actividades/:id" element={<ActivityDetails/>}/>
             <Route path={routes.book} element={<Book/>}/>

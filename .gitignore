@@ -67,13 +67,35 @@ logs/
 
 # Build artifacts
 build/
-out/# Terraform
+out/
+
+# Lambda deployment packages
+*.zip
+terraform/modules/**/*.zip# Terraform
 .terraform/
 .terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 *.tfvars
 *.tfvars.json
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Build artifacts (Maven)
+backend/dependency-reduced-pom.xml
+
+# Terraform plan outputs
+*.tfplan
+terraform-apply-attempt*.txt
+terraform/environments/dev/tfplan
+terraform/environments/dev/terraform-plan-output.txt
+
+# Temporary text files
+baseline-traffic.txt
+RESPUESTA_CORTA_AWS.txt
+
 # Environment backups
 .env-backups/
 .env.checksum

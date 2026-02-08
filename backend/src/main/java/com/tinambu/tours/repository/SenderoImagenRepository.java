@@ -52,4 +52,12 @@ public interface SenderoImagenRepository extends JpaRepository<SenderoImagen, UU
     // Check if sendero has multiple images (for gallery indicator)
     @Query("SELECT COUNT(si) > 1 FROM SenderoImagen si WHERE si.senderoId = :senderoId")
     boolean senderoHasMultipleImages(@Param("senderoId") UUID senderoId);
+
+    // Batch query: Find all principal images for multiple senderos
+    @Query("SELECT si FROM SenderoImagen si WHERE si.senderoId IN :senderoIds AND si.esPrincipal = true")
+    List<SenderoImagen> findBySenderoIdInAndEsPrincipalTrue(@Param("senderoIds") List<UUID> senderoIds);
+
+    // Batch query: Count images for multiple senderos
+    @Query("SELECT si.senderoId, COUNT(si) FROM SenderoImagen si WHERE si.senderoId IN :senderoIds GROUP BY si.senderoId")
+    List<Object[]> countBySenderoIdIn(@Param("senderoIds") List<UUID> senderoIds);
 }

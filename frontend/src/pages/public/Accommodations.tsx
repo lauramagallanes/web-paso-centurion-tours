@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MapPin, Users } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import AccommodationCard from '../../components/common/AccommodationCard';
 import { alojamientoApiService, AlojamientoResponse } from '../../services/alojamientoApiService';
@@ -7,37 +7,53 @@ import './Accommodations.css';
 
 const Accommodations: React.FC = () => {
   const [accommodations, setAccommodations] = useState<AlojamientoResponse[]>([]);
-  const [filteredAccommodations, setFilteredAccommodations] = useState<AlojamientoResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  
-  // Filter states
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
-  const [capacityFilter, setCapacityFilter] = useState('');
+
+  // Cache key for accommodations
+  const CACHE_KEY = 'accommodations_cache';
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   useEffect(() => {
     loadAccommodations();
     loadFavorites();
   }, []);
 
-  useEffect(() => {
-    applyFilters();
-  }, [accommodations, searchTerm, priceRange, capacityFilter]);
 
   const loadAccommodations = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await alojamientoApiService.getAlojamientos();
+      
+      // Check cache first
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        const now = Date.now();
+        if (now - timestamp < CACHE_DURATION) {
+          console.log('📦 Usando datos en cache');
+          setAccommodations(data);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Reducir retries para carga más rápida: 1 retry (2 intentos totales), delay inicial de 1s
+      const data = await alojamientoApiService.getAlojamientos(1, 1000);
       setAccommodations(data);
+      
+      // Save to cache
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
     } catch (err) {
       console.error('Error loading accommodations:', err);
       setError('Error al cargar los alojamientos. Por favor, intenta de nuevo.');
       // Show mock data for development
-      setAccommodations(getMockAccommodations());
+      const mockData = getMockAccommodations();
+      setAccommodations(mockData);
     } finally {
       setLoading(false);
     }
@@ -50,37 +66,6 @@ const Accommodations: React.FC = () => {
     }
   };
 
-  const applyFilters = () => {
-    let filtered = [...accommodations];
-
-    // Search term filter
-    if (searchTerm.trim()) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(acc => 
-        acc.nombre.toLowerCase().includes(search) ||
-        (acc.descripcion && acc.descripcion.toLowerCase().includes(search)) ||
-        (acc.ubicacion && acc.ubicacion.toLowerCase().includes(search))
-      );
-    }
-
-    // Price range filter
-    if (priceRange.min) {
-      const minPrice = parseFloat(priceRange.min);
-      filtered = filtered.filter(acc => acc.precioPorNoche >= minPrice);
-    }
-    if (priceRange.max) {
-      const maxPrice = parseFloat(priceRange.max);
-      filtered = filtered.filter(acc => acc.precioPorNoche <= maxPrice);
-    }
-
-    // Capacity filter
-    if (capacityFilter) {
-      const capacity = parseInt(capacityFilter);
-      filtered = filtered.filter(acc => acc.capacidadMaxima >= capacity);
-    }
-
-    setFilteredAccommodations(filtered);
-  };
 
   const handleToggleFavorite = (id: string) => {
     const newFavorites = new Set(favorites);
@@ -93,12 +78,6 @@ const Accommodations: React.FC = () => {
     localStorage.setItem('accommodation-favorites', JSON.stringify(Array.from(newFavorites)));
   };
 
-  const clearFilters = () => {
-    setSearchTerm('');
-    setPriceRange({ min: '', max: '' });
-    setCapacityFilter('');
-    setShowFilters(false);
-  };
 
   const getMockAccommodations = (): AlojamientoResponse[] => [
     {
@@ -155,123 +134,54 @@ const Accommodations: React.FC = () => {
 
   return (
     <div className="accommodations-page">
-      <div className="container">
-        {/* Header */}
-        <div className="accommodations-header">
-          <div className="breadcrumb">
-            <span>Home</span> / <span>Alojamientos</span>
+      {/* Hero Section */}
+      <section className="accommodations-hero">
+        <div className="hero-overlay"></div>
+        <div className="container">
+          <div className="hero-content">
+            <h1 className="hero-title">Nuestro Alojamiento</h1>
+            <p className="hero-subtitle">
+              Descubre nuestras opciones de hospedaje sustentable en medio de la naturaleza
+            </p>
           </div>
-          <h1>Nuestros Alojamientos</h1>
-          <p>Descubre nuestras opciones de hospedaje en medio de la naturaleza</p>
         </div>
+      </section>
 
-        {/* Search and Filters */}
-        <div className="accommodations-controls">
-          <div className="search-bar">
-            <Search className="search-icon" size={20} />
-            <input
-              type="text"
-              placeholder="Buscar alojamientos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-          </div>
-          
-          <button 
-            className={`filter-btn ${showFilters ? 'active' : ''}`}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter size={20} />
-            Filtros
-          </button>
-        </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="filters-panel">
-            <div className="filters-grid">
-              <div className="filter-group">
-                <label>Precio por noche (UYU)</label>
-                <div className="price-inputs">
-                  <input
-                    type="number"
-                    placeholder="Mínimo"
-                    value={priceRange.min}
-                    onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                  />
-                  <span>-</span>
-                  <input
-                    type="number"
-                    placeholder="Máximo"
-                    value={priceRange.max}
-                    onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                  />
-                </div>
-              </div>
-              
-              <div className="filter-group">
-                <label>Capacidad mínima</label>
-                <select
-                  value={capacityFilter}
-                  onChange={(e) => setCapacityFilter(e.target.value)}
-                >
-                  <option value="">Cualquier capacidad</option>
-                  <option value="2">2+ personas</option>
-                  <option value="4">4+ personas</option>
-                  <option value="6">6+ personas</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="filter-actions">
-              <button onClick={clearFilters} className="clear-filters-btn">
-                Limpiar filtros
+      <section className="accommodations-content-section">
+        <div className="container">
+          {/* Error State */}
+          {error && (
+            <div className="error-message">
+              <p>{error}</p>
+              <button onClick={loadAccommodations} className="retry-btn">
+                Reintentar
               </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Results Info */}
-        <div className="results-info">
-          <span>{filteredAccommodations.length} alojamiento{filteredAccommodations.length !== 1 ? 's' : ''} encontrado{filteredAccommodations.length !== 1 ? 's' : ''}</span>
+          {/* Accommodations Grid */}
+          {accommodations.length > 0 ? (
+            <div className="accommodations-grid">
+              {accommodations
+                .filter(accommodation => accommodation && accommodation.id)
+                .map(accommodation => (
+                  <AccommodationCard
+                    key={accommodation.id}
+                    accommodation={accommodation}
+                    onToggleFavorite={handleToggleFavorite}
+                    isFavorite={favorites.has(accommodation.id)}
+                  />
+                ))}
+            </div>
+          ) : !loading && !error && (
+            <div className="no-results">
+              <MapPin size={48} />
+              <h3>No hay alojamientos disponibles</h3>
+              <p>Vuelve más tarde para ver nuestras opciones de alojamiento.</p>
+            </div>
+          )}
         </div>
-
-        {/* Error State */}
-        {error && (
-          <div className="error-message">
-            <p>{error}</p>
-            <button onClick={loadAccommodations} className="retry-btn">
-              Reintentar
-            </button>
-          </div>
-        )}
-
-        {/* Accommodations Grid */}
-        {filteredAccommodations.length > 0 ? (
-          <div className="accommodations-grid">
-            {filteredAccommodations.map(accommodation => (
-              <AccommodationCard
-                key={accommodation.id}
-                accommodation={accommodation}
-                onToggleFavorite={handleToggleFavorite}
-                isFavorite={favorites.has(accommodation.id)}
-              />
-            ))}
-          </div>
-        ) : !loading && !error && (
-          <div className="no-results">
-            <MapPin size={48} />
-            <h3>No hay alojamientos disponibles</h3>
-            <p>Intenta ajustar tus filtros de búsqueda o vuelve más tarde.</p>
-            {(searchTerm || priceRange.min || priceRange.max || capacityFilter) && (
-              <button onClick={clearFilters} className="clear-filters-btn">
-                Limpiar filtros
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+      </section>
     </div>
   );
 };

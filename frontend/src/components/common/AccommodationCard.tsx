@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Users, Bed } from 'lucide-react';
 import './AccommodationCard.css';
@@ -10,20 +10,27 @@ interface AccommodationCardProps {
   isFavorite?: boolean;
 }
 
-const AccommodationCard: React.FC<AccommodationCardProps> = ({
+const AccommodationCard: React.FC<AccommodationCardProps> = memo(({
   accommodation,
   onToggleFavorite,
   isFavorite = false
 }) => {
+  // Early return if accommodation is undefined
+  if (!accommodation) {
+    return null;
+  }
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onToggleFavorite) {
+    if (onToggleFavorite && accommodation.id) {
       onToggleFavorite(accommodation.id);
     }
   };
 
   const getMainImageUrl = () => {
+    if (!accommodation) return '/placeholder-sendero.svg';
+    
     if (accommodation.imagenPrincipal) {
       return accommodation.imagenPrincipal;
     }
@@ -37,6 +44,10 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
   };
 
   const formatCapacity = () => {
+    if (!accommodation || !accommodation.capacidadMinima || !accommodation.capacidadMaxima) {
+      return 'Capacidad no especificada';
+    }
+    
     if (accommodation.capacidadMinima === accommodation.capacidadMaxima) {
       return `${accommodation.capacidadMinima} persona${accommodation.capacidadMinima > 1 ? 's' : ''}`;
     }
@@ -44,13 +55,15 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
   };
 
   const formatBedConfiguration = () => {
+    if (!accommodation) return 'Configuración no especificada';
+    
     const config = [];
     
-    if (accommodation.cantidadCamasDobles > 0) {
+    if (accommodation.cantidadCamasDobles && accommodation.cantidadCamasDobles > 0) {
       config.push(`${accommodation.cantidadCamasDobles} cama${accommodation.cantidadCamasDobles > 1 ? 's' : ''} doble${accommodation.cantidadCamasDobles > 1 ? 's' : ''}`);
     }
     
-    if (accommodation.cantidadLiteras > 0) {
+    if (accommodation.cantidadLiteras && accommodation.cantidadLiteras > 0) {
       config.push(`${accommodation.cantidadLiteras} litera${accommodation.cantidadLiteras > 1 ? 's' : ''}`);
     }
     
@@ -58,13 +71,16 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
   };
 
   return (
-    <Link to={`/alojamientos/${accommodation.id}`} className="accommodation-card-link">
+    <Link 
+      to={`/alojamientos/${accommodation.id || ''}`} 
+      className="accommodation-card-link"
+    >
       <div className="accommodation-card">
         {/* Image Section */}
         <div className="accommodation-card__image-container">
           <img
             src={getMainImageUrl()}
-            alt={accommodation.nombre}
+            alt={accommodation.nombre || 'Alojamiento'}
             className="accommodation-card__image"
             loading="lazy"
             onError={(e) => {
@@ -76,7 +92,7 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
           {/* Gallery Indicator */}
           {accommodation.tieneGaleria && (
             <div className="accommodation-card__gallery-indicator">
-              📷 {accommodation.totalImagenes}
+              📷 {accommodation.totalImagenes || 0}
             </div>
           )}
           
@@ -94,7 +110,7 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
         <div className="accommodation-card__content">
           {/* Title */}
           <h3 className="accommodation-card__title">
-            {accommodation.nombre}
+            {accommodation.nombre || 'Alojamiento sin nombre'}
           </h3>
 
           {/* Capacity Info */}
@@ -123,7 +139,9 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
           {/* Price Section */}
           <div className="accommodation-card__price-section">
             <div className="accommodation-card__price">
-              <span className="price-amount">Desde ${accommodation.precioPorNoche.toLocaleString('es-UY')} UYU</span>
+              <span className="price-amount">
+                Desde ${accommodation.precioPorNoche ? accommodation.precioPorNoche.toLocaleString('es-UY') : '0'} UYU
+              </span>
               <span className="price-period">por noche x persona</span>
             </div>
           </div>
@@ -131,6 +149,8 @@ const AccommodationCard: React.FC<AccommodationCardProps> = ({
       </div>
     </Link>
   );
-};
+});
+
+AccommodationCard.displayName = 'AccommodationCard';
 
 export default AccommodationCard;

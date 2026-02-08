@@ -68,3 +68,13 @@ variable "lambda_zip_path" {
   default     = "../../../backend/target/tinambu-tours-lambda.zip"
 }
 
+# SES Configuration
+variable "ses_domain_identity" {
+  type        = string
+  description = "SES domain identity (e.g., pasocenturion.com.uy)"
+  default     = "pasocenturion.com.uy"
+}variable "ses_email_identities" {
+  type        = list(string)
+  description = "List of verified SES email identities"
+  default     = ["tinambu.paso.centurion@gmail.com"]
+}

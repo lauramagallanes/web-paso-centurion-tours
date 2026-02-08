@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Badge, Table, Button, Spinner } from 'react-bootstrap';
+import { Card, Row, Col, Badge, Table, Button, Spinner, Alert } from 'react-bootstrap';
 import { useApi } from '../../hooks/useApi';
 import { useDashboardStats } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
@@ -36,7 +36,7 @@ const Dashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       console.log('📊 Cargando estadísticas del dashboard...');
-      await loadStats('/api/dashboard/admin/stats');
+      await loadStats('/dashboard/admin/stats');
     } catch (err) {
       console.error('Error loading dashboard stats:', err);
     }
@@ -250,7 +250,7 @@ const Dashboard: React.FC = () => {
         </Alert>
       )}
 
-      {currentStats && (
+      {stats && (
         <>
           {/* Métricas principales */}
           <Row className="mb-4">

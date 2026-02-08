@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import { useCart } from '../../contexts/CartContext';
 import AccommodationCard from '../../components/common/AccommodationCard';
-import ActivityCard from '../../components/common/ActivityCard';
+import SenderoCardV2 from '../../components/common/SenderoCardV2';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import './Favorites.css';
@@ -188,18 +188,17 @@ const Favorites: React.FC = () => {
                       onViewDetails={(id) => console.log('View details:', id)}
                     />
                   ) : (
-                    <ActivityCard
+                    <SenderoCardV2
                       id={item.id}
-                      name={item.name}
-                      description={item.description}
-                      image={item.image}
-                      difficulty={item.difficulty || 'Moderado'}
-                      duration={item.duration || '3 horas'}
-                      price={item.price}
-                      currency={item.currency}
+                      nombre={item.name}
+                      descripcion={item.description}
+                      imagenUrl={item.image || ''}
+                      dificultad={item.difficulty || 'Moderado'}
+                      duracion={item.duration || '3 horas'}
+                      precio={item.price}
+                      moneda={item.currency}
                       maxParticipants={item.maxParticipants || 8}
-                      includes={item.includes || []}
-                      onBook={(id) => console.log('Book activity:', id)}
+                      onViewDetails={(id) => console.log('View activity details:', id)}
                     />
                   )}
                   <div className="favorite-added-date">

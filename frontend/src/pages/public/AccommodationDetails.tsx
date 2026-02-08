@@ -7,7 +7,6 @@ import {
   Bed, 
   Clock, 
   MapPin, 
-  Star,
   Calendar,
   Plus,
   Minus,
@@ -15,11 +14,14 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import DateRangePicker from '../../components/common/DateRangePicker';
+import ImageGridGallery from '../../components/common/ImageGridGallery';
 import { alojamientoApiService, AlojamientoResponse } from '../../services/alojamientoApiService';
+import { useTheme } from '../../contexts/ThemeContext';
 import './AccommodationDetails.css';
 
 const AccommodationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { theme } = useTheme();
   const [accommodation, setAccommodation] = useState<AlojamientoResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -207,7 +209,17 @@ const AccommodationDetails: React.FC = () => {
   }
 
   return (
-    <div className="accommodation-details-page">
+    <div 
+      className="accommodation-details-page" 
+      style={{ 
+        width: '100%', 
+        margin: 0,
+        ...(theme === 'dark' ? {
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+          minHeight: '100vh'
+        } : {})
+      }}
+    >
       <div className="container">
         {/* Header */}
         <div className="details-header">
@@ -240,22 +252,54 @@ const AccommodationDetails: React.FC = () => {
         <div className="details-content">
           {/* Left Column - Images and Info */}
           <div className="details-left">
-            {/* Hero Image */}
-            <div className="hero-image">
-              <img
-                src={accommodation.imagenPrincipal || '/placeholder-sendero.svg'}
-                alt={accommodation.nombre}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/placeholder-sendero.svg';
-                }}
-              />
-              {accommodation.tieneGaleria && (
-                <button className="gallery-btn">
-                  Ver todas las fotos ({accommodation.totalImagenes})
-                </button>
-              )}
-            </div>
+            {/* Image Gallery */}
+            {(() => {
+              // Build images array: combine imagenes array with imagenPrincipal if needed
+              const allImages = [];
+              
+              // Add imagenPrincipal as first image if it exists and is not already in imagenes
+              if (accommodation.imagenPrincipal) {
+                const principalExists = accommodation.imagenes?.some(img => img.url === accommodation.imagenPrincipal);
+                if (!principalExists) {
+                  allImages.push({
+                    id: 'principal',
+                    url: accommodation.imagenPrincipal,
+                    descripcion: accommodation.nombre,
+                  });
+                }
+              }
+              
+              // Add all images from imagenes array
+              if (accommodation.imagenes && accommodation.imagenes.length > 0) {
+                accommodation.imagenes.forEach((img, index) => {
+                  allImages.push({
+                    id: img.id || `img-${index}`,
+                    url: img.url,
+                    descripcion: img.descripcion || accommodation.nombre,
+                  });
+                });
+              }
+              
+              // If we have any images, use ImageGridGallery
+              if (allImages.length > 0) {
+                return (
+                  <ImageGridGallery
+                    images={allImages}
+                    altText={accommodation.nombre}
+                  />
+                );
+              }
+              
+              // Fallback to placeholder
+              return (
+                <div className="hero-image">
+                  <img
+                    src="/placeholder-sendero.svg"
+                    alt={accommodation.nombre}
+                  />
+                </div>
+              );
+            })()}
 
             {/* Accommodation Info */}
             <div className="accommodation-info">

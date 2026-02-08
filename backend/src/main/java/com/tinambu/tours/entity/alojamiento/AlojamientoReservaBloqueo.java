@@ -27,7 +27,7 @@ public class AlojamientoReservaBloqueo {
     @Column(name = "alojamiento_id", nullable = false)
     private UUID alojamientoId;
 
-    @Column(name = "reserva_id", nullable = false)
+    @Column(name = "reserva_id", nullable = true)
     private UUID reservaId;
 
     @Column(nullable = false)
@@ -42,6 +42,8 @@ public class AlojamientoReservaBloqueo {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "alojamiento_id", insertable = false, updatable = false)  
     private Alojamiento alojamiento;
+    
+    // Note: Reserva relationship temporarily removed to avoid circular dependency
 
     @PrePersist
     protected void onCreate() {

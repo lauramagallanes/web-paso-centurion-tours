@@ -64,67 +64,67 @@
 
 /* Button Variants */
 
-/* Primary Button - Nature Green */
+/* Primary Button - Verde Oliva */
 .btn-primary {
-  background-color: var(--color-secondary);
-  color: white;
-  border-color: var(--color-secondary);
-  box-shadow: 0 1px 3px rgba(107, 121, 46, 0.2);
+  background-color: var(--color-button-primary-bg);
+  color: var(--color-button-primary-text);
+  border-color: var(--color-button-primary-bg);
+  box-shadow: 0 1px 3px var(--color-shadow);
 }
 
 .btn-primary:hover:not(.btn-disabled) {
-  background-color: var(--color-secondary-hover);
-  border-color: var(--color-secondary-hover);
+  background-color: var(--color-button-primary-hover);
+  border-color: var(--color-button-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(107, 121, 46, 0.3);
+  box-shadow: 0 4px 8px var(--color-shadow-md);
 }
 
 .btn-primary:active:not(.btn-disabled) {
-  background-color: var(--color-secondary-active);
-  border-color: var(--color-secondary-active);
+  background-color: var(--color-button-primary-active);
+  border-color: var(--color-button-primary-active);
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(107, 121, 46, 0.2);
+  box-shadow: 0 2px 4px var(--color-shadow);
 }
 
-/* Secondary Button - Blue Accent */
+/* Secondary Button - Verde Oliva Claro */
 .btn-secondary {
-  background-color: var(--color-accent-blue);
-  color: white;
-  border-color: var(--color-accent-blue);
-  box-shadow: 0 1px 3px rgba(59, 136, 195, 0.2);
+  background-color: var(--color-button-secondary-bg);
+  color: var(--color-button-secondary-text);
+  border-color: var(--color-button-secondary-bg);
+  box-shadow: 0 1px 3px var(--color-shadow);
 }
 
 .btn-secondary:hover:not(.btn-disabled) {
-  background-color: var(--color-accent-blue-hover);
-  border-color: var(--color-accent-blue-hover);
+  background-color: var(--color-button-secondary-hover);
+  border-color: var(--color-button-secondary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(59, 136, 195, 0.3);
+  box-shadow: 0 4px 8px var(--color-shadow-md);
 }
 
 .btn-secondary:active:not(.btn-disabled) {
-  background-color: #2d6ea3;
-  border-color: #2d6ea3;
+  background-color: var(--color-button-secondary-active);
+  border-color: var(--color-button-secondary-active);
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(59, 136, 195, 0.2);
+  box-shadow: 0 2px 4px var(--color-shadow);
 }
 
 /* Outline Button */
 .btn-outline {
   background-color: transparent;
-  color: var(--color-text);
-  border-color: var(--color-border);
+  color: var(--color-button-outline-text);
+  border: 2px solid var(--color-button-outline-border);
 }
 
 .btn-outline:hover:not(.btn-disabled) {
-  background-color: var(--color-surface-variant);
-  border-color: var(--color-secondary);
-  color: var(--color-secondary);
+  background-color: var(--color-button-outline-hover-bg);
+  border-color: var(--color-primary-hover);
+  color: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(107, 121, 46, 0.1);
+  box-shadow: 0 2px 4px var(--color-shadow);
 }
 
 .btn-outline:active:not(.btn-disabled) {
-  background-color: var(--color-neutral-100);
+  background-color: var(--color-button-outline-hover-bg);
   transform: translateY(0);
 }
 
@@ -137,11 +137,11 @@
 
 .btn-ghost:hover:not(.btn-disabled) {
   background-color: var(--color-surface-variant);
-  color: var(--color-secondary);
+  color: var(--color-primary);
 }
 
 .btn-ghost:active:not(.btn-disabled) {
-  background-color: var(--color-neutral-100);
+  background-color: var(--color-surface-hover);
 }
 
 /* Danger Button */
@@ -169,24 +169,24 @@
 /* Success Button */
 .btn-success {
   background-color: var(--color-success);
-  color: var(--color-primary);
+  color: white;
   border-color: var(--color-success);
-  box-shadow: 0 1px 3px rgba(170, 190, 80, 0.2);
+  box-shadow: 0 1px 3px var(--color-shadow);
   font-weight: var(--font-semibold);
 }
 
 .btn-success:hover:not(.btn-disabled) {
-  background-color: #9bb044;
-  border-color: #9bb044;
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(170, 190, 80, 0.3);
+  box-shadow: 0 4px 8px var(--color-shadow-md);
 }
 
 .btn-success:active:not(.btn-disabled) {
-  background-color: #8ba03e;
-  border-color: #8ba03e;
+  background-color: var(--color-primary-active);
+  border-color: var(--color-primary-active);
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(170, 190, 80, 0.2);
+  box-shadow: 0 2px 4px var(--color-shadow);
 }
 
 /* Button States */
@@ -348,46 +348,91 @@
 
 /* Special Tourism-themed Button Variants */
 .btn-nature {
-  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-accent-green) 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   color: white;
   border: none;
   font-weight: var(--font-semibold);
-  box-shadow: 0 2px 8px rgba(107, 121, 46, 0.3);
+  box-shadow: 0 2px 8px var(--color-shadow-md);
 }
 
 .btn-nature:hover:not(.btn-disabled) {
-  background: linear-gradient(135deg, var(--color-secondary-hover) 0%, #9bb044 100%);
+  background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary-light) 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(107, 121, 46, 0.4);
+  box-shadow: 0 6px 16px var(--color-shadow-lg);
 }
 
 .btn-booking {
-  background: linear-gradient(135deg, var(--color-accent-blue) 0%, var(--color-accent-salmon) 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   color: white;
   border: none;
   font-weight: var(--font-semibold);
-  box-shadow: 0 2px 8px rgba(59, 136, 195, 0.3);
+  box-shadow: 0 2px 8px var(--color-shadow-md);
 }
 
 .btn-booking:hover:not(.btn-disabled) {
-  background: linear-gradient(135deg, var(--color-accent-blue-hover) 0%, #d18b6f 100%);
+  background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-secondary-hover) 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(59, 136, 195, 0.4);
+  box-shadow: 0 6px 16px var(--color-shadow-lg);
+}
+
+/* Button States - On/Off según Figma */
+.btn-off {
+  background-color: var(--color-secondary);
+  color: var(--color-button-secondary-text);
+  border: 1px solid var(--color-secondary);
+}
+
+.btn-off:hover:not(.btn-disabled) {
+  background-color: var(--color-secondary-hover);
+  border-color: var(--color-secondary-hover);
+}
+
+.btn-on {
+  background-color: var(--color-primary);
+  color: var(--color-button-primary-text);
+  border: 1px solid var(--color-primary);
+}
+
+.btn-on:hover:not(.btn-disabled) {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+/* Outline Button con colores crema/verde - Estilo según Figma */
+.btn-outline-cream {
+  background-color: var(--color-background-alt) !important;
+  color: var(--color-primary) !important;
+  border: 1px solid var(--color-secondary) !important;
+  box-shadow: none !important;
+}
+
+.btn-outline-cream:hover:not(.btn-disabled) {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px var(--color-shadow) !important;
+}
+
+.btn-outline-cream:active:not(.btn-disabled) {
+  background-color: var(--color-surface) !important;
+  transform: translateY(0);
 }
 
 /* Dark Theme Adjustments */
 [data-theme="dark"] .btn-outline {
-  border-color: var(--color-border);
-  color: var(--color-text);
+  border-color: var(--color-button-outline-border);
+  color: var(--color-button-outline-text);
 }
 
 [data-theme="dark"] .btn-outline:hover:not(.btn-disabled) {
-  background-color: var(--color-surface);
-  border-color: var(--color-secondary);
+  background-color: var(--color-button-outline-hover-bg);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 [data-theme="dark"] .btn-ghost:hover:not(.btn-disabled) {
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-variant);
 }
 
 /* High Contrast Mode */

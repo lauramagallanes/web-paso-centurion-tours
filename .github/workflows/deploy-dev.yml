@@ -1,68 +1,148 @@
-name: Deploy to Development
+name: Deploy Development
 
 on:
   push:
-    branches: [ development ]
+    branches: [development]
   workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
-  S3_BUCKET: tinambu-frontend-dev
-  
+  FRONTEND_BUCKET: tinambu-frontend-dev
+  ASSETS_BUCKET: tinambu-public-assets-dev
+  LAMBDA_FUNCTION: tinambu-tours-backend-dev
+  LAMBDA_S3_KEY: lambda/tinambu-tours-lambda-AUTH-ENDPOINTS.jar
+
 jobs:
-  build-and-deploy:
+  # ──────────────────────────────────────────────
+  # Detect what changed to avoid unnecessary deploys
+  # ──────────────────────────────────────────────
+  changes:
     runs-on: ubuntu-latest
-    
+    name: Detect changes
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        
-    - name: Install dependencies
-      working-directory: ./frontend
-      run: |
-        npm ci --verbose
-        
-    - name: Build frontend
-      working-directory: ./frontend
-      env:
-        VITE_API_BASE_URL: https://53dmek6dqk.execute-api.us-east-1.amazonaws.com
-        VITE_ENV: development
-        VITE_DEBUG: false
-        NODE_ENV: production
-      run: |
-        echo "Building frontend with environment variables:"
-        echo "VITE_API_BASE_URL=$VITE_API_BASE_URL"
-        echo "VITE_ENV=$VITE_ENV"
-        npm run build
-      
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-        
-    - name: Deploy to S3
-      run: |
-        aws s3 sync frontend/dist s3://${{ env.S3_BUCKET }} --delete --region ${{ env.AWS_REGION }}
-        echo "🚀 Frontend deployed to S3: https://${{ env.S3_BUCKET }}.s3.us-east-1.amazonaws.com/"
-        
-    - name: Check deployment
-      run: |
-        echo "✅ Deployment completed!"
-        echo "🌐 Frontend URL: https://${{ env.S3_BUCKET }}.s3.us-east-1.amazonaws.com/"
-        echo "🎯 Admin Panel: https://${{ env.S3_BUCKET }}.s3.us-east-1.amazonaws.com/admin"
-        
-        # Test if deployment is accessible
-        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ env.S3_BUCKET }}.s3.us-east-1.amazonaws.com/index.html")
-        if [ "$HTTP_STATUS" = "200" ]; then
-          echo "✅ Deployment verified - Site is accessible!"
-        else
-          echo "❌ Deployment verification failed - HTTP $HTTP_STATUS"
-          exit 1
-        fi
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/src/**'
+              - 'backend/pom.xml'
+
+  # ──────────────────────────────────────────────
+  # Build and deploy Frontend (React/Vite → S3)
+  # ──────────────────────────────────────────────
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    name: Deploy Frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3
+        working-directory: frontend
+        run: aws s3 sync dist/ s3://${{ env.FRONTEND_BUCKET }} --delete
+
+      - name: Summary
+        run: |
+          echo "### Frontend deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- Bucket: \`${{ env.FRONTEND_BUCKET }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # ──────────────────────────────────────────────
+  # Build and deploy Backend (Spring Boot → Lambda)
+  # ──────────────────────────────────────────────
+  deploy-backend:
+    runs-on: ubuntu-latest
+    name: Deploy Backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "maven"
+
+      - name: Build JAR
+        working-directory: backend
+        run: mvn clean package -DskipTests -q
+
+      - name: Verify JAR exists
+        working-directory: backend
+        run: |
+          JAR_FILE="target/tinambu-tours-lambda.jar"
+          if [ ! -f "$JAR_FILE" ]; then
+            echo "::error::JAR not found: $JAR_FILE"
+            exit 1
+          fi
+          echo "JAR size: $(du -h $JAR_FILE | cut -f1)"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload JAR to S3
+        working-directory: backend
+        run: |
+          aws s3 cp target/tinambu-tours-lambda.jar \
+            s3://${{ env.ASSETS_BUCKET }}/${{ env.LAMBDA_S3_KEY }}
+
+      - name: Update Lambda function
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_FUNCTION }} \
+            --s3-bucket ${{ env.ASSETS_BUCKET }} \
+            --s3-key ${{ env.LAMBDA_S3_KEY }} \
+            --no-cli-pager
+
+      - name: Wait for Lambda update
+        run: |
+          echo "Waiting for Lambda function to be ready..."
+          aws lambda wait function-updated \
+            --function-name ${{ env.LAMBDA_FUNCTION }}
+          echo "Lambda function updated successfully"
+
+      - name: Summary
+        run: |
+          echo "### Backend deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- Lambda: \`${{ env.LAMBDA_FUNCTION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY

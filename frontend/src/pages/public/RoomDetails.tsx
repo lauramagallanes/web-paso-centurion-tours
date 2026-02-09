@@ -254,7 +254,21 @@ const RoomDetails: React.FC = () => {
       guests: guestsCount
     });
 
-    navigate('/carrito');
+    // Navigate to checkout with accommodation data
+    navigate('/checkout', {
+      state: {
+        type: 'alojamiento',
+        id: room.id,
+        nombre: room.nombre,
+        precio: room.precioPorNoche * guestsCount * nights,
+        checkIn: checkIn.toISOString().split('T')[0],
+        checkOut: checkOut.toISOString().split('T')[0],
+        fechaInicio: checkIn.toISOString().split('T')[0],
+        fechaFin: checkOut.toISOString().split('T')[0],
+        huespedes: guestsCount,
+        noches: nights,
+      }
+    });
   };
 
   const handleBookNow = () => {

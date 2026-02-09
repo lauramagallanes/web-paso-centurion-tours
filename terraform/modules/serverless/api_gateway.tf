@@ -350,6 +350,156 @@ resource "aws_apigatewayv2_route" "images_update_order" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+# ========== ALOJAMIENTOS ROUTES ==========
+
+resource "aws_apigatewayv2_route" "alojamientos_list" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /alojamientos"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_get" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /alojamientos/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_verify_availability" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /alojamientos/{id}/verificar-disponibilidad"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_admin_list" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /alojamientos/admin"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_admin_create" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /alojamientos/admin"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_update" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /alojamientos/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_delete" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /alojamientos/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_add_availability" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /alojamientos/{id}/disponibilidad"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# ========== NEW RESERVAS ROUTES (Sendero & Alojamiento) ==========
+
+resource "aws_apigatewayv2_route" "reservas_create_sendero" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /reservas/sendero"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_create_alojamiento" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /reservas/alojamiento"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_sendero_by_code" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /reservas/sendero/codigo/{codigo}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_sendero_by_email" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /reservas/sendero/email/{email}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_alojamiento_by_email" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /reservas/alojamiento/email/{email}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_confirm_sendero" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /reservas/admin/{id}/confirmar-sendero"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_confirm_alojamiento" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /reservas/admin/{id}/confirmar-alojamiento"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_cancel_sendero" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /reservas/admin/{id}/cancelar-sendero"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_cancel_alojamiento" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /reservas/admin/{id}/cancelar-alojamiento"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_admin_senderos" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /reservas/admin/senderos"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_admin_alojamientos" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /reservas/admin/alojamientos"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_admin_sendero_get" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /reservas/admin/sendero/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_admin_alojamiento_get" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /reservas/admin/alojamiento/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# ========== PLACETOPAY PAYMENT SESSION ROUTES ==========
+
+resource "aws_apigatewayv2_route" "pagos_crear_sesion" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /pagos/crear-sesion"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "pagos_estado" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /pagos/estado/{reservaId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "pagos_webhook" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /pagos/webhook"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Guide Management Routes
 resource "aws_apigatewayv2_route" "senderos_assign_guide" {
   api_id    = aws_apigatewayv2_api.main.id

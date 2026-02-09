@@ -165,44 +165,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await apiService.login(email, password);
 
       if (data.success === true) {
-        console.log('🔍 Debug Login Response:', {
-          fullData: data,
-          usuario: data.data?.usuario,
-          userTipo: data.data?.usuario?.tipo,
-          backendUser: data.data?.usuario
-        });
-
         const usuario = data.data?.usuario;
         if (!usuario) {
           throw new Error('Datos de usuario no encontrados en la respuesta');
         }
 
-        // Check for admin role
-        const backendTipo = usuario.tipo;
-        const isAdminRole = backendTipo && (
-          backendTipo.toLowerCase() === 'admin' ||
-          backendTipo.toUpperCase() === 'ADMIN' ||
-          usuario.email === 'admin@pasocenturion.com.uy'  // Fallback for admin email
-        );
-
-        console.log('🔍 ADMIN DETECTION DEBUG:', {
-          backendTipo: backendTipo,
-          isAdminRole: isAdminRole,
-          emailCheck: usuario.email === 'admin@pasocenturion.com.uy',
-          userEmail: usuario.email
-        });
-
-        const mappedUser = {
+        const mappedUser: Usuario = {
           id: usuario.id.toString(),
           email: usuario.email,
           nombreCompleto: usuario.nombreCompleto,
-          tipo: usuario.tipo, // Use the backend tipo directly
+          tipo: usuario.tipo,
           activo: usuario.activo,
           fechaCreacion: usuario.fechaCreacion,
         };
-
-        console.log('🔍 Mapped User:', mappedUser);
-        console.log('🔍 Final Admin Check:', isAdminRole, 'Final tipo:', mappedUser.tipo);
 
         dispatch({
           type: 'LOGIN_SUCCESS',
@@ -261,23 +236,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      // Para el mock, simplemente validamos que el token exista
-      // En producción real, esto haría una llamada al endpoint de refresh
-      if (storedRefreshToken.includes('mock-signature')) {
-        // Token mock válido, renovamos con el mismo
-        dispatch({
-          type: 'REFRESH_TOKEN_SUCCESS',
-          payload: {
-            accessToken: storedRefreshToken,
-            refreshToken: storedRefreshToken,
-          },
-        });
-        return true;
-      } else {
-        return false;
+      const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com';
+      const response = await fetch(`${baseURL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${storedRefreshToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          dispatch({
+            type: 'REFRESH_TOKEN_SUCCESS',
+            payload: {
+              accessToken: data.data.accessToken,
+              refreshToken: data.data.refreshToken,
+            },
+          });
+          return true;
+        }
       }
-    } catch (error) {
-      console.error('Error al renovar token:', error);
+
+      // Si el refresh falló, hacer logout
+      logout();
+      return false;
+    } catch {
+      logout();
       return false;
     }
   };

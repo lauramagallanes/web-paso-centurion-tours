@@ -2,6 +2,7 @@ package com.tinambu.tours.config;
 
 import com.tinambu.tours.security.JwtAuthenticationEntryPoint;
 import com.tinambu.tours.security.JwtAuthenticationFilter;
+import com.tinambu.tours.security.RateLimitFilter;
 import com.tinambu.tours.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -47,6 +48,14 @@ public class SecurityConfig {
     }
 
     /**
+     * Bean del filtro de rate limiting (B1)
+     */
+    @Bean
+    public RateLimitFilter rateLimitFilter() {
+        return new RateLimitFilter();
+    }
+
+    /**
      * Deshabilitar el registro automático del filtro JWT
      */
     @Bean
@@ -64,6 +73,16 @@ public class SecurityConfig {
         http
             // Deshabilitar CSRF para APIs REST
             .csrf(csrf -> csrf.disable())
+            
+            // Headers de seguridad (B2)
+            .headers(headers -> headers
+                .contentTypeOptions(contentType -> {}) // X-Content-Type-Options: nosniff
+                .frameOptions(frame -> frame.deny())   // X-Frame-Options: DENY
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .includeSubDomains(true)
+                    .maxAgeInSeconds(31536000))         // HSTS: 1 año
+                .cacheControl(cache -> {})              // Cache-Control: no-cache, no-store
+            )
             
             // Configurar CORS
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -131,6 +150,8 @@ public class SecurityConfig {
             // Configurar provider de autenticación
             .authenticationProvider(daoAuthenticationProvider())
             
+            // Rate limiting antes de todo (B1)
+            .addFilterBefore(rateLimitFilter(), UsernamePasswordAuthenticationFilter.class)
             // Agregar filtro JWT antes del filtro de autenticación por username/password
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 

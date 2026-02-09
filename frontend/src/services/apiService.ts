@@ -5,9 +5,6 @@ class ApiService {
   constructor() {
     // Usar variable de entorno o fallback a la URL actual
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'https://53dmek6dqk.execute-api.us-east-1.amazonaws.com';
-    console.log('🔗 API Service: Usando URL:', this.baseURL);
-    console.log('🔗 Entorno:', import.meta.env.VITE_ENV || 'production');
-    console.log('🔗 Hostname actual:', typeof window !== 'undefined' ? window.location.hostname : 'server');
   }
 
   // Método privado para obtener headers con autenticación
@@ -170,12 +167,9 @@ class ApiService {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         if (attempt > 0) {
-          console.log(`🔄 Reintentando (intento ${attempt + 1}/${retries + 1})...`);
           // Backoff exponencial: 2s, 4s, 8s
           await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
         }
-        
-        console.log('🔍 Llamando a:', `${this.baseURL}/senderos`);
         
         // Crear un AbortController para timeout más largo para cold start
         const controller = new AbortController();
@@ -189,20 +183,12 @@ class ApiService {
           });
           
           clearTimeout(timeoutId);
-          
-          console.log('📡 Respuesta recibida:', {
-            status: response.status,
-            statusText: response.statusText,
-            ok: response.ok,
-            headers: Object.fromEntries(response.headers.entries())
-          });
 
           // Si es un error 503 (Service Unavailable), reintentar automáticamente
           if (response.status === 503) {
             if (attempt === retries) {
               throw new Error('El servidor no está disponible temporalmente. Por favor, intenta nuevamente en unos momentos.');
             }
-            console.warn(`⚠️ Servicio no disponible (503), reintentando... (intento ${attempt + 1}/${retries + 1})`);
             continue;
           }
 
@@ -223,14 +209,12 @@ class ApiService {
       } catch (error) {
         // Si es el último intento, lanzar el error
         if (attempt === retries) {
-          console.error('❌ Error en getSenderos después de todos los intentos:', error);
           if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
             throw new Error('Error de conexión: No se pudo conectar con el servidor. Verifica tu conexión a internet.');
           }
           throw error;
         }
         // Si no es el último intento, continuar con el siguiente retry
-        console.warn(`⚠️ Intento ${attempt + 1} falló, reintentando...`, error);
       }
     }
   }
@@ -303,7 +287,7 @@ class ApiService {
           reader.onload = () => {
             const result = reader.result as string;
             const base64 = result.split(',')[1];
-            console.log(`🗜️ Compressed image from ${file.size} to ${compressedFile.size} bytes`);
+            
             resolve(base64);
           };
           reader.onerror = error => reject(error);
@@ -431,16 +415,12 @@ class ApiService {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    console.log('🚀 Starting upload of', fileArray.length, 'files via API...');
-    
     const response = await fetch(`${this.baseURL}/images/alojamientos/${alojamientoId}`, {
       method: 'POST',
       headers,
       body: formData,
     });
 
-    console.log('✅ API upload completed:', await response.clone().json());
-    
     return this.handleResponse(response);
   }
 
@@ -498,8 +478,6 @@ class ApiService {
    * Upload file directly to S3 using presigned URL
    */
   async uploadToS3(presignedUrl: string, file: File) {
-    console.log(`📤 Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB) directly to S3...`);
-    
     const response = await fetch(presignedUrl, {
       method: 'PUT',
       body: file,
@@ -512,7 +490,6 @@ class ApiService {
       throw new Error(`S3 upload failed: ${response.status} ${response.statusText}`);
     }
 
-    console.log(`✅ Successfully uploaded to S3`);
     return response;
   }
 

@@ -2,6 +2,7 @@ package com.tinambu.tours.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 /**
  * DTO para request de login
@@ -13,6 +14,7 @@ public class LoginRequest {
     private String email;
 
     @NotBlank(message = "Contraseña es obligatoria")
+    @Size(min = 8, message = "Contraseña debe tener al menos 8 caracteres")
     private String password;
 
     // Constructors

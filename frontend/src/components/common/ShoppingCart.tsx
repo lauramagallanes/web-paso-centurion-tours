@@ -1,10 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCart, CartItem } from '../../contexts/CartContext';
 import Button from './Button';
 import EmptyState from './EmptyState';
 import './ShoppingCart.css';
 
 const ShoppingCart: React.FC = () => {
+  const navigate = useNavigate();
   const { state, removeItem, updateQuantity, clearCart, closeCart } = useCart();
 
   const formatDate = (date: Date) => {
@@ -190,8 +192,8 @@ const ShoppingCart: React.FC = () => {
                     variant="primary" 
                     size="lg"
                     onClick={() => {
-                      // TODO: Navigate to checkout
-                      console.log('Proceeding to checkout...');
+                      closeCart();
+                      navigate('/checkout');
                     }}
                     className="checkout-btn"
                     leftIcon="💳"

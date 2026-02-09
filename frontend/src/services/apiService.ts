@@ -739,6 +739,78 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  // ========== PLACETOPAY PAYMENT INTEGRATION ==========
+
+  // Create a sendero reservation
+  async createSenderoReservation(data: {
+    tipoReserva: string;
+    emailContacto: string;
+    nombreContacto: string;
+    telefonoContacto?: string;
+    numeroPersonas: number;
+    fechaInicio: string;
+    fechaFin: string;
+    senderoId: string;
+    guiaId: string;
+    turno: string;
+    observaciones?: string;
+  }) {
+    const response = await fetch(`${this.baseURL}/reservas/sendero`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Create an alojamiento reservation
+  async createAlojamientoReservation(data: {
+    emailContacto: string;
+    nombreContacto: string;
+    telefonoContacto?: string;
+    alojamientoId: string;
+    fechaCheckIn: string;
+    fechaCheckOut: string;
+    numeroHuespedes: number;
+    observaciones?: string;
+    observacionesEspeciales?: string;
+  }) {
+    const response = await fetch(`${this.baseURL}/reservas/alojamiento`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Create a PlacetoPay payment session
+  async createPaymentSession(reservaId: string, tipoReserva: string) {
+    const response = await fetch(`${this.baseURL}/pagos/crear-sesion`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({
+        reservaId,
+        tipoReserva,
+        ipAddress: null, // Backend will detect from request
+        userAgent: navigator.userAgent,
+      }),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Get payment status for a reservation
+  async getPaymentStatus(reservaId: string, tipoReserva: string = 'SENDERO') {
+    const response = await fetch(
+      `${this.baseURL}/pagos/estado/${reservaId}?tipo=${tipoReserva}`,
+      { headers: this.getHeaders() }
+    );
+
+    return this.handleResponse(response);
+  }
+
   // ========== ADMIN - PAYMENT MANAGEMENT ==========
 
   // Get detailed reservations with payment info

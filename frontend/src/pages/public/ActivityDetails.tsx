@@ -237,8 +237,21 @@ const ActivityDetails: React.FC = () => {
   };
 
   const handleBookNow = () => {
-    // For now, just add to cart and navigate
-    handleAddToCart();
+    if (!sendero) return;
+
+    // Navigate to checkout with sendero data
+    navigate('/checkout', {
+      state: {
+        type: 'sendero',
+        id: sendero.id,
+        nombre: sendero.nombre,
+        precio: totalPrice,
+        fechaInicio: selectedDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        fechaFin: selectedDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        personas: participantsCount,
+        turno: 'MANANA', // Default, could be from a selector
+      }
+    });
   };
 
   const handleRelatedSenderoClick = (senderoId: string) => {

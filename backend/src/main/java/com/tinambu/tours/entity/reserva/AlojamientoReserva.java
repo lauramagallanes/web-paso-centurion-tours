@@ -71,6 +71,9 @@ public class AlojamientoReserva {
     @Column(name = "observaciones_especiales", columnDefinition = "TEXT")
     private String observacionesEspeciales;
 
+    @Column(name = "placetopay_request_id")
+    private Long placetoPayRequestId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "alojamiento_id", insertable = false, updatable = false)
     private Alojamiento alojamiento;

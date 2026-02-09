@@ -18,6 +18,12 @@ interface Reserva {
   precioTotal: number;
   observaciones?: string;
   observacionesAdmin?: string;
+  // Payment tracking fields
+  estadoPago?: 'PENDIENTE' | 'PARCIAL' | 'COMPLETO';
+  montoPagado?: number;
+  saldoPendiente?: number;
+  metodoPago?: string;
+  placetoPayRequestId?: number;
   // Datos específicos según tipo
   habitacion?: {
     id: string;
@@ -53,6 +59,7 @@ const ReservationManagement: React.FC = () => {
   const [filtros, setFiltros] = useState({
     estado: '',
     tipo: '',
+    estadoPago: '',
     busqueda: ''
   });
 
@@ -117,6 +124,28 @@ const ReservationManagement: React.FC = () => {
     );
   };
 
+  const getEstadoPagoBadge = (estadoPago?: string) => {
+    switch (estadoPago) {
+      case 'PENDIENTE':
+        return <Badge bg="warning" className="d-flex align-items-center gap-1">
+          <Icon name="clock" size="xs" />
+          Pago Pendiente
+        </Badge>;
+      case 'PARCIAL':
+        return <Badge bg="info" className="d-flex align-items-center gap-1">
+          <Icon name="info" size="xs" />
+          Pago Parcial
+        </Badge>;
+      case 'COMPLETO':
+        return <Badge bg="success" className="d-flex align-items-center gap-1">
+          <Icon name="check-circle" size="xs" />
+          Pagado
+        </Badge>;
+      default:
+        return <Badge bg="secondary">Sin pago</Badge>;
+    }
+  };
+
   const getTurnoText = (turno?: string) => {
     switch (turno) {
       case 'MANANA':
@@ -167,12 +196,13 @@ const ReservationManagement: React.FC = () => {
     return reservas.filter(reserva => {
       const matchEstado = !filtros.estado || reserva.estado === filtros.estado;
       const matchTipo = !filtros.tipo || reserva.tipoReserva === filtros.tipo;
+      const matchEstadoPago = !filtros.estadoPago || reserva.estadoPago === filtros.estadoPago;
       const matchBusqueda = !filtros.busqueda || 
-        reserva.nombreCliente.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
-        reserva.emailCliente.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
-        reserva.codigo.toLowerCase().includes(filtros.busqueda.toLowerCase());
+        reserva.nombreCliente?.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
+        reserva.emailCliente?.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
+        reserva.codigo?.toLowerCase().includes(filtros.busqueda.toLowerCase());
       
-      return matchEstado && matchTipo && matchBusqueda;
+      return matchEstado && matchTipo && matchEstadoPago && matchBusqueda;
     });
   };
 
@@ -269,7 +299,7 @@ const ReservationManagement: React.FC = () => {
                 </Form.Select>
               </Form.Group>
             </Col>
-            <Col md={3}>
+            <Col md={2}>
               <Form.Group>
                 <Form.Label>Tipo</Form.Label>
                 <Form.Select
@@ -282,7 +312,21 @@ const ReservationManagement: React.FC = () => {
                 </Form.Select>
               </Form.Group>
             </Col>
-            <Col md={6}>
+            <Col md={2}>
+              <Form.Group>
+                <Form.Label>Estado Pago</Form.Label>
+                <Form.Select
+                  value={filtros.estadoPago}
+                  onChange={(e) => setFiltros({...filtros, estadoPago: e.target.value})}
+                >
+                  <option value="">Todos</option>
+                  <option value="PENDIENTE">Pendiente</option>
+                  <option value="PARCIAL">Parcial</option>
+                  <option value="COMPLETO">Completo</option>
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={5}>
               <Form.Group>
                 <Form.Label>Buscar</Form.Label>
                 <InputGroup>
@@ -317,6 +361,7 @@ const ReservationManagement: React.FC = () => {
                     <th>Personas</th>
                     <th>Total</th>
                     <th>Estado</th>
+                    <th>Pago</th>
                     <th>Creada</th>
                     <th>Acciones</th>
                   </tr>
@@ -367,6 +412,14 @@ const ReservationManagement: React.FC = () => {
                       </td>
                       <td>
                         {getEstadoBadge(reserva.estado)}
+                      </td>
+                      <td>
+                        {getEstadoPagoBadge(reserva.estadoPago)}
+                        {reserva.montoPagado != null && reserva.montoPagado > 0 && (
+                          <small className="d-block text-muted mt-1">
+                            {formatPrice(reserva.montoPagado)} pagado
+                          </small>
+                        )}
                       </td>
                       <td>
                         <small>{formatDateTime(reserva.fechaCreacion)}</small>
@@ -479,6 +532,31 @@ const ReservationManagement: React.FC = () => {
                   <p><strong>Fecha:</strong> {formatDate(selectedReserva.fechaReserva)}</p>
                   <p><strong>Personas:</strong> {selectedReserva.cantidadPersonas}</p>
                   <p><strong>Total:</strong> {formatPrice(selectedReserva.precioTotal)}</p>
+                </Col>
+              </Row>
+
+              <hr />
+              <Row>
+                <Col md={12}>
+                  <h6>Información de Pago</h6>
+                  <div className="d-flex gap-3 mb-2">
+                    <div>
+                      <strong>Estado Pago:</strong> {getEstadoPagoBadge(selectedReserva.estadoPago)}
+                    </div>
+                  </div>
+                  <p><strong>Total:</strong> {formatPrice(selectedReserva.precioTotal)}</p>
+                  {selectedReserva.montoPagado != null && (
+                    <p><strong>Monto Pagado:</strong> {formatPrice(selectedReserva.montoPagado)}</p>
+                  )}
+                  {selectedReserva.saldoPendiente != null && selectedReserva.saldoPendiente > 0 && (
+                    <p><strong>Saldo Pendiente:</strong> <span className="text-danger">{formatPrice(selectedReserva.saldoPendiente)}</span></p>
+                  )}
+                  {selectedReserva.metodoPago && (
+                    <p><strong>Método de Pago:</strong> {selectedReserva.metodoPago}</p>
+                  )}
+                  {selectedReserva.placetoPayRequestId && (
+                    <p><strong>PlacetoPay ID:</strong> <code>{selectedReserva.placetoPayRequestId}</code></p>
+                  )}
                 </Col>
               </Row>
 

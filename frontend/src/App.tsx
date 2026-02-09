@@ -17,6 +17,9 @@ import ActivityDetails from './pages/public/ActivityDetails'
 import Book from './pages/public/Book';
 import MyBookings from './pages/public/MyBookings';
 import Favorites from './pages/public/Favorites';
+import Checkout from './pages/public/Checkout';
+import PaymentResult from './pages/public/PaymentResult';
+import PaymentCancelled from './pages/public/PaymentCancelled';
 import CalendarDemo from './pages/public/CalendarDemo';
 import LogoDemo from './pages/public/LogoDemo';
 import IconDemo from './pages/public/IconDemo';
@@ -51,6 +54,9 @@ const App: React.FC = () => {
             <Route path={routes.activities} element={<Activities/>}/>
             <Route path="/actividades/:id" element={<ActivityDetails/>}/>
             <Route path={routes.book} element={<Book/>}/>
+            <Route path={routes.checkout} element={<Checkout/>}/>
+            <Route path={routes.paymentResult} element={<PaymentResult/>}/>
+            <Route path={routes.paymentCancelled} element={<PaymentCancelled/>}/>
             <Route path={routes.myBookings} element={
               <ProtectedRoute>
                 <MyBookings/>

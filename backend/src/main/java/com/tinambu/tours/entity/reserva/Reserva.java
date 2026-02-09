@@ -97,6 +97,9 @@ public abstract class Reserva {
     @Column(name = "metodo_pago", length = 50)
     private String metodoPago;
 
+    @Column(name = "placetopay_request_id")
+    private Long placetoPayRequestId;
+
     @Column(name = "estado", nullable = false)
     @Enumerated(EnumType.STRING)
     private EstadoReserva estado = EstadoReserva.PENDIENTE;
@@ -290,4 +293,7 @@ public abstract class Reserva {
 
     public String getMetodoPago() { return metodoPago; }
     public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
+
+    public Long getPlacetoPayRequestId() { return placetoPayRequestId; }
+    public void setPlacetoPayRequestId(Long placetoPayRequestId) { this.placetoPayRequestId = placetoPayRequestId; }
 }

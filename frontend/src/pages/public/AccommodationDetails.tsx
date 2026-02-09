@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Heart, 
@@ -21,6 +21,7 @@ import './AccommodationDetails.css';
 
 const AccommodationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { theme } = useTheme();
   const [accommodation, setAccommodation] = useState<AlojamientoResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,13 +136,31 @@ const AccommodationDetails: React.FC = () => {
   };
 
   const handleReserveNow = () => {
-    // TODO: Implement reservation logic
-    alert('Funcionalidad de reserva en desarrollo');
+    if (!accommodation || !checkInDate || !checkOutDate) return;
+
+    const noches = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    navigate('/checkout', {
+      state: {
+        type: 'alojamiento',
+        id: accommodation.id,
+        nombre: accommodation.nombre,
+        precio: totalPrice,
+        checkIn: checkInDate.toISOString().split('T')[0],
+        checkOut: checkOutDate.toISOString().split('T')[0],
+        fechaInicio: checkInDate.toISOString().split('T')[0],
+        fechaFin: checkOutDate.toISOString().split('T')[0],
+        huespedes: guestCount,
+        noches: noches,
+      }
+    });
   };
 
   const handleAddToCart = () => {
-    // TODO: Implement add to cart logic
-    alert('Funcionalidad de carrito en desarrollo');
+    if (!accommodation || !checkInDate || !checkOutDate) return;
+
+    // Navigate to checkout (can also add to cart context if needed)
+    handleReserveNow();
   };
 
   const getMockAccommodation = (): AlojamientoResponse => ({

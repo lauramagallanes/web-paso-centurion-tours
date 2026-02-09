@@ -13,6 +13,10 @@ export const routes = {
     book: "/book",
     bookings: "/bookings",
     myBookings: "/my-bookings",
+    // Checkout & Payment routes
+    checkout: "/checkout",
+    paymentResult: "/pago/resultado",
+    paymentCancelled: "/pago/cancelado",
     // Admin routes
     admin: "/admin",
     adminReservations: "/admin/reservations",

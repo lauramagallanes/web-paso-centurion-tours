@@ -177,9 +177,9 @@ const ReservationManagement: React.FC = () => {
     setActionLoading(true);
     try {
       if (modalAction === 'confirm') {
-        await confirmarReserva(parseInt(selectedReserva.id), observacionesAdmin);
+        await confirmarReserva(selectedReserva.id, observacionesAdmin, selectedReserva.tipoReserva);
       } else if (modalAction === 'cancel') {
-        await cancelarReserva(parseInt(selectedReserva.id), observacionesAdmin);
+        await cancelarReserva(selectedReserva.id, observacionesAdmin, selectedReserva.tipoReserva);
       }
       
       // Recargar reservas

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApi } from './useApi';
 
 // Hook personalizado para APIs específicas del admin
@@ -40,43 +40,72 @@ export const useGuiasDisponibles = () => {
 export const useDashboardStats = () => {
   const { data, loading, error, execute } = useApi();
 
-  const load = () => execute('/dashboard/admin/stats');
+  const load = () => execute('/reservas/admin/estadisticas');
 
   return { data, loading, error, load };
 };
 
 export const useReservasAdmin = () => {
-  const { data, loading, error, execute } = useApi();
+  const [reservas, setReservas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { execute } = useApi();
 
   const loadReservas = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const result = await execute('/reservas/admin');
-      return result;
+      // Load both types of reservations in parallel
+      const [senderosResult, alojamientosResult] = await Promise.allSettled([
+        execute('/reservas/admin/senderos'),
+        execute('/reservas/admin/alojamientos')
+      ]);
+
+      const senderos = senderosResult.status === 'fulfilled' && senderosResult.value?.success
+        ? (senderosResult.value.data || []).map((r: any) => ({ ...r, tipoReserva: 'SENDERO' }))
+        : [];
+
+      const alojamientos = alojamientosResult.status === 'fulfilled' && alojamientosResult.value?.success
+        ? (alojamientosResult.value.data || []).map((r: any) => ({ ...r, tipoReserva: 'ALOJAMIENTO' }))
+        : [];
+
+      const combined = [...senderos, ...alojamientos].sort(
+        (a, b) => new Date(b.fechaCreacion || b.fechaReserva || 0).getTime() - new Date(a.fechaCreacion || a.fechaReserva || 0).getTime()
+      );
+
+      setReservas(combined);
+      return combined;
     } catch (err) {
       console.error('Error loading reservas:', err);
-      return null;
+      setError(err instanceof Error ? err.message : 'Error loading reservas');
+      return [];
+    } finally {
+      setLoading(false);
     }
   };
   
-  const confirmarReserva = (id: number, observaciones?: string) => 
-    execute(`/reservas/admin/${id}/confirmar`, {
+  const confirmarReserva = (id: string, observaciones?: string, tipo?: string) => {
+    const suffix = tipo === 'ALOJAMIENTO' ? 'confirmar-alojamiento' : 'confirmar-sendero';
+    return execute(`/reservas/admin/${id}/${suffix}`, {
       method: 'PUT',
       body: JSON.stringify({ observacionesAdmin: observaciones })
     });
+  };
 
-  const cancelarReserva = (id: number, observaciones?: string) => 
-    execute(`/reservas/admin/${id}/cancelar`, {
+  const cancelarReserva = (id: string, observaciones?: string, tipo?: string) => {
+    const suffix = tipo === 'ALOJAMIENTO' ? 'cancelar-alojamiento' : 'cancelar-sendero';
+    return execute(`/reservas/admin/${id}/${suffix}`, {
       method: 'PUT',
       body: JSON.stringify({ observacionesAdmin: observaciones })
     });
+  };
 
-  const completarReserva = (id: number) => 
-    execute(`/reservas/admin/${id}/completar`, {
+  const completarReserva = (id: string, tipo?: string) => {
+    const suffix = tipo === 'ALOJAMIENTO' ? 'confirmar-alojamiento' : 'confirmar-sendero';
+    return execute(`/reservas/admin/${id}/${suffix}`, {
       method: 'PUT'
     });
-
-  // Asegurar que data sea siempre un array válido
-  const reservas = data?.success ? (data.data || []) : [];
+  };
 
   return { 
     data: reservas, 

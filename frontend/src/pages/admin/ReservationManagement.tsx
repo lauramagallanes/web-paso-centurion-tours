@@ -70,7 +70,7 @@ const ReservationManagement: React.FC = () => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-UY', {
       style: 'currency',
-      currency: 'UYU',
+      currency: 'USD',
       minimumFractionDigits: 0
     }).format(price);
   };
@@ -429,7 +429,7 @@ const ReservationManagement: React.FC = () => {
                           <Dropdown.Toggle variant="outline-secondary" size="sm">
                             <Icon name="menu" size="sm" />
                           </Dropdown.Toggle>
-                          <Dropdown.Menu>
+                          <Dropdown.Menu renderOnMount popperConfig={{ strategy: 'fixed' }}>
                             <Dropdown.Item onClick={() => handleAction(reserva, 'view')}>
                               <Icon name="search" size="sm" className="me-2" />
                               Ver Detalles

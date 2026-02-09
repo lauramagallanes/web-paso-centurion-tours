@@ -36,6 +36,9 @@ public class AlojamientoReservaResponse {
     private Integer numeroHuespedes;
     private String observacionesEspeciales;
     
+    // Payment tracking
+    private Long placetoPayRequestId;
+    
     // Campos adicionales para gestión
     private String ubicacionAlojamiento;
     private BigDecimal precioPorNoche;

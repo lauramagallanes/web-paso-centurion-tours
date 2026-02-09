@@ -425,6 +425,7 @@ public class ReservaService {
                 .observacionesEspeciales(reserva.getObservacionesEspeciales())
                 .ubicacionAlojamiento(alojamiento != null ? alojamiento.getUbicacion() : null)
                 .precioPorNoche(alojamiento != null ? alojamiento.getPrecioPorNoche() : null)
+                .placetoPayRequestId(reserva.getPlacetoPayRequestId())
                 .build();
     }
 }

@@ -45,6 +45,61 @@ export const useDashboardStats = () => {
   return { data, loading, error, load };
 };
 
+// Normalize backend datetime (stored in UTC without 'Z') to proper UTC string
+const toUTCDatetime = (dt: string | null | undefined): string => {
+  if (!dt) return '';
+  // Backend stores LocalDateTime in UTC but serializes without 'Z'
+  // Append 'Z' so the browser parses it as UTC and converts to local
+  return dt.endsWith('Z') ? dt : dt + 'Z';
+};
+
+// Map sendero reservation from backend fields to frontend expected fields
+const mapSenderoReserva = (r: any) => ({
+  id: r.id,
+  codigo: r.codigoReserva,
+  tipoReserva: 'SENDERO' as const,
+  nombreCliente: r.nombreContacto || '',
+  emailCliente: r.emailContacto || '',
+  telefonoCliente: r.telefonoContacto,
+  cantidadPersonas: r.numeroPersonas || 0,
+  fechaReserva: r.fechaInicio || '',
+  fechaFin: r.fechaFin,
+  fechaCreacion: toUTCDatetime(r.fechaCreacion),
+  estado: r.estado || 'PENDIENTE',
+  precioTotal: r.precioTotal || 0,
+  observaciones: r.observaciones,
+  observacionesAdmin: r.observacionesAdmin,
+  informacionAdicional: r.informacionAdicional,
+  // Sendero reservations don't track PlacetoPay separately for now
+  estadoPago: r.estado === 'CONFIRMADA' ? 'COMPLETO' : (r.estado === 'CANCELADA' ? undefined : 'PENDIENTE'),
+  placetoPayRequestId: r.placetoPayRequestId,
+});
+
+// Map alojamiento reservation from backend fields to frontend expected fields
+const mapAlojamientoReserva = (r: any) => ({
+  id: r.id,
+  codigo: r.codigoReserva,
+  tipoReserva: 'ALOJAMIENTO' as const,
+  nombreCliente: r.nombreContacto || '',
+  emailCliente: r.emailContacto || '',
+  telefonoCliente: r.telefonoContacto,
+  cantidadPersonas: r.numeroHuespedes || 0,
+  fechaReserva: r.fechaCheckIn || '',
+  fechaFin: r.fechaCheckOut,
+  fechaCreacion: toUTCDatetime(r.fechaCreacion),
+  estado: r.estado || 'PENDIENTE',
+  precioTotal: r.precioTotal || 0,
+  observaciones: r.observaciones || r.observacionesEspeciales,
+  observacionesAdmin: r.observacionesAdmin,
+  habitacion: r.alojamientoNombre ? { id: r.alojamientoId, nombre: r.alojamientoNombre } : undefined,
+  numeroNoches: r.numeroNoches,
+  ubicacion: r.ubicacionAlojamiento,
+  precioPorNoche: r.precioPorNoche,
+  // Infer payment status from PlacetoPay and reservation state
+  estadoPago: r.placetoPayRequestId ? 'COMPLETO' : (r.estado === 'CONFIRMADA' ? 'COMPLETO' : 'PENDIENTE'),
+  placetoPayRequestId: r.placetoPayRequestId,
+});
+
 export const useReservasAdmin = () => {
   const [reservas, setReservas] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -62,15 +117,15 @@ export const useReservasAdmin = () => {
       ]);
 
       const senderos = senderosResult.status === 'fulfilled' && senderosResult.value?.success
-        ? (senderosResult.value.data || []).map((r: any) => ({ ...r, tipoReserva: 'SENDERO' }))
+        ? (senderosResult.value.data || []).map(mapSenderoReserva)
         : [];
 
       const alojamientos = alojamientosResult.status === 'fulfilled' && alojamientosResult.value?.success
-        ? (alojamientosResult.value.data || []).map((r: any) => ({ ...r, tipoReserva: 'ALOJAMIENTO' }))
+        ? (alojamientosResult.value.data || []).map(mapAlojamientoReserva)
         : [];
 
       const combined = [...senderos, ...alojamientos].sort(
-        (a, b) => new Date(b.fechaCreacion || b.fechaReserva || 0).getTime() - new Date(a.fechaCreacion || a.fechaReserva || 0).getTime()
+        (a, b) => new Date(b.fechaCreacion || 0).getTime() - new Date(a.fechaCreacion || 0).getTime()
       );
 
       setReservas(combined);

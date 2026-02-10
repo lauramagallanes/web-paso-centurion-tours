@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -56,29 +56,31 @@ const RoomDetails: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Restore booking state from sessionStorage (after login/signup redirect)
-  const savedBooking = (() => {
-    try {
-      const saved = sessionStorage.getItem(`booking_${id}`);
-      if (saved) {
-        sessionStorage.removeItem(`booking_${id}`);
-        return JSON.parse(saved);
-      }
-    } catch { /* ignore */ }
-    return null;
-  })();
-
   // Booking state
-  const [checkInDate, setCheckInDate] = useState<Date | null>(
-    savedBooking?.checkIn ? new Date(savedBooking.checkIn) : null
-  );
-  const [checkOutDate, setCheckOutDate] = useState<Date | null>(
-    savedBooking?.checkOut ? new Date(savedBooking.checkOut) : null
-  );
-  const [guestsCount, setGuestsCount] = useState(savedBooking?.guests || 2);
+  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
+  const [guestsCount, setGuestsCount] = useState(2);
   const [isFavorite, setIsFavorite] = useState(false);
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Ref to track if booking state was restored from sessionStorage
+  const restoredBookingRef = useRef(false);
+
+  // Restore booking state from sessionStorage (after login/signup redirect)
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(`booking_${id}`);
+      if (saved) {
+        const data = JSON.parse(saved);
+        sessionStorage.removeItem(`booking_${id}`);
+        if (data.checkIn) setCheckInDate(new Date(data.checkIn));
+        if (data.checkOut) setCheckOutDate(new Date(data.checkOut));
+        if (data.guests) setGuestsCount(data.guests);
+        restoredBookingRef.current = true;
+      }
+    } catch { /* ignore */ }
+  }, [id]);
   
   // Gallery modal state - REMOVED: Now using ImageGallery component
 
@@ -154,7 +156,10 @@ const RoomDetails: React.FC = () => {
           };
           
           setRoom(transformedRoom);
-          setGuestsCount(transformedRoom.capacidadMinima);
+          // Only set default guests if we didn't restore from sessionStorage
+          if (!restoredBookingRef.current) {
+            setGuestsCount(transformedRoom.capacidadMinima);
+          }
           
           // OPTIMIZACIÓN 2: Cargar habitaciones relacionadas después (no bloquea el render principal)
           // Se ejecuta en segundo plano sin await

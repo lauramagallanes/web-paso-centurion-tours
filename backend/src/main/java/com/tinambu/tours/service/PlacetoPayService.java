@@ -119,8 +119,21 @@ public class PlacetoPayService {
         // Calculate the amount to charge based on tipoPago
         BigDecimal montoACobrar;
         boolean esSena = "SENA".equalsIgnoreCase(tipoPago);
+        boolean esSaldo = "SALDO".equalsIgnoreCase(tipoPago);
 
-        if (esSena) {
+        if (esSaldo) {
+            // Pay remaining balance
+            BigDecimal saldo = reserva.getSaldoPendiente();
+            if (saldo == null || saldo.compareTo(BigDecimal.ZERO) <= 0) {
+                saldo = reserva.getPrecioTotal().subtract(
+                        reserva.getMontoPagado() != null ? reserva.getMontoPagado() : BigDecimal.ZERO);
+            }
+            if (saldo.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("No hay saldo pendiente para esta reserva");
+            }
+            montoACobrar = saldo;
+            reserva.setTipoPago("SALDO");
+        } else if (esSena) {
             montoACobrar = reserva.calcularMontoSena();
             reserva.setTipoPago("SENA");
         } else {
@@ -130,10 +143,11 @@ public class PlacetoPayService {
 
         log.info("Amount to charge: {} (total: {}, tipoPago: {})", montoACobrar, reserva.getPrecioTotal(), tipoPago);
 
+        String suffixDesc = esSena ? " (Reserva 30%)" : esSaldo ? " (Saldo pendiente)" : "";
         String description = String.format("Reserva Alojamiento: %s - %s%s",
                 reserva.getAlojamiento() != null ? reserva.getAlojamiento().getNombre() : "N/A",
                 reserva.getCodigoReserva(),
-                esSena ? " (Seña 30%)" : "");
+                suffixDesc);
 
         Map<String, Object> sessionRequest = buildSessionRequest(
                 reserva.getCodigoReserva(),
@@ -240,6 +254,13 @@ public class PlacetoPayService {
                 BigDecimal montoPagado;
                 if ("SENA".equals(reserva.getTipoPago())) {
                     montoPagado = reserva.calcularMontoSena();
+                } else if ("SALDO".equals(reserva.getTipoPago())) {
+                    BigDecimal saldo = reserva.getSaldoPendiente();
+                    if (saldo == null || saldo.compareTo(BigDecimal.ZERO) <= 0) {
+                        saldo = reserva.getPrecioTotal().subtract(
+                                reserva.getMontoPagado() != null ? reserva.getMontoPagado() : BigDecimal.ZERO);
+                    }
+                    montoPagado = saldo;
                 } else {
                     montoPagado = reserva.getPrecioTotal();
                 }

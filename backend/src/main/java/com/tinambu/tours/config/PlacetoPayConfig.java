@@ -23,7 +23,7 @@ public class PlacetoPayConfig {
     @Value("${placetopay.cancel-url:http://localhost:5173/pago/cancelado}")
     private String cancelUrl;
 
-    @Value("${placetopay.currency:USD}")
+    @Value("${placetopay.currency:UYU}")
     private String currency;
 
     @Bean(name = "placetoPayRestTemplate")

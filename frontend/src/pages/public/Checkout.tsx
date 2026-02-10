@@ -260,7 +260,7 @@ const Checkout: React.FC = () => {
 
               <div className="summary-total">
                 <span>Total:</span>
-                <span className="total-price">USD ${item.precio?.toFixed(2)}</span>
+                <span className="total-price">$${item.precio?.toFixed(2)} UYU</span>
               </div>
 
               {/* Payment type selector for accommodations */}
@@ -274,19 +274,19 @@ const Checkout: React.FC = () => {
                     <div>
                       <strong style={{ color: '#f8fafc' }}>Pago total</strong>
                       <span style={{ color: '#94a3b8', fontSize: '0.85rem', marginLeft: '0.5rem' }}>
-                        USD ${item.precio?.toFixed(2)}
+                        $${item.precio?.toFixed(2)} UYU
                       </span>
                     </div>
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem', borderRadius: '6px', border: tipoPago === 'SENA' ? '2px solid #f59e0b' : '2px solid transparent', background: tipoPago === 'SENA' ? 'rgba(245,158,11,0.1)' : 'transparent' }}>
                     <input type="radio" name="tipoPago" value="SENA" checked={tipoPago === 'SENA'} onChange={() => setTipoPago('SENA')} />
                     <div>
-                      <strong style={{ color: '#f8fafc' }}>Seña (30%)</strong>
+                      <strong style={{ color: '#f8fafc' }}>Reserva (30%)</strong>
                       <span style={{ color: '#94a3b8', fontSize: '0.85rem', marginLeft: '0.5rem' }}>
-                        USD ${(item.precio * 0.3).toFixed(2)}
+                        $${(item.precio * 0.3).toFixed(2)} UYU
                       </span>
                       <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0.25rem 0 0 0' }}>
-                        Saldo restante: USD ${(item.precio * 0.7).toFixed(2)} a pagar antes del check-in
+                        Saldo restante: $${(item.precio * 0.7).toFixed(2)} UYU a pagar antes del check-in
                       </p>
                     </div>
                   </label>
@@ -294,7 +294,7 @@ const Checkout: React.FC = () => {
                   <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: tipoPago === 'SENA' ? 'rgba(245,158,11,0.15)' : 'rgba(109,126,39,0.15)', borderRadius: '6px', textAlign: 'center' }}>
                     <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Monto a pagar ahora:</span>
                     <div style={{ fontSize: '1.3rem', fontWeight: 700, color: tipoPago === 'SENA' ? '#f59e0b' : '#6d7e27' }}>
-                      USD ${tipoPago === 'SENA' ? (item.precio * 0.3).toFixed(2) : item.precio?.toFixed(2)}
+                      $${tipoPago === 'SENA' ? (item.precio * 0.3).toFixed(2) : item.precio?.toFixed(2)} UYU
                     </div>
                   </div>
                 </div>

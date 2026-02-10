@@ -3,8 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '../../utils/routes';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import LoginForm from '../forms/LoginForm';
-import SignupForm from '../forms/SignupForm';
 import ThemeToggle from './ThemeToggle';
 import CartButton from './CartButton';
 import Logo from './Logo';
@@ -15,19 +13,9 @@ const MainNavbar: React.FC = () => {
   const { theme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showSignupModal, setShowSignupModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const navbarRef = useRef<HTMLDivElement>(null);
-
-  const handleLoginSuccess = () => {
-    setShowLoginModal(false);
-  };
-
-  const handleSignupSuccess = () => {
-    setShowSignupModal(false);
-  };
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -267,20 +255,20 @@ const MainNavbar: React.FC = () => {
                       className="dropdown-item"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setShowLoginModal(true);
                         closeDropdowns();
+                        navigate('/login');
                       }}
                       type="button"
                     >
                       <i className="bi bi-box-arrow-in-right"></i>
-                      Iniciar Sesión
+                      Iniciar Sesion
                     </button>
                     <button 
                       className="dropdown-item"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setShowSignupModal(true);
                         closeDropdowns();
+                        navigate('/login', { state: { tab: 'signup' } });
                       }}
                       type="button"
                     >
@@ -395,17 +383,17 @@ const MainNavbar: React.FC = () => {
                   <button 
                     className="btn btn-outline w-full mb-2"
                     onClick={() => {
-                      setShowLoginModal(true);
                       closeMobileMenu();
+                      navigate('/login');
                     }}
                   >
-                    Iniciar Sesión
+                    Iniciar Sesion
                   </button>
                   <button 
                     className="btn btn-primary w-full"
                     onClick={() => {
-                      setShowSignupModal(true);
                       closeMobileMenu();
+                      navigate('/login', { state: { tab: 'signup' } });
                     }}
                   >
                     Registrarse
@@ -426,47 +414,6 @@ const MainNavbar: React.FC = () => {
         )}
       </nav>
 
-      {/* Modal de Login */}
-      {showLoginModal && (
-        <div className="modal-overlay" onClick={() => setShowLoginModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">Iniciar Sesión</h2>
-              <button 
-                className="modal-close"
-                onClick={() => setShowLoginModal(false)}
-                aria-label="Cerrar modal"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="modal-body">
-              <LoginForm onSuccess={handleLoginSuccess} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Signup */}
-      {showSignupModal && (
-        <div className="modal-overlay" onClick={() => setShowSignupModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">Registrarse</h2>
-              <button 
-                className="modal-close"
-                onClick={() => setShowSignupModal(false)}
-                aria-label="Cerrar modal"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="modal-body">
-              <SignupForm onSuccess={handleSignupSuccess} />
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };

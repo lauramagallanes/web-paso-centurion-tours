@@ -173,7 +173,7 @@ const PaymentResult: React.FC = () => {
             {status.precioTotal > 0 && (
               <div className="detail-row">
                 <span>Total:</span>
-                <span>USD ${status.precioTotal?.toFixed(2)}</span>
+                <span>${status.precioTotal?.toFixed(2)} UYU</span>
               </div>
             )}
             <div className="detail-row">

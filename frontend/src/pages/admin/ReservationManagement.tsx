@@ -72,7 +72,7 @@ const ReservationManagement: React.FC = () => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-UY', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'UYU',
       minimumFractionDigits: 0
     }).format(price);
   };

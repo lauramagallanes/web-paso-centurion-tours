@@ -578,6 +578,11 @@
   text-align: center;
 }
 
+.mb-saldo {
+  color: #c47a15;
+  font-weight: 600;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .mb-page {

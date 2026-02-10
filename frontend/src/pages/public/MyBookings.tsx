@@ -30,7 +30,7 @@ const MyBookings: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [payingId, setPayingId] = useState<string | null>(null);
   const [paymentModal, setPaymentModal] = useState<BookingItem | null>(null);
-  const [selectedTipoPago, setSelectedTipoPago] = useState<'TOTAL' | 'SENA'>('TOTAL');
+  const [selectedTipoPago, setSelectedTipoPago] = useState<'TOTAL' | 'SENA' | 'SALDO'>('TOTAL');
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -63,7 +63,7 @@ const MyBookings: React.FC = () => {
               total: r.precioTotal || r.precio || 0,
               paid: r.montoPagado || 0,
               pending: r.saldoPendiente || 0,
-              currency: 'USD',
+              currency: 'UYU',
             });
           }
         }
@@ -85,7 +85,7 @@ const MyBookings: React.FC = () => {
               total: r.precioTotal || r.precio || 0,
               paid: r.montoPagado || 0,
               pending: r.saldoPendiente || 0,
-              currency: 'USD',
+              currency: 'UYU',
             });
           }
         }
@@ -128,7 +128,8 @@ const MyBookings: React.FC = () => {
     const map: Record<string, string> = {
       PENDIENTE: 'Sin pago',
       PAGADO: 'Pagado',
-      RESERVA_PAGA: 'Sena pagada',
+      COMPLETO: 'Pagado',
+      RESERVA_PAGA: 'Reserva pagada',
       PARCIAL: 'Pago parcial',
     };
     return map[ps] || ps;
@@ -151,11 +152,23 @@ const MyBookings: React.FC = () => {
 
   const canPay = (b: BookingItem) =>
     (b.status === 'PENDIENTE' || b.status === 'CONFIRMADA') &&
+    b.paymentStatus !== 'COMPLETO' && b.paymentStatus !== 'PAGADO' &&
     (b.paymentStatus === 'PENDIENTE' || b.paymentStatus === 'RESERVA_PAGA' || b.paymentStatus === 'PARCIAL');
 
+  const hasPendingSaldo = (b: BookingItem) =>
+    b.paymentStatus === 'PARCIAL' || b.paymentStatus === 'RESERVA_PAGA';
+
+  const getSaldo = (b: BookingItem) => {
+    if (b.pending > 0) return b.pending;
+    return b.total - b.paid;
+  };
+
   const handlePayClick = (booking: BookingItem) => {
-    if (booking.type === 'alojamiento') {
-      // Show modal to choose payment type
+    if (hasPendingSaldo(booking)) {
+      // Already has partial payment - pay saldo directly
+      processPayment(booking, 'SALDO');
+    } else if (booking.type === 'alojamiento') {
+      // Show modal to choose payment type (total vs 30% reserva)
       setPaymentModal(booking);
       setSelectedTipoPago('TOTAL');
     } else {
@@ -164,7 +177,7 @@ const MyBookings: React.FC = () => {
     }
   };
 
-  const processPayment = async (booking: BookingItem, tipoPago: 'TOTAL' | 'SENA') => {
+  const processPayment = async (booking: BookingItem, tipoPago: 'TOTAL' | 'SENA' | 'SALDO') => {
     setPayingId(booking.id);
     setPaymentModal(null);
     try {
@@ -304,6 +317,12 @@ const MyBookings: React.FC = () => {
                     <span className="mb-detail-label">Pago</span>
                     <span className="mb-detail-value">{getPaymentLabel(booking.paymentStatus)}</span>
                   </div>
+                  {hasPendingSaldo(booking) && (
+                    <div className="mb-detail">
+                      <span className="mb-detail-label">Saldo pendiente</span>
+                      <span className="mb-detail-value mb-saldo">${getSaldo(booking).toLocaleString()} {booking.currency}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Pay button for unpaid reservations */}
@@ -324,7 +343,7 @@ const MyBookings: React.FC = () => {
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
                           </svg>
-                          {booking.paymentStatus === 'RESERVA_PAGA' ? 'Pagar saldo' : 'Pagar ahora'}
+                          {hasPendingSaldo(booking) ? `Pagar saldo ($${getSaldo(booking).toLocaleString()} ${booking.currency})` : 'Pagar ahora'}
                         </>
                       )}
                     </button>
@@ -341,29 +360,29 @@ const MyBookings: React.FC = () => {
         <div className="mb-modal-overlay" onClick={() => setPaymentModal(null)}>
           <div className="mb-modal" onClick={e => e.stopPropagation()}>
             <h3 className="mb-modal-title">Seleccionar forma de pago</h3>
-            <p className="mb-modal-subtitle">{paymentModal.name} - Total: ${paymentModal.total.toLocaleString()} USD</p>
+            <p className="mb-modal-subtitle">{paymentModal.name} - Total: ${paymentModal.total.toLocaleString()} UYU</p>
 
             <div className="mb-modal-options">
               <label className={`mb-modal-option ${selectedTipoPago === 'TOTAL' ? 'selected' : ''}`}>
                 <input type="radio" name="tipoPago" checked={selectedTipoPago === 'TOTAL'} onChange={() => setSelectedTipoPago('TOTAL')} />
                 <div>
                   <strong>Pago total</strong>
-                  <span className="mb-modal-amount">${paymentModal.total.toLocaleString()} USD</span>
+                  <span className="mb-modal-amount">${paymentModal.total.toLocaleString()} UYU</span>
                 </div>
               </label>
               <label className={`mb-modal-option ${selectedTipoPago === 'SENA' ? 'selected' : ''}`}>
                 <input type="radio" name="tipoPago" checked={selectedTipoPago === 'SENA'} onChange={() => setSelectedTipoPago('SENA')} />
                 <div>
-                  <strong>Sena (30%)</strong>
-                  <span className="mb-modal-amount">${(paymentModal.total * 0.3).toLocaleString()} USD</span>
-                  <small>Saldo de ${(paymentModal.total * 0.7).toLocaleString()} USD antes del check-in</small>
+                  <strong>Reserva (30%)</strong>
+                  <span className="mb-modal-amount">${(paymentModal.total * 0.3).toLocaleString()} UYU</span>
+                  <small>Saldo de ${(paymentModal.total * 0.7).toLocaleString()} UYU antes del check-in</small>
                 </div>
               </label>
             </div>
 
             <div className="mb-modal-actions">
               <button className="mb-btn-pay" onClick={() => processPayment(paymentModal, selectedTipoPago)}>
-                Pagar ${selectedTipoPago === 'SENA' ? (paymentModal.total * 0.3).toLocaleString() : paymentModal.total.toLocaleString()} USD
+                Pagar ${selectedTipoPago === 'SENA' ? (paymentModal.total * 0.3).toLocaleString() : paymentModal.total.toLocaleString()} UYU
               </button>
               <button className="mb-btn-cancel" onClick={() => setPaymentModal(null)}>
                 Cancelar

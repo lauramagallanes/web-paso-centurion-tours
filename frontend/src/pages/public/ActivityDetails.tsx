@@ -54,6 +54,7 @@ const ActivityDetails: React.FC = () => {
   // Booking state
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [participantsCount, setParticipantsCount] = useState(1);
+  const [selectedTurno, setSelectedTurno] = useState<string>('MANANA');
   const [isFavorite, setIsFavorite] = useState(false);
   
 
@@ -234,16 +235,17 @@ const ActivityDetails: React.FC = () => {
     });
 
     // Navigate to checkout with sendero data
+    const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     navigate('/checkout', {
       state: {
         type: 'sendero',
         id: sendero.id,
         nombre: sendero.nombre,
         precio: totalPrice,
-        fechaInicio: selectedDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        fechaFin: selectedDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        fechaInicio: selectedDate || defaultDate,
+        fechaFin: selectedDate || defaultDate,
         personas: participantsCount,
-        turno: 'MANANA',
+        turno: selectedTurno,
       }
     });
   };
@@ -252,16 +254,17 @@ const ActivityDetails: React.FC = () => {
     if (!sendero) return;
 
     // Navigate to checkout with sendero data
+    const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     navigate('/checkout', {
       state: {
         type: 'sendero',
         id: sendero.id,
         nombre: sendero.nombre,
         precio: totalPrice,
-        fechaInicio: selectedDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        fechaFin: selectedDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        fechaInicio: selectedDate || defaultDate,
+        fechaFin: selectedDate || defaultDate,
         personas: participantsCount,
-        turno: 'MANANA', // Default, could be from a selector
+        turno: selectedTurno,
       }
     });
   };
@@ -445,9 +448,13 @@ const ActivityDetails: React.FC = () => {
               {/* Horario */}
               <div className="form-group">
                 <label className="form-label">Horario</label>
-                <select className="form-input">
-                  <option>Am</option>
-                  <option>Pm</option>
+                <select
+                  className="form-input"
+                  value={selectedTurno}
+                  onChange={(e) => setSelectedTurno(e.target.value)}
+                >
+                  <option value="MANANA">Am</option>
+                  <option value="TARDE">Pm</option>
                 </select>
               </div>
             </div>

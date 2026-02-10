@@ -75,22 +75,35 @@ public class ReservaService {
             );
         }
 
-        // Validate guide exists and is active
-        Guia guia = guiaRepository.findById(request.getGuiaId())
-                .orElseThrow(() -> new IllegalArgumentException("Guía no encontrado: " + request.getGuiaId()));
+        // Validate or auto-assign guide
+        Guia guia;
+        if (request.getGuiaId() != null) {
+            guia = guiaRepository.findById(request.getGuiaId())
+                    .orElseThrow(() -> new IllegalArgumentException("Guía no encontrado: " + request.getGuiaId()));
 
-        if (!guia.getActivo()) {
-            throw new IllegalArgumentException("El guía seleccionado no está disponible");
-        }
+            if (!guia.getActivo()) {
+                throw new IllegalArgumentException("El guía seleccionado no está disponible");
+            }
 
-        // Validate guide is not blocked for the requested date/shift
-        boolean guiaBloqueado = guiaBloqueoRepository.isGuiaBlocked(
-                guia.getId(), request.getFechaInicio(), request.getTurno());
+            // Validate guide is not blocked for the requested date/shift
+            boolean guiaBloqueado = guiaBloqueoRepository.isGuiaBlocked(
+                    guia.getId(), request.getFechaInicio(), request.getTurno());
 
-        if (guiaBloqueado) {
-            throw new IllegalArgumentException(
-                String.format("El guía %s no está disponible para la fecha %s turno %s",
-                    guia.getNombreCompleto(), request.getFechaInicio(), request.getTurno()));
+            if (guiaBloqueado) {
+                throw new IllegalArgumentException(
+                    String.format("El guía %s no está disponible para la fecha %s turno %s",
+                        guia.getNombreCompleto(), request.getFechaInicio(), request.getTurno()));
+            }
+        } else {
+            // Auto-assign an available guide
+            List<Guia> guiasActivos = guiaRepository.findByActivoTrue();
+            guia = guiasActivos.stream()
+                    .filter(g -> !guiaBloqueoRepository.isGuiaBlocked(
+                            g.getId(), request.getFechaInicio(), request.getTurno()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "No hay guías disponibles para la fecha " + request.getFechaInicio() + " turno " + request.getTurno()));
+            log.info("Auto-assigned guide: {} for date {} turno {}", guia.getNombreCompleto(), request.getFechaInicio(), request.getTurno());
         }
 
         // Create the sendero reservation

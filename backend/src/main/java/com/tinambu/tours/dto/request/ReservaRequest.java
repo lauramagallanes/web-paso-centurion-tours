@@ -65,10 +65,10 @@ public class ReservaRequest {
         return true;
     }
 
-    @AssertTrue(message = "Para reservas de sendero, sendero, guía y turno son obligatorios")
+    @AssertTrue(message = "Para reservas de sendero, sendero y turno son obligatorios")
     private boolean isSenderoValidoParaSendero() {
         if (tipoReserva == TipoReserva.SENDERO) {
-            return senderoId != null && guiaId != null && turno != null;
+            return senderoId != null && turno != null;
         }
         return true;
     }

@@ -98,7 +98,7 @@ const Checkout: React.FC = () => {
 
       if (item.type === 'sendero') {
         // Create sendero reservation
-        reservaResponse = await apiService.createSenderoReservation({
+        const senderoPayload: any = {
           tipoReserva: 'SENDERO',
           emailContacto: contactInfo.emailContacto,
           nombreContacto: contactInfo.nombreContacto,
@@ -107,10 +107,13 @@ const Checkout: React.FC = () => {
           fechaInicio: item.fechaInicio || '',
           fechaFin: item.fechaFin || item.fechaInicio || '',
           senderoId: item.id,
-          guiaId: item.guiaId || '',
           turno: item.turno || 'MANANA',
           observaciones: contactInfo.observaciones,
-        });
+        };
+        if (item.guiaId) {
+          senderoPayload.guiaId = item.guiaId;
+        }
+        reservaResponse = await apiService.createSenderoReservation(senderoPayload);
       } else {
         // Create alojamiento reservation
         reservaResponse = await apiService.createAlojamientoReservation({

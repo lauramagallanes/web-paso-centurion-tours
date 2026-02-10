@@ -207,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const data = await apiService.signup(email, password, nombreCompleto);
 
-      if (data.status === 'success') {
+      if (data.success) {
         // Después del registro exitoso, hacer login automático
         await login(email, password);
       } else {
@@ -216,10 +216,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           payload: data.error || 'Error al registrarse',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       dispatch({
         type: 'LOGIN_FAILURE',
-        payload: 'Error de conexión',
+        payload: error?.message || 'Error de conexión',
       });
     }
   };

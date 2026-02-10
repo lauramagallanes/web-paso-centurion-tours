@@ -105,8 +105,8 @@ public class PlacetoPayService {
                 .build();
     }
 
-    public SesionPagoResponse crearSesionPagoAlojamiento(UUID reservaId, String ipAddress, String userAgent) {
-        log.info("Creating PlacetoPay session for alojamiento reservation: {}", reservaId);
+    public SesionPagoResponse crearSesionPagoAlojamiento(UUID reservaId, String tipoPago, String ipAddress, String userAgent) {
+        log.info("Creating PlacetoPay session for alojamiento reservation: {} (tipoPago: {})", reservaId, tipoPago);
 
         if (!config.isConfigured()) {
             log.warn("PlacetoPay not configured, returning mock response");
@@ -116,14 +116,29 @@ public class PlacetoPayService {
         AlojamientoReserva reserva = alojamientoReservaRepository.findById(reservaId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva de alojamiento no encontrada: " + reservaId));
 
-        String description = String.format("Reserva Alojamiento: %s - %s",
+        // Calculate the amount to charge based on tipoPago
+        BigDecimal montoACobrar;
+        boolean esSena = "SENA".equalsIgnoreCase(tipoPago);
+
+        if (esSena) {
+            montoACobrar = reserva.calcularMontoSena();
+            reserva.setTipoPago("SENA");
+        } else {
+            montoACobrar = reserva.getPrecioTotal();
+            reserva.setTipoPago("TOTAL");
+        }
+
+        log.info("Amount to charge: {} (total: {}, tipoPago: {})", montoACobrar, reserva.getPrecioTotal(), tipoPago);
+
+        String description = String.format("Reserva Alojamiento: %s - %s%s",
                 reserva.getAlojamiento() != null ? reserva.getAlojamiento().getNombre() : "N/A",
-                reserva.getCodigoReserva());
+                reserva.getCodigoReserva(),
+                esSena ? " (Seña 30%)" : "");
 
         Map<String, Object> sessionRequest = buildSessionRequest(
                 reserva.getCodigoReserva(),
                 description,
-                reserva.getPrecioTotal(),
+                montoACobrar,
                 reserva.getEmailContacto(),
                 reserva.getNombreContacto(),
                 ipAddress,
@@ -221,13 +236,22 @@ public class PlacetoPayService {
 
             // Update reservation based on payment status
             if ("APPROVED".equals(p2pStatus)) {
+                // Determine how much was paid based on tipoPago
+                BigDecimal montoPagado;
+                if ("SENA".equals(reserva.getTipoPago())) {
+                    montoPagado = reserva.calcularMontoSena();
+                } else {
+                    montoPagado = reserva.getPrecioTotal();
+                }
+
                 reserva.setEstado(EstadoReserva.CONFIRMADA);
+                reserva.registrarPago(montoPagado, "PLACETOPAY");
                 reserva.setFechaActualizacion(LocalDateTime.now());
                 alojamientoReservaRepository.save(reserva);
 
                 return buildEstadoResponse(reservaId, reserva.getCodigoReserva(), "ALOJAMIENTO",
-                        reserva.getPrecioTotal(), reserva.getPrecioTotal(), BigDecimal.ZERO,
-                        "CONFIRMADA", "COMPLETO", p2pStatus, p2pMessage,
+                        reserva.getPrecioTotal(), reserva.getMontoPagado(), reserva.getSaldoPendiente(),
+                        "CONFIRMADA", reserva.getEstadoPago().name(), p2pStatus, p2pMessage,
                         reserva.getPlacetoPayRequestId());
             }
 

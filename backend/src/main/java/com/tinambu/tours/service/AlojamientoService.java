@@ -244,6 +244,11 @@ public class AlojamientoService {
         System.out.println("✅ Alojamiento bloqueado exitosamente: " + bloqueos.size() + " bloqueos creados");
     }
 
+    public List<LocalDate> obtenerFechasBloqueadas(UUID alojamientoId, LocalDate desde, LocalDate hasta) {
+        System.out.println("📅 Obteniendo fechas bloqueadas para alojamiento " + alojamientoId + " del " + desde + " al " + hasta);
+        return bloqueoRepository.findFechasBloqueadasEnRango(alojamientoId, desde, hasta);
+    }
+
     public void desbloquearAlojamientoDeReserva(UUID reservaId) {
         System.out.println("🔓 Desbloqueando alojamiento para reserva: " + reservaId);
         

@@ -185,4 +185,33 @@ public class ReservaController {
                     .body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @PutMapping("/admin/{id}/estado-alojamiento")
+    public ResponseEntity<?> actualizarEstadoAlojamiento(@PathVariable UUID id,
+                                                          @RequestBody Map<String, String> body) {
+        try {
+            String nuevoEstado = body.get("estado");
+            log.info("PUT /reservas/admin/{}/estado-alojamiento - nuevo estado: {}", id, nuevoEstado);
+            AlojamientoReservaResponse response = reservaService.actualizarEstadoAlojamiento(id, nuevoEstado);
+            return ResponseEntity.ok(ApiResponse.success(response, "Estado actualizado"));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/admin/{id}/estado-pago-alojamiento")
+    public ResponseEntity<?> actualizarEstadoPagoAlojamiento(@PathVariable UUID id,
+                                                              @RequestBody Map<String, Object> body) {
+        try {
+            String estadoPago = (String) body.get("estadoPago");
+            Number montoPagadoNum = (Number) body.get("montoPagado");
+            java.math.BigDecimal montoPagado = montoPagadoNum != null ?
+                    new java.math.BigDecimal(montoPagadoNum.toString()) : null;
+            log.info("PUT /reservas/admin/{}/estado-pago-alojamiento - estadoPago: {}, montoPagado: {}", id, estadoPago, montoPagado);
+            AlojamientoReservaResponse response = reservaService.actualizarEstadoPagoAlojamiento(id, estadoPago, montoPagado);
+            return ResponseEntity.ok(ApiResponse.success(response, "Estado de pago actualizado"));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

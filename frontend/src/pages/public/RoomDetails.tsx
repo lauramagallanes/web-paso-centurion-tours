@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
 import { fixArrayEncoding } from '../../utils/encodingFixer';
 import { useCart } from '../../contexts/CartContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ImageGridGallery from '../../components/common/ImageGridGallery';
+import LoginRequiredModal from '../../components/common/LoginRequiredModal';
 import './RoomDetails.css';
 
 interface RoomDetails {
@@ -45,6 +47,7 @@ const RoomDetails: React.FC = () => {
   const navigate = useNavigate();
   const { addItem } = useCart();
   const { theme } = useTheme();
+  const { state: authState } = useAuth();
 
   // State
   const [room, setRoom] = useState<RoomDetails | null>(null);
@@ -57,6 +60,8 @@ const RoomDetails: React.FC = () => {
   const [checkOutDate, setCheckOutDate] = useState<string>('');
   const [guestsCount, setGuestsCount] = useState(2);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   
   // Gallery modal state - REMOVED: Now using ImageGallery component
 
@@ -194,6 +199,29 @@ const RoomDetails: React.FC = () => {
     setIsFavorite(favorites.some((fav: any) => fav.id === id));
   }, [id]);
 
+  // Load blocked dates for the next 6 months
+  useEffect(() => {
+    const loadBlockedDates = async () => {
+      if (!id) return;
+      try {
+        const desde = new Date().toISOString().split('T')[0];
+        const hasta = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const result = await apiService.getFechasBloqueadas(id, desde, hasta);
+        if (Array.isArray(result)) {
+          setBlockedDates(result);
+        }
+      } catch (err) {
+        console.error('Error loading blocked dates:', err);
+      }
+    };
+    loadBlockedDates();
+  }, [id]);
+
+  // Check if a date is blocked
+  const isDateBlocked = useCallback((dateStr: string) => {
+    return blockedDates.includes(dateStr);
+  }, [blockedDates]);
+
   // Handlers
   const handleFavoriteToggle = () => {
     if (!room) return;
@@ -229,6 +257,12 @@ const RoomDetails: React.FC = () => {
   const handleAddToCart = () => {
     if (!room || !checkInDate || !checkOutDate) {
       alert('Por favor selecciona las fechas de entrada y salida');
+      return;
+    }
+
+    // Check authentication
+    if (!authState.isAuthenticated) {
+      setShowLoginModal(true);
       return;
     }
 
@@ -505,9 +539,25 @@ const RoomDetails: React.FC = () => {
                   type="date" 
                   className="form-input"
                   value={checkInDate}
-                  onChange={(e) => setCheckInDate(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (isDateBlocked(val)) {
+                      alert('Esta fecha no está disponible. Por favor selecciona otra fecha.');
+                      return;
+                    }
+                    setCheckInDate(val);
+                    // Reset checkout if it's before new checkin
+                    if (checkOutDate && val >= checkOutDate) {
+                      setCheckOutDate('');
+                    }
+                  }}
                   min={new Date().toISOString().split('T')[0]}
                 />
+                {blockedDates.length > 0 && (
+                  <small style={{ color: '#f59e0b', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+                    Algunas fechas no están disponibles
+                  </small>
+                )}
               </div>
 
               {/* Check-out Date */}
@@ -517,7 +567,22 @@ const RoomDetails: React.FC = () => {
                   type="date" 
                   className="form-input"
                   value={checkOutDate}
-                  onChange={(e) => setCheckOutDate(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // Check if any date in the range is blocked
+                    if (checkInDate) {
+                      const start = new Date(checkInDate);
+                      const end = new Date(val);
+                      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+                        const ds = d.toISOString().split('T')[0];
+                        if (isDateBlocked(ds)) {
+                          alert(`La fecha ${ds} no está disponible dentro del rango seleccionado.`);
+                          return;
+                        }
+                      }
+                    }
+                    setCheckOutDate(val);
+                  }}
                   min={checkInDate || new Date().toISOString().split('T')[0]}
                 />
               </div>
@@ -612,6 +677,13 @@ const RoomDetails: React.FC = () => {
 
         {/* Gallery Modal - Now handled by ImageGallery component */}
       </div>
+
+      {/* Login Required Modal */}
+      <LoginRequiredModal
+        show={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        returnPath={`/alojamientos/${id}`}
+      />
     </div>
   );
 };

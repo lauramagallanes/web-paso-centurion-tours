@@ -370,6 +370,25 @@ resource "aws_apigatewayv2_route" "alojamientos_verify_availability" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "alojamientos_blocked_dates" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /alojamientos/{id}/fechas-bloqueadas"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# Admin reservation state management routes
+resource "aws_apigatewayv2_route" "reservas_update_estado_alojamiento" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /reservas/admin/{id}/estado-alojamiento"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_update_estado_pago_alojamiento" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /reservas/admin/{id}/estado-pago-alojamiento"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "alojamientos_admin_list" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "GET /alojamientos/admin"

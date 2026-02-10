@@ -61,6 +61,20 @@ public class AlojamientoController {
         }
     }
 
+    @GetMapping("/{id}/fechas-bloqueadas")
+    public ResponseEntity<?> obtenerFechasBloqueadas(
+            @PathVariable UUID id,
+            @RequestParam LocalDate desde,
+            @RequestParam LocalDate hasta) {
+        try {
+            List<LocalDate> fechas = alojamientoService.obtenerFechasBloqueadas(id, desde, hasta);
+            return ResponseEntity.ok(fechas);
+        } catch (Exception e) {
+            System.err.println("Error obteniendo fechas bloqueadas: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // Admin Endpoints (secured in future with @PreAuthorize)
 
     @GetMapping("/admin")

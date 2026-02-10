@@ -18,6 +18,8 @@ public class CrearSesionPagoRequest {
     @NotNull(message = "El tipo de reserva es obligatorio")
     private String tipoReserva; // "SENDERO" or "ALOJAMIENTO"
 
+    private String tipoPago; // "TOTAL" or "SENA" (null defaults to TOTAL)
+
     private String ipAddress;
     private String userAgent;
 }

@@ -785,14 +785,24 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  // Get blocked dates for an accommodation in a date range
+  async getFechasBloqueadas(alojamientoId: string, desde: string, hasta: string) {
+    const response = await fetch(
+      `${this.baseURL}/alojamientos/${alojamientoId}/fechas-bloqueadas?desde=${desde}&hasta=${hasta}`,
+      { headers: this.getHeaders() }
+    );
+    return this.handleResponse(response);
+  }
+
   // Create a PlacetoPay payment session
-  async createPaymentSession(reservaId: string, tipoReserva: string) {
+  async createPaymentSession(reservaId: string, tipoReserva: string, tipoPago: string = 'TOTAL') {
     const response = await fetch(`${this.baseURL}/pagos/crear-sesion`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({
         reservaId,
         tipoReserva,
+        tipoPago,
         ipAddress: null, // Backend will detect from request
         userAgent: navigator.userAgent,
       }),

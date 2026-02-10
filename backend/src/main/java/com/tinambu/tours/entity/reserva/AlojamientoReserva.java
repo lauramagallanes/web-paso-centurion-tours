@@ -74,6 +74,26 @@ public class AlojamientoReserva {
     @Column(name = "placetopay_request_id")
     private Long placetoPayRequestId;
 
+    // Payment tracking fields
+    @Column(name = "monto_pagado", precision = 12, scale = 2)
+    private BigDecimal montoPagado = BigDecimal.ZERO;
+
+    @Column(name = "saldo_pendiente", precision = 12, scale = 2)
+    private BigDecimal saldoPendiente;
+
+    @Column(name = "estado_pago", length = 20)
+    @Enumerated(EnumType.STRING)
+    private EstadoPago estadoPago = EstadoPago.PENDIENTE;
+
+    @Column(name = "metodo_pago", length = 50)
+    private String metodoPago;
+
+    @Column(name = "tipo_pago", length = 20)
+    private String tipoPago; // TOTAL or SENA
+
+    @Column(name = "porcentaje_sena", precision = 5, scale = 2)
+    private BigDecimal porcentajeSena = BigDecimal.valueOf(30.00);
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "alojamiento_id", insertable = false, updatable = false)
     private Alojamiento alojamiento;
@@ -142,5 +162,45 @@ public class AlojamientoReserva {
     public boolean estaActiva() {
         LocalDate hoy = LocalDate.now();
         return !hoy.isBefore(fechaCheckIn) && hoy.isBefore(fechaCheckOut);
+    }
+
+    // Payment methods
+    public void registrarPago(BigDecimal monto, String metodo) {
+        if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Monto del pago debe ser mayor a cero");
+        }
+        this.montoPagado = (this.montoPagado == null) ? monto : this.montoPagado.add(monto);
+        this.metodoPago = metodo;
+        actualizarEstadoPago();
+    }
+
+    public void actualizarEstadoPago() {
+        if (montoPagado == null || precioTotal == null) {
+            this.estadoPago = EstadoPago.PENDIENTE;
+            return;
+        }
+        if (montoPagado.compareTo(BigDecimal.ZERO) == 0) {
+            this.estadoPago = EstadoPago.PENDIENTE;
+        } else if (montoPagado.compareTo(precioTotal) >= 0) {
+            this.estadoPago = EstadoPago.COMPLETO;
+        } else {
+            this.estadoPago = EstadoPago.PARCIAL;
+        }
+        this.saldoPendiente = precioTotal.subtract(montoPagado);
+    }
+
+    public BigDecimal calcularMontoSena() {
+        if (porcentajeSena == null || precioTotal == null) {
+            return BigDecimal.ZERO;
+        }
+        return precioTotal.multiply(porcentajeSena).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+    }
+
+    public boolean estaPagadaCompletamente() {
+        return estadoPago == EstadoPago.COMPLETO;
+    }
+
+    public boolean tienePagosPendientes() {
+        return estadoPago == EstadoPago.PENDIENTE || estadoPago == EstadoPago.PARCIAL;
     }
 }

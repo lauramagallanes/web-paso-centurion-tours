@@ -172,10 +172,11 @@ public class ReservaService {
                 "Ya existe una reserva para el alojamiento en las fechas seleccionadas");
         }
 
-        // Calculate price
+        // Calculate price: price per night * nights * guests
         int noches = request.calcularNumeroNoches();
         BigDecimal precio = alojamiento.getPrecioPorNoche()
-                .multiply(BigDecimal.valueOf(noches));
+                .multiply(BigDecimal.valueOf(noches))
+                .multiply(BigDecimal.valueOf(request.getNumeroHuespedes()));
 
         // Create reservation
         AlojamientoReserva reserva = AlojamientoReserva.builder()
@@ -190,6 +191,9 @@ public class ReservaService {
                 .numeroHuespedes(request.getNumeroHuespedes())
                 .observacionesEspeciales(request.getObservacionesEspeciales())
                 .precioTotal(precio)
+                .saldoPendiente(precio)
+                .montoPagado(BigDecimal.ZERO)
+                .estadoPago(EstadoPago.PENDIENTE)
                 .estado(EstadoReserva.PENDIENTE)
                 .fechaCreacion(LocalDateTime.now())
                 .build();
@@ -403,6 +407,57 @@ public class ReservaService {
         return response;
     }
 
+    // ==================== ADMIN UPDATE OPERATIONS ====================
+
+    public AlojamientoReservaResponse actualizarEstadoAlojamiento(UUID reservaId, String nuevoEstadoStr) {
+        log.info("Updating alojamiento reservation state: {} -> {}", reservaId, nuevoEstadoStr);
+
+        AlojamientoReserva reserva = alojamientoReservaRepository.findById(reservaId)
+                .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
+
+        EstadoReserva nuevoEstado = EstadoReserva.valueOf(nuevoEstadoStr.toUpperCase());
+
+        if (!reserva.getEstado().puedeTransicionarA(nuevoEstado)) {
+            throw new IllegalStateException(
+                    String.format("No se puede cambiar de %s a %s", reserva.getEstado(), nuevoEstado));
+        }
+
+        reserva.setEstado(nuevoEstado);
+        reserva.setFechaActualizacion(LocalDateTime.now());
+
+        // If cancelled, release accommodation blocks
+        if (nuevoEstado == EstadoReserva.CANCELADA) {
+            alojamientoService.desbloquearAlojamientoDeReserva(reservaId);
+        }
+
+        reserva = alojamientoReservaRepository.save(reserva);
+        Alojamiento alojamiento = alojamientoRepository.findById(reserva.getAlojamientoId()).orElse(null);
+        return convertirAlojamientoReservaAResponse(reserva, alojamiento);
+    }
+
+    public AlojamientoReservaResponse actualizarEstadoPagoAlojamiento(UUID reservaId, String estadoPagoStr, BigDecimal montoPagado) {
+        log.info("Updating alojamiento payment state: {} -> {} (monto: {})", reservaId, estadoPagoStr, montoPagado);
+
+        AlojamientoReserva reserva = alojamientoReservaRepository.findById(reservaId)
+                .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
+
+        EstadoPago nuevoEstadoPago = EstadoPago.fromString(estadoPagoStr);
+
+        if (montoPagado != null) {
+            reserva.setMontoPagado(montoPagado);
+            reserva.setSaldoPendiente(reserva.getPrecioTotal().subtract(montoPagado));
+        }
+
+        reserva.setEstadoPago(nuevoEstadoPago);
+        reserva.setFechaActualizacion(LocalDateTime.now());
+        reserva = alojamientoReservaRepository.save(reserva);
+
+        Alojamiento alojamiento = alojamientoRepository.findById(reserva.getAlojamientoId()).orElse(null);
+        return convertirAlojamientoReservaAResponse(reserva, alojamiento);
+    }
+
+    // ==================== CONVERSION METHODS ====================
+
     private AlojamientoReservaResponse convertirAlojamientoReservaAResponse(
             AlojamientoReserva reserva, Alojamiento alojamiento) {
         return AlojamientoReservaResponse.builder()
@@ -426,6 +481,12 @@ public class ReservaService {
                 .ubicacionAlojamiento(alojamiento != null ? alojamiento.getUbicacion() : null)
                 .precioPorNoche(alojamiento != null ? alojamiento.getPrecioPorNoche() : null)
                 .placetoPayRequestId(reserva.getPlacetoPayRequestId())
+                .montoPagado(reserva.getMontoPagado())
+                .saldoPendiente(reserva.getSaldoPendiente())
+                .estadoPago(reserva.getEstadoPago() != null ? reserva.getEstadoPago().name() : "PENDIENTE")
+                .metodoPago(reserva.getMetodoPago())
+                .tipoPago(reserva.getTipoPago())
+                .porcentajeSena(reserva.getPorcentajeSena())
                 .build();
     }
 }

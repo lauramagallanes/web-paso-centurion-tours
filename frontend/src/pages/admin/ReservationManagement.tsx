@@ -48,7 +48,9 @@ const ReservationManagement: React.FC = () => {
     error, 
     loadReservas,
     confirmarReserva,
-    cancelarReserva 
+    cancelarReserva,
+    actualizarEstado,
+    actualizarEstadoPago
   } = useReservasAdmin();
   
   const [selectedReserva, setSelectedReserva] = useState<Reserva | null>(null);
@@ -452,6 +454,29 @@ const ReservationManagement: React.FC = () => {
                                 </Dropdown.Item>
                               </>
                             )}
+                            {reserva.estado === 'CONFIRMADA' && (
+                              <>
+                                <Dropdown.Item 
+                                  onClick={async () => {
+                                    if (confirm('¿Marcar esta reserva como completada?')) {
+                                      await actualizarEstado(reserva.id, 'COMPLETADA', reserva.tipoReserva);
+                                      await loadReservas();
+                                    }
+                                  }}
+                                  className="text-info"
+                                >
+                                  <Icon name="check-circle" size="sm" className="me-2" />
+                                  Completar
+                                </Dropdown.Item>
+                                <Dropdown.Item 
+                                  onClick={() => handleAction(reserva, 'cancel')}
+                                  className="text-danger"
+                                >
+                                  <Icon name="close" size="sm" className="me-2" />
+                                  Cancelar
+                                </Dropdown.Item>
+                              </>
+                            )}
                           </Dropdown.Menu>
                         </Dropdown>
                       </td>
@@ -543,12 +568,18 @@ const ReservationManagement: React.FC = () => {
                     <div>
                       <strong>Estado Pago:</strong> {getEstadoPagoBadge(selectedReserva.estadoPago)}
                     </div>
+                    {selectedReserva.tipoPago && (
+                      <div>
+                        <strong>Tipo:</strong>{' '}
+                        <Badge bg={selectedReserva.tipoPago === 'SENA' ? 'warning' : 'primary'}>
+                          {selectedReserva.tipoPago === 'SENA' ? 'Seña (30%)' : 'Pago Total'}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                   <p><strong>Total:</strong> {formatPrice(selectedReserva.precioTotal)}</p>
-                  {selectedReserva.montoPagado != null && (
-                    <p><strong>Monto Pagado:</strong> {formatPrice(selectedReserva.montoPagado)}</p>
-                  )}
-                  {selectedReserva.saldoPendiente != null && selectedReserva.saldoPendiente > 0 && (
+                  <p><strong>Monto Pagado:</strong> {formatPrice(selectedReserva.montoPagado || 0)}</p>
+                  {(selectedReserva.saldoPendiente != null && selectedReserva.saldoPendiente > 0) && (
                     <p><strong>Saldo Pendiente:</strong> <span className="text-danger">{formatPrice(selectedReserva.saldoPendiente)}</span></p>
                   )}
                   {selectedReserva.metodoPago && (
@@ -556,6 +587,39 @@ const ReservationManagement: React.FC = () => {
                   )}
                   {selectedReserva.placetoPayRequestId && (
                     <p><strong>PlacetoPay ID:</strong> <code>{selectedReserva.placetoPayRequestId}</code></p>
+                  )}
+                  
+                  {/* Admin: Edit payment status */}
+                  {selectedReserva.tipoReserva === 'ALOJAMIENTO' && modalAction === 'view' && selectedReserva.estadoPago !== 'COMPLETO' && (
+                    <div className="mt-3 p-3 bg-light rounded">
+                      <strong>Actualizar estado de pago:</strong>
+                      <div className="d-flex gap-2 mt-2">
+                        <Button
+                          size="sm"
+                          variant="outline-warning"
+                          onClick={async () => {
+                            const sena = selectedReserva.precioTotal * 0.3;
+                            await actualizarEstadoPago(selectedReserva.id, 'PARCIAL', sena);
+                            await loadReservas();
+                            handleCloseModal();
+                          }}
+                          disabled={selectedReserva.estadoPago === 'PARCIAL'}
+                        >
+                          Seña Pagada
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline-success"
+                          onClick={async () => {
+                            await actualizarEstadoPago(selectedReserva.id, 'COMPLETO', selectedReserva.precioTotal);
+                            await loadReservas();
+                            handleCloseModal();
+                          }}
+                        >
+                          Pago Completo
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </Col>
               </Row>

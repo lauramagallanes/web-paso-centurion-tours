@@ -43,12 +43,14 @@ public class PagoController {
 
             SesionPagoResponse response;
 
+            String tipoPago = request.getTipoPago() != null ? request.getTipoPago() : "TOTAL";
+
             if ("SENDERO".equalsIgnoreCase(request.getTipoReserva())) {
                 response = placetoPayService.crearSesionPagoSendero(
                         request.getReservaId(), ipAddress, userAgent);
             } else if ("ALOJAMIENTO".equalsIgnoreCase(request.getTipoReserva())) {
                 response = placetoPayService.crearSesionPagoAlojamiento(
-                        request.getReservaId(), ipAddress, userAgent);
+                        request.getReservaId(), tipoPago, ipAddress, userAgent);
             } else {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error("Tipo de reserva no válido. Use SENDERO o ALOJAMIENTO"));

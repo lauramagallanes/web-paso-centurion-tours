@@ -95,8 +95,13 @@ const mapAlojamientoReserva = (r: any) => ({
   numeroNoches: r.numeroNoches,
   ubicacion: r.ubicacionAlojamiento,
   precioPorNoche: r.precioPorNoche,
-  // Infer payment status from PlacetoPay and reservation state
-  estadoPago: r.placetoPayRequestId ? 'COMPLETO' : (r.estado === 'CONFIRMADA' ? 'COMPLETO' : 'PENDIENTE'),
+  // Payment fields from backend
+  estadoPago: r.estadoPago || 'PENDIENTE',
+  montoPagado: r.montoPagado || 0,
+  saldoPendiente: r.saldoPendiente || 0,
+  metodoPago: r.metodoPago,
+  tipoPago: r.tipoPago,
+  porcentajeSena: r.porcentajeSena,
   placetoPayRequestId: r.placetoPayRequestId,
 });
 
@@ -162,6 +167,26 @@ export const useReservasAdmin = () => {
     });
   };
 
+  const actualizarEstado = (id: string, nuevoEstado: string, tipo?: string) => {
+    if (tipo === 'ALOJAMIENTO') {
+      return execute(`/reservas/admin/${id}/estado-alojamiento`, {
+        method: 'PUT',
+        body: JSON.stringify({ estado: nuevoEstado })
+      });
+    }
+    // For sendero, use confirm/cancel endpoints
+    if (nuevoEstado === 'CONFIRMADA') return confirmarReserva(id, undefined, tipo);
+    if (nuevoEstado === 'CANCELADA') return cancelarReserva(id, undefined, tipo);
+    return Promise.resolve(null);
+  };
+
+  const actualizarEstadoPago = (id: string, estadoPago: string, montoPagado?: number) => {
+    return execute(`/reservas/admin/${id}/estado-pago-alojamiento`, {
+      method: 'PUT',
+      body: JSON.stringify({ estadoPago, montoPagado })
+    });
+  };
+
   return { 
     data: reservas, 
     loading, 
@@ -169,7 +194,9 @@ export const useReservasAdmin = () => {
     loadReservas,
     confirmarReserva,
     cancelarReserva,
-    completarReserva
+    completarReserva,
+    actualizarEstado,
+    actualizarEstadoPago
   };
 };
 

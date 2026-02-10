@@ -38,6 +38,12 @@ public class AlojamientoReservaResponse {
     
     // Payment tracking
     private Long placetoPayRequestId;
+    private BigDecimal montoPagado;
+    private BigDecimal saldoPendiente;
+    private String estadoPago;
+    private String metodoPago;
+    private String tipoPago;
+    private BigDecimal porcentajeSena;
     
     // Campos adicionales para gestión
     private String ubicacionAlojamiento;

@@ -75,12 +75,14 @@ public class AlojamientoReserva {
     private Long placetoPayRequestId;
 
     // Payment tracking fields
+    @Builder.Default
     @Column(name = "monto_pagado", precision = 12, scale = 2)
     private BigDecimal montoPagado = BigDecimal.ZERO;
 
     @Column(name = "saldo_pendiente", precision = 12, scale = 2)
     private BigDecimal saldoPendiente;
 
+    @Builder.Default
     @Column(name = "estado_pago", length = 20)
     @Enumerated(EnumType.STRING)
     private EstadoPago estadoPago = EstadoPago.PENDIENTE;
@@ -91,6 +93,7 @@ public class AlojamientoReserva {
     @Column(name = "tipo_pago", length = 20)
     private String tipoPago; // TOTAL or SENA
 
+    @Builder.Default
     @Column(name = "porcentaje_sena", precision = 5, scale = 2)
     private BigDecimal porcentajeSena = BigDecimal.valueOf(30.00);
 
@@ -190,10 +193,11 @@ public class AlojamientoReserva {
     }
 
     public BigDecimal calcularMontoSena() {
-        if (porcentajeSena == null || precioTotal == null) {
+        if (precioTotal == null) {
             return BigDecimal.ZERO;
         }
-        return precioTotal.multiply(porcentajeSena).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal pct = porcentajeSena != null ? porcentajeSena : BigDecimal.valueOf(30.00);
+        return precioTotal.multiply(pct).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
     }
 
     public boolean estaPagadaCompletamente() {

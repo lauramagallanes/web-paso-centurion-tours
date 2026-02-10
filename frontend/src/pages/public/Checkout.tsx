@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
+import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useCart } from '../../contexts/CartContext';
 import './Checkout.css';
@@ -33,11 +34,12 @@ const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { state: cartState, clearCart } = useCart();
+  const { state: authState } = useAuth();
 
   const [item, setItem] = useState<CheckoutItem | null>(null);
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
-    nombreContacto: '',
-    emailContacto: '',
+    nombreContacto: authState.user?.nombreCompleto || '',
+    emailContacto: authState.user?.email || '',
     telefonoContacto: '',
     observaciones: '',
   });
@@ -340,9 +342,11 @@ const Checkout: React.FC = () => {
                     type="email"
                     id="email"
                     value={contactInfo.emailContacto}
+                    readOnly={!!authState.user?.email}
                     onChange={(e) => handleContactChange('emailContacto', e.target.value)}
                     placeholder="tu@email.com"
                     required
+                    style={authState.user?.email ? { opacity: 0.7, cursor: 'not-allowed' } : {}}
                   />
                 </div>
 

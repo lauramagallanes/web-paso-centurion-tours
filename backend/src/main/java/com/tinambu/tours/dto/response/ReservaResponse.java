@@ -32,6 +32,13 @@ public class ReservaResponse {
     // Información específica del tipo de reserva (usando Strategy pattern)
     private String informacionAdicional;
 
+    // Sendero-specific fields
+    private String nombreSendero;
+    private String estadoPago;
+    private BigDecimal montoPagado;
+    private BigDecimal saldoPendiente;
+    private String turno;
+
     // Constructors
     public ReservaResponse() {}
 
@@ -80,4 +87,19 @@ public class ReservaResponse {
 
     public String getInformacionAdicional() { return informacionAdicional; }
     public void setInformacionAdicional(String informacionAdicional) { this.informacionAdicional = informacionAdicional; }
+
+    public String getNombreSendero() { return nombreSendero; }
+    public void setNombreSendero(String nombreSendero) { this.nombreSendero = nombreSendero; }
+
+    public String getEstadoPago() { return estadoPago; }
+    public void setEstadoPago(String estadoPago) { this.estadoPago = estadoPago; }
+
+    public BigDecimal getMontoPagado() { return montoPagado; }
+    public void setMontoPagado(BigDecimal montoPagado) { this.montoPagado = montoPagado; }
+
+    public BigDecimal getSaldoPendiente() { return saldoPendiente; }
+    public void setSaldoPendiente(BigDecimal saldoPendiente) { this.saldoPendiente = saldoPendiente; }
+
+    public String getTurno() { return turno; }
+    public void setTurno(String turno) { this.turno = turno; }
 }

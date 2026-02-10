@@ -410,10 +410,16 @@ public class ReservaService {
         response.setFechaCreacion(reserva.getFechaCreacion());
         response.setFechaActualizacion(reserva.getFechaActualizacion());
 
-        // Additional info
-        String info = String.format("Sendero: %s | Guía: %s | Turno: %s",
+        // Sendero-specific fields
+        response.setNombreSendero(reserva.getSendero() != null ? reserva.getSendero().getNombre() : "Sendero");
+        response.setTurno(reserva.getTurno() != null ? reserva.getTurno().name() : null);
+        response.setEstadoPago(reserva.getEstadoPago() != null ? reserva.getEstadoPago().name() : "PENDIENTE");
+        response.setMontoPagado(reserva.getMontoPagado());
+        response.setSaldoPendiente(reserva.getSaldoPendiente());
+
+        // Additional info (guide info is internal only, not exposed to users)
+        String info = String.format("Sendero: %s | Turno: %s",
                 reserva.getSendero() != null ? reserva.getSendero().getNombre() : "N/A",
-                reserva.getGuia() != null ? reserva.getGuia().getNombreCompleto() : "N/A",
                 reserva.getTurno() != null ? reserva.getTurno().name() : "N/A");
         response.setInformacionAdicional(info);
 

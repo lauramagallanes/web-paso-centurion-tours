@@ -28,6 +28,9 @@ const MyBookings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [payingId, setPayingId] = useState<string | null>(null);
+  const [paymentModal, setPaymentModal] = useState<BookingItem | null>(null);
+  const [selectedTipoPago, setSelectedTipoPago] = useState<'TOTAL' | 'SENA'>('TOTAL');
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -145,6 +148,40 @@ const MyBookings: React.FC = () => {
     if (filterStatus === 'all') return true;
     return b.status === filterStatus;
   });
+
+  const canPay = (b: BookingItem) =>
+    (b.status === 'PENDIENTE' || b.status === 'CONFIRMADA') &&
+    (b.paymentStatus === 'PENDIENTE' || b.paymentStatus === 'RESERVA_PAGA' || b.paymentStatus === 'PARCIAL');
+
+  const handlePayClick = (booking: BookingItem) => {
+    if (booking.type === 'alojamiento') {
+      // Show modal to choose payment type
+      setPaymentModal(booking);
+      setSelectedTipoPago('TOTAL');
+    } else {
+      // Sendero: pay directly
+      processPayment(booking, 'TOTAL');
+    }
+  };
+
+  const processPayment = async (booking: BookingItem, tipoPago: 'TOTAL' | 'SENA') => {
+    setPayingId(booking.id);
+    setPaymentModal(null);
+    try {
+      const tipoReserva = booking.type === 'sendero' ? 'SENDERO' : 'ALOJAMIENTO';
+      const response: any = await apiService.createPaymentSession(booking.id, tipoReserva, tipoPago);
+      const data = response?.data || response;
+      if (data?.processUrl) {
+        window.location.href = data.processUrl;
+      } else {
+        setError(data?.message || 'Error al crear sesion de pago');
+        setPayingId(null);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Error al procesar el pago');
+      setPayingId(null);
+    }
+  };
 
   // Not authenticated
   if (!state.isAuthenticated) {
@@ -268,11 +305,73 @@ const MyBookings: React.FC = () => {
                     <span className="mb-detail-value">{getPaymentLabel(booking.paymentStatus)}</span>
                   </div>
                 </div>
+
+                {/* Pay button for unpaid reservations */}
+                {canPay(booking) && (
+                  <div className="mb-card-actions">
+                    <button
+                      className="mb-btn-pay"
+                      onClick={() => handlePayClick(booking)}
+                      disabled={payingId === booking.id}
+                    >
+                      {payingId === booking.id ? (
+                        <>
+                          <div className="mb-btn-spinner" />
+                          Procesando...
+                        </>
+                      ) : (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+                          </svg>
+                          {booking.paymentStatus === 'RESERVA_PAGA' ? 'Pagar saldo' : 'Pagar ahora'}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Payment type modal for alojamiento */}
+      {paymentModal && (
+        <div className="mb-modal-overlay" onClick={() => setPaymentModal(null)}>
+          <div className="mb-modal" onClick={e => e.stopPropagation()}>
+            <h3 className="mb-modal-title">Seleccionar forma de pago</h3>
+            <p className="mb-modal-subtitle">{paymentModal.name} - Total: ${paymentModal.total.toLocaleString()} USD</p>
+
+            <div className="mb-modal-options">
+              <label className={`mb-modal-option ${selectedTipoPago === 'TOTAL' ? 'selected' : ''}`}>
+                <input type="radio" name="tipoPago" checked={selectedTipoPago === 'TOTAL'} onChange={() => setSelectedTipoPago('TOTAL')} />
+                <div>
+                  <strong>Pago total</strong>
+                  <span className="mb-modal-amount">${paymentModal.total.toLocaleString()} USD</span>
+                </div>
+              </label>
+              <label className={`mb-modal-option ${selectedTipoPago === 'SENA' ? 'selected' : ''}`}>
+                <input type="radio" name="tipoPago" checked={selectedTipoPago === 'SENA'} onChange={() => setSelectedTipoPago('SENA')} />
+                <div>
+                  <strong>Sena (30%)</strong>
+                  <span className="mb-modal-amount">${(paymentModal.total * 0.3).toLocaleString()} USD</span>
+                  <small>Saldo de ${(paymentModal.total * 0.7).toLocaleString()} USD antes del check-in</small>
+                </div>
+              </label>
+            </div>
+
+            <div className="mb-modal-actions">
+              <button className="mb-btn-pay" onClick={() => processPayment(paymentModal, selectedTipoPago)}>
+                Pagar ${selectedTipoPago === 'SENA' ? (paymentModal.total * 0.3).toLocaleString() : paymentModal.total.toLocaleString()} USD
+              </button>
+              <button className="mb-btn-cancel" onClick={() => setPaymentModal(null)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

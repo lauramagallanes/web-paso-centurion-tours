@@ -711,6 +711,22 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async getReservasSenderoPorEmail(email: string) {
+    const response = await fetch(`${this.baseURL}/reservas/sendero/email/${encodeURIComponent(email)}`, {
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  async getReservasAlojamientoPorEmail(email: string) {
+    const response = await fetch(`${this.baseURL}/reservas/alojamiento/email/${encodeURIComponent(email)}`, {
+      headers: this.getHeaders(true),
+    });
+
+    return this.handleResponse(response);
+  }
+
   // ========== MÉTODOS DE ADMINISTRACIÓN ==========
 
   async getReservasAdmin() {

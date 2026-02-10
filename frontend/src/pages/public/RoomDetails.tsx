@@ -56,10 +56,26 @@ const RoomDetails: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Restore booking state from sessionStorage (after login/signup redirect)
+  const savedBooking = (() => {
+    try {
+      const saved = sessionStorage.getItem(`booking_${id}`);
+      if (saved) {
+        sessionStorage.removeItem(`booking_${id}`);
+        return JSON.parse(saved);
+      }
+    } catch { /* ignore */ }
+    return null;
+  })();
+
   // Booking state
-  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
-  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
-  const [guestsCount, setGuestsCount] = useState(2);
+  const [checkInDate, setCheckInDate] = useState<Date | null>(
+    savedBooking?.checkIn ? new Date(savedBooking.checkIn) : null
+  );
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(
+    savedBooking?.checkOut ? new Date(savedBooking.checkOut) : null
+  );
+  const [guestsCount, setGuestsCount] = useState(savedBooking?.guests || 2);
   const [isFavorite, setIsFavorite] = useState(false);
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -261,8 +277,13 @@ const RoomDetails: React.FC = () => {
       return;
     }
 
-    // Check authentication
+    // Check authentication - save booking state before redirecting to login
     if (!authState.isAuthenticated) {
+      sessionStorage.setItem(`booking_${id}`, JSON.stringify({
+        checkIn: checkInDate?.toISOString(),
+        checkOut: checkOutDate?.toISOString(),
+        guests: guestsCount,
+      }));
       setShowLoginModal(true);
       return;
     }

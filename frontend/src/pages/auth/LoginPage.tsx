@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoginForm from '../../components/forms/LoginForm';
 import SignupForm from '../../components/forms/SignupForm';
@@ -14,14 +14,19 @@ import './LoginPage.css';
 const LoginPage: React.FC = () => {
   const { state } = useAuth();
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const location = useLocation();
+  const locationState = location.state as { tab?: string; returnTo?: string } | null;
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>(
+    locationState?.tab === 'signup' ? 'signup' : 'login'
+  );
 
-  // Si ya está autenticado, redirigir según el tipo de usuario
+  // Si ya está autenticado, redirigir según el tipo de usuario o returnTo
   if (state.isAuthenticated) {
     if (state.user?.tipo === 'ADMIN') {
       return <Navigate to="/admin" replace />;
     } else {
-      return <Navigate to="/" replace />;
+      const returnTo = locationState?.returnTo || '/';
+      return <Navigate to={returnTo} replace />;
     }
   }
 

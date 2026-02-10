@@ -31,6 +31,7 @@
     "lucide-react": "^0.544.0",
     "react": "^18.3.1",
     "react-bootstrap": "^2.10.6",
+    "react-datepicker": "^9.1.0",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0"
   },
@@ -43,6 +44,7 @@
     "@types/jest": "^29.5.0",
     "@types/node": "^24.1.0",
     "@types/react": "^18.3.10",
+    "@types/react-datepicker": "^7.0.0",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",

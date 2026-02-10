@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { apiService } from '../../services/apiService';
-import { fixArrayEncoding } from '../../utils/encodingFixer';
 import { useCart } from '../../contexts/CartContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -56,11 +57,11 @@ const RoomDetails: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Booking state
-  const [checkInDate, setCheckInDate] = useState<string>('');
-  const [checkOutDate, setCheckOutDate] = useState<string>('');
+  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [guestsCount, setGuestsCount] = useState(2);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [blockedDates, setBlockedDates] = useState<string[]>([]);
+  const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   
   // Gallery modal state - REMOVED: Now using ImageGallery component
@@ -208,7 +209,12 @@ const RoomDetails: React.FC = () => {
         const hasta = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         const result = await apiService.getFechasBloqueadas(id, desde, hasta);
         if (Array.isArray(result)) {
-          setBlockedDates(result);
+          // Convert date strings (YYYY-MM-DD) to Date objects for react-datepicker
+          const dates = result.map((dateStr: string) => {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(year, month - 1, day);
+          });
+          setBlockedDates(dates);
         }
       } catch (err) {
         console.error('Error loading blocked dates:', err);
@@ -216,11 +222,6 @@ const RoomDetails: React.FC = () => {
     };
     loadBlockedDates();
   }, [id]);
-
-  // Check if a date is blocked
-  const isDateBlocked = useCallback((dateStr: string) => {
-    return blockedDates.includes(dateStr);
-  }, [blockedDates]);
 
   // Handlers
   const handleFavoriteToggle = () => {
@@ -266,14 +267,14 @@ const RoomDetails: React.FC = () => {
       return;
     }
 
-    const checkIn = new Date(checkInDate);
-    const checkOut = new Date(checkOutDate);
-    const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
 
     if (nights <= 0) {
       alert('La fecha de salida debe ser posterior a la fecha de entrada');
       return;
     }
+
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
 
     addItem({
       id: room.id,
@@ -281,10 +282,10 @@ const RoomDetails: React.FC = () => {
       name: room.nombre,
       description: room.descripcion,
       image: room.imagenes[0]?.url || '/placeholder-sendero.svg',
-      price: room.precioPorNoche * guestsCount * nights, // Total price: per person per night * guests * nights
+      price: room.precioPorNoche * guestsCount * nights,
       currency: 'UYU',
-      checkIn: checkIn,
-      checkOut: checkOut,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
       guests: guestsCount
     });
 
@@ -295,10 +296,10 @@ const RoomDetails: React.FC = () => {
         id: room.id,
         nombre: room.nombre,
         precio: room.precioPorNoche * guestsCount * nights,
-        checkIn: checkIn.toISOString().split('T')[0],
-        checkOut: checkOut.toISOString().split('T')[0],
-        fechaInicio: checkIn.toISOString().split('T')[0],
-        fechaFin: checkOut.toISOString().split('T')[0],
+        checkIn: formatDate(checkInDate),
+        checkOut: formatDate(checkOutDate),
+        fechaInicio: formatDate(checkInDate),
+        fechaFin: formatDate(checkOutDate),
         huespedes: guestsCount,
         noches: nights,
       }
@@ -317,7 +318,7 @@ const RoomDetails: React.FC = () => {
 
   // Calculate nights and total price
   const nights = checkInDate && checkOutDate 
-    ? Math.max(1, Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(1, Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)))
     : 1;
   // Price is per person per night, so multiply by guests and nights
   const totalPrice = room ? room.precioPorNoche * guestsCount * nights : 0;
@@ -535,55 +536,36 @@ const RoomDetails: React.FC = () => {
               {/* Check-in Date */}
               <div className="form-group">
                 <label className="form-label">Entrada</label>
-                <input 
-                  type="date" 
-                  className="form-input"
-                  value={checkInDate}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (isDateBlocked(val)) {
-                      alert('Esta fecha no está disponible. Por favor selecciona otra fecha.');
-                      return;
-                    }
-                    setCheckInDate(val);
+                <DatePicker
+                  selected={checkInDate}
+                  onChange={(date: Date | null) => {
+                    setCheckInDate(date);
                     // Reset checkout if it's before new checkin
-                    if (checkOutDate && val >= checkOutDate) {
-                      setCheckOutDate('');
+                    if (checkOutDate && date && date >= checkOutDate) {
+                      setCheckOutDate(null);
                     }
                   }}
-                  min={new Date().toISOString().split('T')[0]}
+                  excludeDates={blockedDates}
+                  minDate={new Date()}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Seleccionar fecha"
+                  className="form-input"
+                  calendarClassName="room-datepicker"
                 />
-                {blockedDates.length > 0 && (
-                  <small style={{ color: '#f59e0b', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
-                    Algunas fechas no están disponibles
-                  </small>
-                )}
               </div>
 
               {/* Check-out Date */}
               <div className="form-group">
                 <label className="form-label">Salida</label>
-                <input 
-                  type="date" 
+                <DatePicker
+                  selected={checkOutDate}
+                  onChange={(date: Date | null) => setCheckOutDate(date)}
+                  excludeDates={blockedDates}
+                  minDate={checkInDate || new Date()}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Seleccionar fecha"
                   className="form-input"
-                  value={checkOutDate}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    // Check if any date in the range is blocked
-                    if (checkInDate) {
-                      const start = new Date(checkInDate);
-                      const end = new Date(val);
-                      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-                        const ds = d.toISOString().split('T')[0];
-                        if (isDateBlocked(ds)) {
-                          alert(`La fecha ${ds} no está disponible dentro del rango seleccionado.`);
-                          return;
-                        }
-                      }
-                    }
-                    setCheckOutDate(val);
-                  }}
-                  min={checkInDate || new Date().toISOString().split('T')[0]}
+                  calendarClassName="room-datepicker"
                 />
               </div>
 

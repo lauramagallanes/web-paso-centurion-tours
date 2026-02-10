@@ -19,7 +19,7 @@ const LoginRequiredModal: React.FC<LoginRequiredModalProps> = ({ show, onClose, 
 
   const handleSignup = () => {
     onClose();
-    navigate('/register', { state: { returnTo: returnPath || window.location.hash.replace('#', '') } });
+    navigate('/login', { state: { returnTo: returnPath || window.location.hash.replace('#', ''), tab: 'signup' } });
   };
 
   return (

@@ -1,8 +1,11 @@
 import React from 'react';
-import BookingForm from '../../components/forms/BookingForm';
+import { useNavigate } from 'react-router-dom';
+import { routes } from '../../utils/routes';
 import './Book.css';
 
 const Book: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="book-page">
       {/* Hero */}
@@ -16,16 +19,63 @@ const Book: React.FC = () => {
             </div>
             <h1 className="book-hero-title">Realizar Reserva</h1>
             <p className="book-hero-subtitle">
-              Completa el formulario para reservar tu experiencia en Tinambú · Paso Centurión
+              Elegí tu experiencia en Tinambú · Paso Centurión y reservá con pago seguro
             </p>
           </div>
         </div>
       </section>
 
-      {/* Form */}
+      {/* Selector */}
       <section className="book-form-section">
         <div className="container">
-          <BookingForm />
+          <div className="booking-type-selection">
+            <h2 className="booking-type-title">¿Qué tipo de reserva querés hacer?</h2>
+            <p className="booking-type-subtitle">
+              Elegí una opción para explorar la disponibilidad y reservar
+            </p>
+
+            <div className="booking-type-cards">
+              {/* Alojamiento */}
+              <div
+                className="booking-type-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate(routes.alojamientos)}
+                onKeyDown={e => e.key === 'Enter' && navigate(routes.alojamientos)}
+              >
+                <div className="booking-type-card-icon">
+                  <i className="bi bi-house-door-fill" />
+                </div>
+                <h3 className="booking-type-card-title">Alojamiento</h3>
+                <p className="booking-type-card-desc">
+                  Explorá nuestras habitaciones y cabañas, elegí la que más te guste y reservá tu estadía
+                </p>
+                <span className="booking-type-card-cta">
+                  Ver alojamientos <i className="bi bi-arrow-right" />
+                </span>
+              </div>
+
+              {/* Sendero */}
+              <div
+                className="booking-type-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate(routes.activities)}
+                onKeyDown={e => e.key === 'Enter' && navigate(routes.activities)}
+              >
+                <div className="booking-type-card-icon">
+                  <i className="bi bi-signpost-2-fill" />
+                </div>
+                <h3 className="booking-type-card-title">Sendero</h3>
+                <p className="booking-type-card-desc">
+                  Conocé nuestros senderos guiados, elegí tu excursión y reservá tu lugar
+                </p>
+                <span className="booking-type-card-cta">
+                  Ver senderos <i className="bi bi-arrow-right" />
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </div>

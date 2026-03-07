@@ -1,5 +1,16 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 
+const generateId = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback for non-secure contexts (HTTP)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+};
+
 // Types
 export interface CartItem {
   cartItemId: string;   // unique UUID per cart entry (NOT product ID)
@@ -55,7 +66,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       // on different dates are separate items, not quantity increments.
       const newItem: CartItem = {
         ...action.payload,
-        cartItemId: crypto.randomUUID(),
+        cartItemId: generateId(),
       };
       const updatedItems = [...state.items, newItem];
       return {

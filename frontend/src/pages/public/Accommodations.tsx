@@ -32,7 +32,6 @@ const Accommodations: React.FC = () => {
         const { data, timestamp } = JSON.parse(cached);
         const now = Date.now();
         if (now - timestamp < CACHE_DURATION) {
-          console.log('📦 Usando datos en cache');
           setAccommodations(data);
           setLoading(false);
           return;

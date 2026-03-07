@@ -60,7 +60,7 @@ const GuideManagement: React.FC = () => {
   // Redirigir a login si hay error de autenticación
   useEffect(() => {
     if (error && error.includes('401')) {
-      console.log('Error de autenticación detectado, redirigiendo al login...');
+
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');

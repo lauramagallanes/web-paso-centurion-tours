@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
-import { imageStorageService } from '../../services/imageStorageService';
 import { fixArrayEncoding } from '../../utils/encodingFixer';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import SenderoCardV2 from '../../components/common/SenderoCardV2';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ImageGridGallery from '../../components/common/ImageGridGallery';
+import Breadcrumbs from '../../components/common/Breadcrumbs';
 import LoginRequiredModal from '../../components/common/LoginRequiredModal';
 import './ActivityDetails.css';
 
@@ -108,22 +108,14 @@ const ActivityDetails: React.FC = () => {
           const sendero = fixedData.find((s: any) => s.id === id);
           
           if (sendero) {
-            // OPTIMIZACIÓN: Cargar imágenes en paralelo con el procesamiento
             const imagesPromise = apiService.getSenderoImages(sendero.id)
               .then(imagesResponse => Array.isArray(imagesResponse) ? imagesResponse : [])
-              .catch(error => {
-                console.error('Error loading images from API:', error);
-                return [];
-              });
-            
-            // Mientras se cargan las imágenes, preparar senderos relacionados en segundo plano
+              .catch(() => [] as any[]);
+
             loadRelatedSenderos(fixedData);
-            
-            // Esperar solo por las imágenes
+
             let senderoImages = await imagesPromise;
-            console.log('📸 Loaded images from API:', senderoImages.length);
-            
-            // If no images from API, use urlImagen from sendero
+
             if (senderoImages.length === 0 && sendero.urlImagen) {
               senderoImages = [{
                 id: 'main',
@@ -131,7 +123,6 @@ const ActivityDetails: React.FC = () => {
                 descripcion: 'Imagen principal del sendero',
                 esPrincipal: true
               }];
-              console.log('📸 Using sendero.urlImagen:', sendero.urlImagen);
             }
             
             const transformedSendero: SenderoDetails = {
@@ -161,8 +152,7 @@ const ActivityDetails: React.FC = () => {
         } else {
           setError(response.error || 'Error al cargar los detalles');
         }
-      } catch (err) {
-        console.error('Error loading sendero details:', err);
+      } catch {
         setError('Error de conexión');
       } finally {
         setIsLoading(false);
@@ -363,14 +353,15 @@ const ActivityDetails: React.FC = () => {
   return (
     <div className="activity-details-page">
       <div className="details-container">
-        {/* Breadcrumb */}
-        <nav style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#666' }}>
-          <a href="/" style={{ textDecoration: 'none', color: '#666' }}>Inicio</a>
-          {' > '}
-          <a href="/tours" style={{ textDecoration: 'none', color: '#666' }}>Tours</a>
-          {' > '}
-          <span style={{ color: '#333' }}>{sendero.nombre}</span>
-        </nav>
+        <Breadcrumbs
+          items={[
+            { label: 'Inicio', path: '/' },
+            { label: 'Actividades', path: '/actividades' },
+            { label: sendero.nombre, path: `/actividades/${id}` },
+          ]}
+          separator="chevron"
+          showHome={false}
+        />
 
         <div className="details-layout">
           {/* Main Content */}
@@ -508,28 +499,24 @@ const ActivityDetails: React.FC = () => {
               {selectedDate && (
                 <div className="form-group">
                   {checkingDisponibilidad ? (
-                    <p style={{ fontSize: '0.85rem', color: '#888' }}>Verificando disponibilidad…</p>
+                    <p className="avail-checking">Verificando disponibilidad…</p>
                   ) : disponibilidad ? (
                     disponibilidad.disponible ? (
-                      <p style={{ fontSize: '0.85rem', color: '#6b792e', fontWeight: 600 }}>
+                      <p className="avail-ok">
                         ✓ Disponible · {disponibilidad.cuposRestantes} cupo{disponibilidad.cuposRestantes !== 1 ? 's' : ''} restante{disponibilidad.cuposRestantes !== 1 ? 's' : ''}
                       </p>
                     ) : (
-                      <div style={{ fontSize: '0.85rem' }}>
-                        <p style={{ color: '#dc6b6b', fontWeight: 600, margin: '0 0 4px' }}>
-                          ✗ No disponible
-                        </p>
+                      <div>
+                        <p className="avail-error">✗ No disponible</p>
                         {disponibilidad.mensajeUsuario && (
-                          <p style={{ color: '#666', margin: '0 0 4px', lineHeight: 1.4 }}>
-                            {disponibilidad.mensajeUsuario}
-                          </p>
+                          <p className="avail-message">{disponibilidad.mensajeUsuario}</p>
                         )}
                         {disponibilidad.alternativas && disponibilidad.alternativas.length > 0 && (
-                          <div style={{ marginTop: 6 }}>
+                          <div>
                             {disponibilidad.alternativas.map(alt => (
                               <button
                                 key={alt.id}
-                                style={{ fontSize: '0.8rem', color: '#6b792e', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                                className="avail-alt-link"
                                 onClick={() => navigate(`/actividades/${alt.id}`)}
                               >
                                 → Ver {alt.nombre}
@@ -547,12 +534,12 @@ const ActivityDetails: React.FC = () => {
             {/* Total */}
             <div className="booking-total">
               <div className="total-row">
-                <span className="total-label">${sendero.precio.toLocaleString()} UYU x {participantsCount} asistentes</span>
-                <span className="total-amount">${totalPrice.toLocaleString()} uyu</span>
+                <span className="total-label">${sendero.precio.toLocaleString()} UYU × {participantsCount} asistentes</span>
+                <span className="total-amount">${totalPrice.toLocaleString()} UYU</span>
               </div>
               <div className="total-row">
-                <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>Total</span>
-                <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>${totalPrice.toLocaleString()}uyu</span>
+                <span>Total</span>
+                <span>${totalPrice.toLocaleString()} UYU</span>
               </div>
             </div>
 
@@ -565,7 +552,6 @@ const ActivityDetails: React.FC = () => {
                     className="btn-primary"
                     onClick={handleBookNow}
                     disabled={!!noDisponible || checkingDisponibilidad}
-                    style={noDisponible ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
                   >
                     Reservar Ahora
                   </button>
@@ -573,7 +559,6 @@ const ActivityDetails: React.FC = () => {
                     className="btn-secondary"
                     onClick={handleAddToCart}
                     disabled={!!noDisponible || checkingDisponibilidad}
-                    style={noDisponible ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
                   >
                     Agregar al carrito
                   </button>
@@ -591,7 +576,7 @@ const ActivityDetails: React.FC = () => {
         {/* Related Senderos */}
         {relatedSenderos.length > 0 && (
           <div style={{ marginTop: '4rem' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#333', marginBottom: '2rem' }}>
+            <h2 className="section-title" style={{ marginBottom: '2rem' }}>
               Senderos relacionados
             </h2>
             <div className="related-grid">

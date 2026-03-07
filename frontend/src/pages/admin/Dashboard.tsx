@@ -35,7 +35,6 @@ const Dashboard: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      console.log('📊 Cargando estadísticas del dashboard...');
       await loadStats('/dashboard/admin/stats');
     } catch (err) {
       console.error('Error loading dashboard stats:', err);

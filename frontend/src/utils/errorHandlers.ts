@@ -36,7 +36,6 @@ export const initializeErrorHandlers = (): void => {
     event.preventDefault();
   });
 
-  console.log('✅ Global error handlers initialized - Login issues resolved');
 };
 
 /**
@@ -45,6 +44,5 @@ export const initializeErrorHandlers = (): void => {
 export const cleanupErrorHandlers = (): void => {
   // En una implementación más compleja, podríamos remover los listeners
   // Por ahora, esto es principalmente para documentación
-  console.log('🧹 Error handlers cleanup requested');
 };
 

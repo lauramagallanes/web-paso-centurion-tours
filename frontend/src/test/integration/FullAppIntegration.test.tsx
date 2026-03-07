@@ -7,7 +7,7 @@ import { ThemeProvider } from '../../contexts/ThemeContext';
 import { CartProvider } from '../../contexts/CartContext';
 import { FavoritesProvider } from '../../contexts/FavoritesContext';
 import Activities from '../../pages/public/Activities';
-import Accomodations from '../../pages/public/Accomodations';
+import Accommodations from '../../pages/public/Accommodations';
 import MyBookings from '../../pages/public/MyBookings';
 
 // Test wrapper component
@@ -217,7 +217,7 @@ describe('🚀 Full App Integration with Backend', () => {
 
       render(
         <TestWrapper>
-          <Accomodations />
+          <Accommodations />
         </TestWrapper>
       );
 
@@ -261,7 +261,7 @@ describe('🚀 Full App Integration with Backend', () => {
 
       render(
         <TestWrapper>
-          <Accomodations />
+          <Accommodations />
         </TestWrapper>
       );
 

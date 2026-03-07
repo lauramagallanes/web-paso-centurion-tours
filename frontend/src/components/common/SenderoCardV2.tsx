@@ -35,12 +35,10 @@ const SenderoCardV2: React.FC<SenderoCardV2Props> = ({
   const hasMultipleImages = images.length > 1;
   
   const handleClick = () => {
-    console.log('🎯 SenderoCardV2 clicked:', id, nombre);
     onViewDetails(id);
   };
 
   const handleImageError = () => {
-    console.log('❌ SenderoCardV2 image failed to load:', currentImage);
     setImageError(true);
   };
 
@@ -57,7 +55,6 @@ const SenderoCardV2: React.FC<SenderoCardV2Props> = ({
   const toggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsFavorite(!isFavorite);
-    console.log('❤️ Favorite toggled for:', nombre);
   };
 
   return (

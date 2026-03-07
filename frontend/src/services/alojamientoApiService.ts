@@ -69,12 +69,8 @@ const alojamientoApiService = {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         if (attempt > 0) {
-          console.log(`🔄 Reintentando getAlojamientos (intento ${attempt + 1}/${retries + 1})...`);
-          // Backoff exponencial: 1s, 2s
           await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
         }
-        
-        console.log('🔍 Llamando a:', `${this.getBaseURL()}/alojamientos`);
         
         // Crear un AbortController para timeout más corto
         const controller = new AbortController();
@@ -91,12 +87,6 @@ const alojamientoApiService = {
           });
           
           clearTimeout(timeoutId);
-          
-          console.log('📡 Respuesta recibida:', {
-            status: response.status,
-            statusText: response.statusText,
-            ok: response.ok,
-          });
           
           if (!response.ok) {
             throw new Error(`Error fetching accommodations: ${response.status}`);

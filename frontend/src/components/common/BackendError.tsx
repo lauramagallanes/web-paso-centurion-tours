@@ -43,13 +43,6 @@ const BackendError: React.FC<BackendErrorProps> = ({
       errorMessage.includes('Network Error') ||
       errorMessage.includes('TypeError: Failed to fetch');
     
-    console.log('🔍 BackendError Debug:', {
-      error,
-      errorMessage,
-      isBackendUnavailable,
-      title
-    });
-    
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight }}>
         <div className="text-center">

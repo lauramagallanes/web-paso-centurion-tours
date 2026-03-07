@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
-import { imageStorageService } from '../../services/imageStorageService';
 import { fixArrayEncoding } from '../../utils/encodingFixer';
 import { getReviewsSummary, ReviewsSummary } from '../../services/reviewsService';
 import HeroSliderV2, { HeroSlide } from '../../components/common/HeroSliderV2';
@@ -54,10 +53,8 @@ const Home: React.FC = () => {
   
   const loadReviews = async () => {
     try {
-      console.log('📊 Cargando reviews reales...');
       const reviewsData = await getReviewsSummary();
       setReviews(reviewsData);
-      console.log('✅ Reviews cargadas:', reviewsData);
     } catch (error) {
       console.error('Error loading reviews:', error);
     } finally {
@@ -71,45 +68,23 @@ const Home: React.FC = () => {
       const response = await apiService.getSenderos() as any;
       
       if (response.success) {
-        console.log('🏠 Loading featured activities from real backend data');
-        
-        // Fix encoding issues first
         const fixedData = fixArrayEncoding(response.data);
-        console.log('🔧 Fixed encoding data for featured activities:', fixedData.slice(0, 3));
-        
-        // Transform API data and take first 3 as featured with REAL data
+
         const transformedActivities = fixedData.slice(0, 3).map((sendero: any) => {
-          // Map difficulty levels
           const difficultyMap: Record<string, string> = {
             'FACIL': 'Fácil',
-            'MODERADO': 'Moderado', 
+            'MODERADO': 'Moderado',
             'DIFICIL': 'Difícil',
             'EXPERTO': 'Experto'
           };
-          
-          // SIMPLE and ROBUST image selection - Priority: imagenPrincipal > urlImagen (legacy)
+
           let imagenUrl = '';
           if (sendero.imagenPrincipal && sendero.imagenPrincipal.trim() !== '') {
             imagenUrl = sendero.imagenPrincipal.trim();
           } else if (sendero.urlImagen && sendero.urlImagen.trim() !== '') {
             imagenUrl = sendero.urlImagen.trim();
           }
-          // If both are empty, imagenUrl stays empty and component will show placeholder
-          
-          console.log(`🏠 Featured sendero ${sendero.nombre}:`, {
-            id: sendero.id,
-            urlImagen: sendero.urlImagen,
-            imagenPrincipal: sendero.imagenPrincipal,
-            finalImageUrl: imagenUrl,
-            hasImage: imagenUrl !== '',
-            isEmpty: imagenUrl === '',
-            isCorrupt: imagenUrl && imagenUrl.length < 100, // Likely corrupt if very short
-            urlImagenLength: sendero.urlImagen ? sendero.urlImagen.length : 0,
-            imagenPrincipalLength: sendero.imagenPrincipal ? sendero.imagenPrincipal.length : 0,
-            urlImagenType: typeof sendero.urlImagen,
-            imagenPrincipalType: typeof sendero.imagenPrincipal
-          });
-          
+
           return {
             id: sendero.id,
             nombre: sendero.nombre,

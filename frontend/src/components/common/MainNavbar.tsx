@@ -237,7 +237,6 @@ const MainNavbar: React.FC = () => {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('User button clicked! Current dropdown:', activeDropdown);
                     handleDropdownToggle('user');
                   }}
                   aria-label="Menú de usuario"

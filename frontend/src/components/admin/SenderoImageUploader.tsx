@@ -39,12 +39,8 @@ const SenderoImageUploader: React.FC<SenderoImageUploaderProps> = ({
   useEffect(() => {
     const loadImages = async () => {
       if (senderoId) {
-        console.log('📂 Loading images from API for sendero:', senderoId);
         try {
           const response = await apiService.getSenderoImages(senderoId);
-          console.log('📂 API Response:', response);
-          
-          // Convert API response to SenderoImage format
           const apiImages = Array.isArray(response) ? response : [];
           const convertedImages: SenderoImage[] = apiImages.map(img => ({
             id: img.id,
@@ -54,8 +50,6 @@ const SenderoImageUploader: React.FC<SenderoImageUploaderProps> = ({
             orden: img.orden || 0,
             esPrincipal: img.esPrincipal || false,
           }));
-          
-          console.log('📂 Loaded', convertedImages.length, 'images from API');
           onImagesChange(convertedImages);
         } catch (error) {
           console.error('Error loading images:', error);
@@ -122,16 +116,11 @@ const SenderoImageUploader: React.FC<SenderoImageUploaderProps> = ({
       setSuccessMessage(null);
       setUploadProgress(10);
 
-      console.log('🚀 Starting upload of', validFiles.length, 'files via API...');
-      
-      // Prepare descriptions array
-      const descriptions = validFiles.map(() => ''); // Empty descriptions for now
+      const descriptions = validFiles.map(() => '');
 
       setUploadProgress(30);
       const uploadResults = await apiService.uploadSenderoImages(senderoId, validFiles, descriptions);
-      
       setUploadProgress(80);
-      console.log('✅ API upload completed:', uploadResults);
       
       // Handle API response - it might be the images array or wrapped in a data property
       const apiImages = uploadResults?.images || uploadResults?.data || uploadResults || [];
@@ -146,7 +135,6 @@ const SenderoImageUploader: React.FC<SenderoImageUploaderProps> = ({
         esPrincipal: result.esPrincipal || (images.length === 0 && index === 0),
       }));
       
-      console.log('🔄 Converted', newImages.length, 'images from API response');
       
       // Update images list
       const updatedImages = [...images, ...newImages];
@@ -171,11 +159,9 @@ const SenderoImageUploader: React.FC<SenderoImageUploaderProps> = ({
     if (!senderoId) return;
     
     try {
-      console.log('🗑️ Deleting image via API:', imageId);
       
       // Delete via API
       await apiService.deleteSenderoImage(imageId);
-      console.log('✅ Image deleted via API');
       
       // Remove image from list
       const updatedImages = images.filter(img => img.id !== imageId);
@@ -193,7 +179,6 @@ const SenderoImageUploader: React.FC<SenderoImageUploaderProps> = ({
     if (!senderoId) return;
     
     try {
-      console.log('⭐ Setting main image via API:', imageId);
       
       // Update via API (if endpoint exists)
       // Note: This might need to be implemented in the backend

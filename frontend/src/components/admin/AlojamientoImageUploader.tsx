@@ -39,12 +39,8 @@ const AlojamientoImageUploader: React.FC<AlojamientoImageUploaderProps> = ({
   useEffect(() => {
     const loadImages = async () => {
       if (alojamientoId) {
-        console.log('📂 Loading images from API for alojamiento:', alojamientoId);
         try {
           const response = await apiService.getAlojamientoImages(alojamientoId);
-          console.log('📂 API Response:', response);
-          
-          // Convert API response to AlojamientoImage format
           const apiImages = Array.isArray(response) ? response : [];
           const convertedImages: AlojamientoImage[] = apiImages.map(img => ({
             id: img.id,
@@ -54,8 +50,6 @@ const AlojamientoImageUploader: React.FC<AlojamientoImageUploaderProps> = ({
             orden: img.orden || 0,
             esPrincipal: img.esPrincipal || false,
           }));
-          
-          console.log('📂 Loaded', convertedImages.length, 'images from API');
           onImagesChange(convertedImages);
         } catch (error) {
           console.error('Error loading images:', error);
@@ -133,9 +127,6 @@ const AlojamientoImageUploader: React.FC<AlojamientoImageUploaderProps> = ({
         const progressBase = ((i / totalFiles) * 90); // 0-90% for uploads
 
         try {
-          console.log(`📤 [${i+1}/${totalFiles}] Uploading ${file.name}...`);
-          
-          // Step 1: Get presigned URL from backend
           setUploadProgress(progressBase + 10);
           const presignedData = await apiService.getAlojamientoPresignedUploadUrl(
             alojamientoId,
@@ -143,23 +134,15 @@ const AlojamientoImageUploader: React.FC<AlojamientoImageUploaderProps> = ({
             file.type
           );
 
-          console.log(`🔗 Got presigned URL for ${file.name}`);
-
-          // Step 2: Upload directly to S3
           setUploadProgress(progressBase + 30);
           await apiService.uploadToS3(presignedData.uploadUrl, file);
 
-          console.log(`✅ Uploaded ${file.name} to S3`);
-
-          // Step 3: Register the image in the database
           setUploadProgress(progressBase + 60);
           const registeredImage = await apiService.registerAlojamientoImage(
             alojamientoId,
             presignedData.imageUrl,
-            '' // Empty description for now
+            ''
           );
-
-          console.log(`✅ Registered ${file.name} in database`);
 
           // Convert to SenderoImage format
           const imageData = registeredImage.image || registeredImage;
@@ -179,8 +162,6 @@ const AlojamientoImageUploader: React.FC<AlojamientoImageUploaderProps> = ({
           throw new Error(`Error subiendo ${file.name}: ${fileError instanceof Error ? fileError.message : 'Error desconocido'}`);
         }
       }
-      
-      console.log('🔄 Successfully uploaded', newImages.length, 'images');
       
       // Update images list
       const updatedImages = [...images, ...newImages];
@@ -205,11 +186,9 @@ const AlojamientoImageUploader: React.FC<AlojamientoImageUploaderProps> = ({
     if (!alojamientoId) return;
     
     try {
-      console.log('🗑️ Deleting image via API:', imageId);
       
       // Delete via API
       await apiService.deleteAlojamientoImage(imageId);
-      console.log('✅ Image deleted via API');
       
       // Remove image from list
       const updatedImages = images.filter(img => img.id !== imageId);
@@ -227,7 +206,6 @@ const AlojamientoImageUploader: React.FC<AlojamientoImageUploaderProps> = ({
     if (!alojamientoId) return;
     
     try {
-      console.log('⭐ Setting main image via API:', imageId);
       
       // Update via API (if endpoint exists)
       // Note: This might need to be implemented in the backend

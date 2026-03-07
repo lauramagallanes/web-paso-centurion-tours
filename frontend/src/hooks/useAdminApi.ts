@@ -234,7 +234,6 @@ export const useHabitacionesAdmin = () => {
   
   const createHabitacion = (habitacion: any) => {
     const mappedData = mapToAlojamientoRequest(habitacion);
-    console.log('🏠 Creando habitación con datos:', mappedData);
     return execute('/alojamientos/admin', {
       method: 'POST',
       body: JSON.stringify(mappedData)

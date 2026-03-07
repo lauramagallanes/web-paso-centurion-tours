@@ -8,7 +8,6 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { routes } from '../../utils/routes';
 // Imagen de fondo: foto específica para hero de actividades
 const heroBackgroundImage = 'https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/activities/hero-activities.jpg';
-import { imageStorageService } from '../../services/imageStorageService';
 import { fixArrayEncoding } from '../../utils/encodingFixer';
 import './Activities.css';
 
@@ -59,24 +58,16 @@ const Activities: React.FC = () => {
         const { data, timestamp } = JSON.parse(cached);
         const now = Date.now();
         if (now - timestamp < CACHE_DURATION) {
-          console.log('📦 Usando datos en cache');
-          setActivities(data);
+            setActivities(data);
           setLoading(false);
           return;
         }
       }
       
-      console.log('🔍 Intentando cargar actividades...');
-      // Reducir retries para carga más rápida: 1 retry (2 intentos totales), delay inicial de 1s
       const response = await apiService.getSenderos(1, 1000);
-      console.log('📡 Respuesta recibida:', response);
       
       if (response.success) {
-        console.log('📊 Raw backend data:', response.data);
-        
-        // Fix encoding issues first
         const fixedData = fixArrayEncoding(response.data);
-        console.log('🔧 Fixed encoding data:', fixedData);
         
         // Transform API data to our format with REAL data
         const transformedData = fixedData.map((sendero: any) => {
@@ -96,13 +87,6 @@ const Activities: React.FC = () => {
             imagenUrl = sendero.urlImagen.trim();
           }
           // If both are empty, imagenUrl stays empty and component will show placeholder
-          
-          console.log(`📊 Sendero ${sendero.nombre}:`, {
-            urlImagen: sendero.urlImagen,
-            imagenPrincipal: sendero.imagenPrincipal,
-            finalImageUrl: imagenUrl,
-            hasImage: imagenUrl !== ''
-          });
           
           return {
             id: sendero.id,

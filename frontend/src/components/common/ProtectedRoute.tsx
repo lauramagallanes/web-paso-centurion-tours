@@ -32,24 +32,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Si requiere admin y no es admin, redirigir al home
   if (requireAdmin && state.user.tipo !== 'ADMIN') {
-    console.log('🚫 ProtectedRoute ADMIN CHECK FAILED:', {
-      requireAdmin: requireAdmin,
-      userTipo: state.user?.tipo,
-      fullUser: state.user,
-      isEqual: state.user?.tipo === 'ADMIN'
-    });
     return <Navigate to="/" replace />;
-  }
-  
-  // Debug: log successful admin access
-  if (requireAdmin && state.user.tipo === 'ADMIN') {
-    console.log('✅ ProtectedRoute ADMIN ACCESS GRANTED:', {
-      requireAdmin: requireAdmin,
-      userTipo: state.user?.tipo,
-      fullUser: state.user
-    });
   }
 
   return <>{children}</>;

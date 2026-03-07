@@ -107,6 +107,33 @@
   --color-backdrop: rgba(25, 25, 25, 0.3);
   --color-divider: #e7e5e5;
   --color-skeleton: #f0f0f0;
+
+  /* ============================================
+     NEUTRAL SCALE — usado por Navbar, Card, ShoppingCart, scrollbar
+     ============================================ */
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e8e8e8;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #b0b0b0;
+  --color-neutral-500: #807a75;
+  --color-neutral-600: #5b5b5b;
+  --color-neutral-700: #3a3a3a;
+  --color-neutral-800: #1a1a18;
+
+  /* ============================================
+     ACCENT ALIASES — referencias de Navbar y globals
+     ============================================ */
+  --color-accent-blue: var(--color-info);
+  --color-accent-green: var(--color-secondary);
+  --color-accent-salmon: var(--color-error);
+
+  /* ============================================
+     SEÑA / PAGO PARCIAL — selector de forma de pago en Checkout
+     ============================================ */
+  --color-sena: #b8860b;
+  --color-sena-bg: rgba(184, 134, 11, 0.12);
+  --color-sena-border: rgba(184, 134, 11, 0.4);
+  --color-sena-text: #8a6400;
 }
 
 /* ============================================
@@ -215,6 +242,22 @@
   --color-backdrop: rgba(0, 0, 0, 0.5);
   --color-divider: #2a2a28;
   --color-skeleton: #242422;
+
+  /* Neutral scale — dark theme */
+  --color-neutral-100: #2a2a28;
+  --color-neutral-200: #242422;
+  --color-neutral-300: #3a3a38;
+  --color-neutral-400: #5b5b5b;
+  --color-neutral-500: #807a75;
+  --color-neutral-600: #b8b5b2;
+  --color-neutral-700: #d4d1ce;
+  --color-neutral-800: #f0ede8;
+
+  /* Seña — dark theme */
+  --color-sena: #d4a017;
+  --color-sena-bg: rgba(212, 160, 23, 0.15);
+  --color-sena-border: rgba(212, 160, 23, 0.45);
+  --color-sena-text: #e8c060;
 }
 
 /* Utility Classes */

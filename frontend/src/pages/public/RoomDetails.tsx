@@ -107,19 +107,13 @@ const RoomDetails: React.FC = () => {
           })
         ]);
         
-        console.log('🏠 Room response:', response);
-        
         if (response.success && response.data) {
           const room = response.data;
-          
-          // Get images from parallel call
+
           let roomImages: any[] = Array.isArray(imagesResponse) ? imagesResponse : [];
-          console.log('📸 Loaded images from API:', roomImages.length, roomImages);
-          
-          // If no images from API, use imagenPrincipal or urlImagen from room
+
           if (roomImages.length === 0) {
             const imageUrl = room.imagenPrincipalUrl || room.imagenPrincipal || room.urlImagen;
-            console.log('⚠️ No images from API, using fallback:', imageUrl);
             if (imageUrl) {
               roomImages = [{
                 id: 'main',

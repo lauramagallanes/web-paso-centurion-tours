@@ -300,7 +300,36 @@ const ActivityDetails: React.FC = () => {
   };
 
   const handleBookNow = () => {
-    handleAddToCart();
+    if (!sendero) return;
+
+    if (!authState.isAuthenticated) {
+      sessionStorage.setItem(`booking_sendero_${id}`, JSON.stringify({
+        date: selectedDate,
+        participants: participantsCount,
+        turno: selectedTurno,
+      }));
+      setShowLoginModal(true);
+      return;
+    }
+
+    const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const fechaReserva = selectedDate || defaultDate;
+
+    addItem({
+      id: sendero.id,
+      type: 'sendero',
+      name: sendero.nombre,
+      description: sendero.descripcion,
+      image: sendero.imagenes[0]?.url || '/placeholder-sendero.svg',
+      price: totalPrice,
+      currency: sendero.moneda,
+      fecha: fechaReserva,
+      personas: participantsCount,
+      turno: selectedTurno,
+      duracion: sendero.duracion,
+    });
+
+    navigate('/checkout');
   };
 
   const handleRelatedSenderoClick = (senderoId: string) => {

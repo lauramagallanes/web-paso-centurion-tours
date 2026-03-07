@@ -316,7 +316,44 @@ const RoomDetails: React.FC = () => {
   };
 
   const handleBookNow = () => {
-    handleAddToCart();
+    if (!room || !checkInDate || !checkOutDate) {
+      alert('Por favor selecciona las fechas de entrada y salida');
+      return;
+    }
+
+    if (!authState.isAuthenticated) {
+      sessionStorage.setItem(`booking_${id}`, JSON.stringify({
+        checkIn: checkInDate?.toISOString(),
+        checkOut: checkOutDate?.toISOString(),
+        guests: guestsCount,
+      }));
+      setShowLoginModal(true);
+      return;
+    }
+
+    const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (nights <= 0) {
+      alert('La fecha de salida debe ser posterior a la fecha de entrada');
+      return;
+    }
+
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+    addItem({
+      id: room.id,
+      type: 'alojamiento',
+      name: room.nombre,
+      description: room.descripcion,
+      image: room.imagenes[0]?.url || '/placeholder-sendero.svg',
+      price: room.precioPorNoche * guestsCount * nights,
+      currency: 'UYU',
+      checkIn: formatDate(checkInDate),
+      checkOut: formatDate(checkOutDate),
+      huespedes: guestsCount,
+      noches: nights,
+    });
+
+    navigate('/checkout');
   };
 
   const handleRelatedRoomClick = (roomId: string) => {

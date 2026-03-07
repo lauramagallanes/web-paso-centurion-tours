@@ -152,7 +152,7 @@ const ShoppingCart: React.FC = () => {
 
               <div className="cart-summary">
                 <div className="cart-total">
-                  <div className="total-label">Total estimado:</div>
+                  <div className="total-label">Total:</div>
                   <div className="total-amount">{formatCurrency(state.total)}</div>
                 </div>
 

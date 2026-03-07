@@ -103,14 +103,151 @@
    FORM SECTION
    ============================================ */
 .book-form-section {
-  padding: 48px 0 80px;
+  padding: 56px 0 96px;
   background: var(--color-background);
 }
 
 .book-form-section .container {
-  max-width: 860px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 0 var(--space-4, 16px);
+}
+
+/* ============================================
+   TYPE SELECTION
+   ============================================ */
+.booking-type-selection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.booking-type-title {
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: center;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.booking-type-subtitle {
+  font-size: 16px;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 0 0 24px;
+}
+
+.booking-type-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  width: 100%;
+}
+
+/* ── Individual card ── */
+.booking-type-card {
+  position: relative;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: 20px;
+  padding: 48px 36px 40px;
+  cursor: pointer;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  box-shadow: 0 2px 12px var(--color-shadow-sm);
+  user-select: none;
+  outline: none;
+  overflow: hidden;
+}
+
+/* subtle nature-texture accent on top edge */
+.booking-type-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-primary-dark), var(--color-primary-light));
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  border-radius: 20px 20px 0 0;
+}
+
+.booking-type-card:hover,
+.booking-type-card:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 12px 32px var(--color-shadow-md);
+  transform: translateY(-6px);
+}
+
+.booking-type-card:hover::before,
+.booking-type-card:focus-visible::before {
+  opacity: 1;
+}
+
+/* ── Icon circle ── */
+.booking-type-card-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(107, 121, 46, 0.1);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  transition: background 0.22s ease, color 0.22s ease;
+  flex-shrink: 0;
+}
+
+.booking-type-card:hover .booking-type-card-icon,
+.booking-type-card:focus-visible .booking-type-card-icon {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* ── Texts ── */
+.booking-type-card-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.booking-type-card-desc {
+  font-size: 15px;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.6;
+  max-width: 280px;
+}
+
+/* ── CTA arrow link ── */
+.booking-type-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.booking-type-card:hover .booking-type-card-cta,
+.booking-type-card:focus-visible .booking-type-card-cta {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ============================================
@@ -137,6 +274,21 @@
   background: var(--color-background);
 }
 
+[data-theme="dark"] .booking-type-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .booking-type-card:hover,
+[data-theme="dark"] .booking-type-card:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .booking-type-card-icon {
+  background: rgba(122, 137, 53, 0.15);
+}
+
 /* ============================================
    RESPONSIVE
    ============================================ */
@@ -148,6 +300,35 @@
   }
 
   .book-form-section {
-    padding: 32px 0 60px;
+    padding: 36px 0 64px;
+  }
+
+  .booking-type-cards {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .booking-type-card {
+    flex-direction: row;
+    text-align: left;
+    padding: 28px 24px;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .booking-type-card-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+
+  .booking-type-card-desc {
+    max-width: 100%;
+  }
+
+  .booking-type-card-cta {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

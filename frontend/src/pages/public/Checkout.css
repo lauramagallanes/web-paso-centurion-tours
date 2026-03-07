@@ -188,7 +188,16 @@
   flex-direction: column;
   gap: 2px;
   margin-bottom: 0.5rem;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  padding: 0.5rem 0.75rem;
   cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.payment-type-option.payment-option-selected {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .payment-type-option label {
@@ -201,27 +210,77 @@
   cursor: pointer;
 }
 
+.payment-type-option label strong {
+  color: var(--color-text);
+}
+
+.payment-option-amount {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin-left: 0.25rem;
+}
+
 .payment-type-option p {
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  margin: 0 0 0 1.5rem;
+  color: var(--color-text-secondary);
+  margin: 0.25rem 0 0 1.5rem;
   line-height: 1.4;
 }
 
 .sena-highlight {
+  border-color: var(--color-sena-border);
   background: var(--color-sena-bg);
-  border: 1px solid var(--color-sena-border);
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-  margin-top: 0.25rem;
 }
 
-.sena-highlight label {
-  color: var(--color-sena-text) !important;
+.sena-highlight.payment-option-selected {
+  border-color: var(--color-sena);
+  background: var(--color-sena-bg);
+}
+
+.sena-highlight label strong {
+  color: var(--color-sena-text);
+}
+
+.sena-highlight .payment-option-amount {
+  color: var(--color-sena-text);
 }
 
 .sena-highlight p {
-  color: var(--color-sena-text) !important;
+  color: var(--color-sena-text);
+}
+
+/* Payment amount summary */
+.payment-amount-summary {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  text-align: center;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.payment-amount-summary.is-sena {
+  background: var(--color-sena-bg);
+}
+
+.payment-amount-summary > span {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.payment-amount-value {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--color-primary);
+}
+
+.payment-amount-summary.is-sena .payment-amount-value {
+  color: var(--color-sena-text);
+}
+
+[data-theme="dark"] .payment-amount-summary.is-sena .payment-amount-value {
+  color: var(--color-sena);
 }
 
 /* Form */

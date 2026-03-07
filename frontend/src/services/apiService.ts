@@ -858,10 +858,48 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  // Get payment status for a reservation
+  // Get payment status for a single reservation
   async getPaymentStatus(reservaId: string, tipoReserva: string = 'SENDERO') {
     const response = await fetch(
       `${this.baseURL}/pagos/estado/${reservaId}?tipo=${tipoReserva}`,
+      { headers: this.getHeaders() }
+    );
+
+    return this.handleResponse(response);
+  }
+
+  // Create checkout order for multiple cart items (new multi-item flow)
+  async createOrdenCheckout(payload: {
+    emailContacto: string;
+    nombreContacto: string;
+    telefonoContacto?: string;
+    observaciones?: string;
+    tipoPago: string;
+    items: Array<{
+      tipo: string;
+      productoId: string;
+      fechaInicio?: string;
+      fechaFin?: string;
+      turno?: string;
+      numeroPersonas?: number;
+      fechaCheckIn?: string;
+      fechaCheckOut?: string;
+      numeroHuespedes?: number;
+    }>;
+  }) {
+    const response = await fetch(`${this.baseURL}/checkout/orden`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    return this.handleResponse(response);
+  }
+
+  // Get payment status for an orden (multi-item order)
+  async getOrdenPaymentStatus(ordenId: string) {
+    const response = await fetch(
+      `${this.baseURL}/pagos/estado/orden/${ordenId}`,
       { headers: this.getHeaders() }
     );
 

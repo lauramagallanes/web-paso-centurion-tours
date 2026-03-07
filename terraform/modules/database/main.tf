@@ -42,7 +42,7 @@ resource "aws_security_group" "rds" {
     to_port     = 5432
     protocol    = "tcp"
     description = "PostgreSQL from Lambda (public access - SSL required)"
-    cidr_blocks = ["0.0.0.0/0"]  # Allow from anywhere, but SSL is required
+    cidr_blocks = ["0.0.0.0/0"] # Allow from anywhere, but SSL is required
   }
 
   tags = {

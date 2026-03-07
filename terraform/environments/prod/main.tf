@@ -55,8 +55,8 @@ module "database" {
 module "serverless" {
   source = "../../modules/serverless"
 
-  environment                         = var.environment
-  region                              = var.aws_region
+  environment = var.environment
+  region      = var.aws_region
   # VPC variables removed - Lambda runs without VPC
   db_endpoint                         = module.database.db_endpoint
   db_name                             = module.database.db_name

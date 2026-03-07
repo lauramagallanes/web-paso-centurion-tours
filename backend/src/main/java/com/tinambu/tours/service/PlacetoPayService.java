@@ -1,10 +1,15 @@
 package com.tinambu.tours.service;
 
 import com.tinambu.tours.config.PlacetoPayConfig;
-import com.tinambu.tours.dto.response.SesionPagoResponse;
 import com.tinambu.tours.dto.response.EstadoPagoResponse;
+import com.tinambu.tours.dto.response.OrdenEstadoResponse;
+import com.tinambu.tours.dto.response.OrdenEstadoResponse.ItemEstado;
+import com.tinambu.tours.dto.response.SesionPagoResponse;
+import com.tinambu.tours.entity.orden.OrdenCompra;
+import com.tinambu.tours.entity.orden.OrdenCompraItem;
 import com.tinambu.tours.entity.reserva.*;
 import com.tinambu.tours.repository.AlojamientoReservaRepository;
+import com.tinambu.tours.repository.OrdenCompraRepository;
 import com.tinambu.tours.repository.SenderoReservaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -41,6 +47,9 @@ public class PlacetoPayService {
 
     @Autowired
     private AlojamientoReservaRepository alojamientoReservaRepository;
+
+    @Autowired
+    private OrdenCompraRepository ordenCompraRepository;
 
     // ==================== CREATE PAYMENT SESSION ====================
 
@@ -218,6 +227,159 @@ public class PlacetoPayService {
                 .status("FAILED")
                 .message("Error al crear sesión de pago: " + errorMsg)
                 .build();
+    }
+
+    // ==================== ORDEN COMPRA PAYMENT ====================
+
+    public SesionPagoResponse crearSesionPagoOrden(UUID ordenId, String tipoPago, String ipAddress, String userAgent) {
+        log.info("Creating PlacetoPay session for orden: {} (tipoPago: {})", ordenId, tipoPago);
+
+        OrdenCompra orden = ordenCompraRepository.findById(ordenId)
+                .orElseThrow(() -> new IllegalArgumentException("Orden de compra no encontrada: " + ordenId));
+
+        if (!config.isConfigured()) {
+            log.warn("PlacetoPay not configured, returning mock response for orden");
+            SesionPagoResponse mock = crearRespuestaMock(ordenId, "ORDEN");
+            return mock;
+        }
+
+        boolean esSena = "SENA".equalsIgnoreCase(tipoPago);
+        BigDecimal montoACobrar = orden.getMontoTotal();
+
+        String suffixDesc = esSena ? " (Reserva 30%)" : "";
+        String description = String.format("Orden de compra %s%s", orden.getCodigoOrden(), suffixDesc);
+
+        Map<String, Object> sessionRequest = buildSessionRequest(
+                orden.getCodigoOrden(),
+                description,
+                montoACobrar,
+                orden.getEmailContacto(),
+                orden.getNombreContacto(),
+                ipAddress,
+                userAgent,
+                ordenId.toString(),
+                "ORDEN"
+        );
+
+        Map<String, Object> response = callPlacetoPay("/api/session", sessionRequest);
+
+        if (response != null && "OK".equals(getNestedString(response, "status", "status"))) {
+            Long requestId = getLongValue(response, "requestId");
+            String processUrl = (String) response.get("processUrl");
+
+            orden.setPlacetoPayRequestId(requestId);
+            ordenCompraRepository.save(orden);
+
+            log.info("PlacetoPay session for orden created: requestId={}, processUrl={}", requestId, processUrl);
+
+            return SesionPagoResponse.builder()
+                    .reservaId(ordenId)
+                    .codigoReserva(orden.getCodigoOrden())
+                    .requestId(requestId)
+                    .processUrl(processUrl)
+                    .status("OK")
+                    .message("Sesión de pago para orden creada exitosamente")
+                    .build();
+        }
+
+        String errorMsg = response != null ? getNestedString(response, "status", "message") : "Error desconocido";
+        log.error("PlacetoPay session creation failed for orden: {}", errorMsg);
+
+        return SesionPagoResponse.builder()
+                .reservaId(ordenId)
+                .codigoReserva(orden.getCodigoOrden())
+                .status("FAILED")
+                .message("Error al crear sesión de pago: " + errorMsg)
+                .build();
+    }
+
+    public OrdenEstadoResponse consultarEstadoPagoOrden(UUID ordenId) {
+        log.info("Querying payment status for orden: {}", ordenId);
+
+        OrdenCompra orden = ordenCompraRepository.findById(ordenId)
+                .orElseThrow(() -> new IllegalArgumentException("Orden de compra no encontrada: " + ordenId));
+
+        if (orden.getPlacetoPayRequestId() == null) {
+            return buildOrdenEstadoResponse(orden, null, "No hay sesión de pago creada");
+        }
+
+        if (!config.isConfigured()) {
+            return buildOrdenEstadoResponse(orden, null, "PlacetoPay no configurado");
+        }
+
+        Map<String, Object> authMap = new HashMap<>();
+        authMap.put("auth", generarAuth());
+
+        Map<String, Object> response = callPlacetoPay("/api/session/" + orden.getPlacetoPayRequestId(), authMap);
+
+        if (response != null) {
+            String p2pStatus = getNestedString(response, "status", "status");
+            String p2pMessage = getNestedString(response, "status", "message");
+
+            if ("APPROVED".equals(p2pStatus)) {
+                // Confirm all reservations linked to this orden
+                confirmarReservasDeOrden(orden);
+                orden.marcarPagada();
+                ordenCompraRepository.save(orden);
+                log.info("Orden {} marked as PAGADA", orden.getCodigoOrden());
+            }
+
+            return buildOrdenEstadoResponse(orden, p2pStatus, p2pMessage);
+        }
+
+        return buildOrdenEstadoResponse(orden, null, "Error al consultar estado");
+    }
+
+    private void confirmarReservasDeOrden(OrdenCompra orden) {
+        for (OrdenCompraItem item : orden.getItems()) {
+            try {
+                if ("SENDERO".equals(item.getTipoReserva())) {
+                    senderoReservaRepository.findById(item.getReservaId()).ifPresent(reserva -> {
+                        if (reserva.getEstado() == EstadoReserva.PENDIENTE) {
+                            reserva.cambiarEstado(EstadoReserva.CONFIRMADA);
+                            reserva.registrarPago(item.getSubtotal(), "PLACETOPAY");
+                            senderoReservaRepository.save(reserva);
+                        }
+                    });
+                } else if ("ALOJAMIENTO".equals(item.getTipoReserva())) {
+                    alojamientoReservaRepository.findById(item.getReservaId()).ifPresent(reserva -> {
+                        if (reserva.getEstado() == EstadoReserva.PENDIENTE) {
+                            reserva.setEstado(EstadoReserva.CONFIRMADA);
+                            reserva.registrarPago(item.getSubtotal(), "PLACETOPAY");
+                            alojamientoReservaRepository.save(reserva);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                log.error("Error confirming reservation {} for orden {}: {}",
+                        item.getReservaId(), orden.getCodigoOrden(), e.getMessage(), e);
+            }
+        }
+    }
+
+    private OrdenEstadoResponse buildOrdenEstadoResponse(OrdenCompra orden, String p2pStatus, String p2pMessage) {
+        List<ItemEstado> itemStates = new ArrayList<>();
+        for (OrdenCompraItem item : orden.getItems()) {
+            String estadoReserva = "DESCONOCIDO";
+            try {
+                if ("SENDERO".equals(item.getTipoReserva())) {
+                    estadoReserva = senderoReservaRepository.findById(item.getReservaId())
+                            .map(r -> r.getEstado().name()).orElse("NO_ENCONTRADA");
+                } else if ("ALOJAMIENTO".equals(item.getTipoReserva())) {
+                    estadoReserva = alojamientoReservaRepository.findById(item.getReservaId())
+                            .map(r -> r.getEstado().name()).orElse("NO_ENCONTRADA");
+                }
+            } catch (Exception ignored) {}
+
+            itemStates.add(ItemEstado.of(item.getReservaId(), item.getTipoReserva(),
+                    estadoReserva, item.getSubtotal(), item.getDescripcion()));
+        }
+
+        return OrdenEstadoResponse.of(
+                orden.getId(), orden.getCodigoOrden(),
+                orden.getEstado(), orden.getMontoTotal(), orden.getTipoPago(),
+                p2pStatus, p2pMessage, itemStates
+        );
     }
 
     // ==================== QUERY PAYMENT STATUS ====================

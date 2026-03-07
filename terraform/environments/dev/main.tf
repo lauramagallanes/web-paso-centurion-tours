@@ -94,15 +94,15 @@ module "monitoring" {
 module "ses_notifications" {
   source = "../../modules/ses-notifications"
 
-  environment         = var.environment
-  ses_domain_identity = var.ses_domain_identity
+  environment          = var.environment
+  ses_domain_identity  = var.ses_domain_identity
   ses_email_identities = var.ses_email_identities
 }
 
 module "ses_email_forwarding" {
   source = "../../modules/ses-email-forwarding"
-  
-  environment      = var.environment
+
+  environment       = var.environment
   destination_email = "pasocenturiontours@gmail.com"
-  from_email       = "noreply@pasocenturion.com.uy"
+  from_email        = "noreply@pasocenturion.com.uy"
 }

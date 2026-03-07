@@ -9,6 +9,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ImageGridGallery from '../../components/common/ImageGridGallery';
 import Breadcrumbs from '../../components/common/Breadcrumbs';
 import LoginRequiredModal from '../../components/common/LoginRequiredModal';
+import AddedToCartModal from '../../components/common/AddedToCartModal';
 import './ActivityDetails.css';
 
 interface SenderoDetails {
@@ -61,6 +62,7 @@ const ActivityDetails: React.FC = () => {
   const [selectedTurno, setSelectedTurno] = useState<string>('MANANA');
   const [isFavorite, setIsFavorite] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showAddedModal, setShowAddedModal] = useState(false);
 
   // Availability state
   const [disponibilidad, setDisponibilidad] = useState<{
@@ -277,32 +279,24 @@ const ActivityDetails: React.FC = () => {
       return;
     }
 
+    const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const fechaReserva = selectedDate || defaultDate;
+
     addItem({
       id: sendero.id,
-      type: 'activity',
+      type: 'sendero',
       name: sendero.nombre,
       description: sendero.descripcion,
       image: sendero.imagenes[0]?.url || '/placeholder-sendero.svg',
-      price: sendero.precio,
+      price: totalPrice,
       currency: sendero.moneda,
-      date: selectedDate ? new Date(selectedDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      participants: participantsCount,
-      duration: sendero.duracion
+      fecha: fechaReserva,
+      personas: participantsCount,
+      turno: selectedTurno,
+      duracion: sendero.duracion,
     });
 
-    const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    navigate('/checkout', {
-      state: {
-        type: 'sendero',
-        id: sendero.id,
-        nombre: sendero.nombre,
-        precio: totalPrice,
-        fechaInicio: selectedDate || defaultDate,
-        fechaFin: selectedDate || defaultDate,
-        personas: participantsCount,
-        turno: selectedTurno,
-      }
-    });
+    setShowAddedModal(true);
   };
 
   const handleBookNow = () => {
@@ -606,6 +600,14 @@ const ActivityDetails: React.FC = () => {
         show={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         returnPath={`/actividades/${id}`}
+      />
+
+      {/* Added to Cart Modal */}
+      <AddedToCartModal
+        isOpen={showAddedModal}
+        onClose={() => setShowAddedModal(false)}
+        itemName={sendero?.nombre || ''}
+        itemType="sendero"
       />
     </div>
   );

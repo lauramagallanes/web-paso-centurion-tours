@@ -90,7 +90,7 @@ resource "aws_lambda_function" "email_forwarding" {
     variables = {
       DESTINATION_EMAIL = var.destination_email
       FROM_EMAIL        = var.from_email
-      ENVIRONMENT      = var.environment
+      ENVIRONMENT       = var.environment
     }
   }
 

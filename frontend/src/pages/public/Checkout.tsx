@@ -1,27 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCart, CartItem } from '../../contexts/CartContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { useCart } from '../../contexts/CartContext';
 import './Checkout.css';
-
-interface CheckoutItem {
-  type: 'sendero' | 'alojamiento';
-  id: string;
-  nombre: string;
-  precio: number;
-  fechaInicio?: string;
-  fechaFin?: string;
-  personas?: number;
-  turno?: string;
-  guiaId?: string;
-  guiaNombre?: string;
-  checkIn?: string;
-  checkOut?: string;
-  huespedes?: number;
-  noches?: number;
-}
 
 interface ContactInfo {
   nombreContacto: string;
@@ -30,13 +13,77 @@ interface ContactInfo {
   observaciones: string;
 }
 
+const formatCurrency = (amount: number, currency = 'UYU') =>
+  new Intl.NumberFormat('es-UY', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+  }).format(amount);
+
+const formatDate = (iso: string) =>
+  new Intl.DateTimeFormat('es-UY', { year: 'numeric', month: 'short', day: 'numeric' }).format(
+    new Date(iso + 'T12:00:00')
+  );
+
+const itemToOrdenItem = (item: CartItem) => {
+  if (item.type === 'sendero') {
+    return {
+      tipo: 'SENDERO',
+      productoId: item.id,
+      fechaInicio: item.fecha,
+      fechaFin: item.fecha,
+      turno: item.turno,
+      numeroPersonas: item.personas,
+    };
+  } else {
+    return {
+      tipo: 'ALOJAMIENTO',
+      productoId: item.id,
+      fechaCheckIn: item.checkIn,
+      fechaCheckOut: item.checkOut,
+      numeroHuespedes: item.huespedes,
+    };
+  }
+};
+
+const CartItemSummary: React.FC<{ item: CartItem; currency: string }> = ({ item, currency }) => (
+  <div className="summary-item">
+    <div className="summary-item-header">
+      <div className="summary-item-type-badge">
+        {item.type === 'alojamiento' ? '🏠 Alojamiento' : '🥾 Sendero'}
+      </div>
+      <span className="summary-item-subtotal">{formatCurrency(item.price, currency)}</span>
+    </div>
+    <h4 className="summary-item-name">{item.name}</h4>
+    <div className="summary-item-details">
+      {item.type === 'alojamiento' ? (
+        <>
+          {item.checkIn && item.checkOut && (
+            <span>📅 {formatDate(item.checkIn)} → {formatDate(item.checkOut)}</span>
+          )}
+          {item.noches != null && <span>🌙 {item.noches} noche{item.noches !== 1 ? 's' : ''}</span>}
+          {item.huespedes != null && <span>👥 {item.huespedes} huésped{item.huespedes !== 1 ? 'es' : ''}</span>}
+        </>
+      ) : (
+        <>
+          {item.fecha && <span>📅 {formatDate(item.fecha)}</span>}
+          {item.turno && (
+            <span>
+              🕐 {item.turno === 'MANANA' ? 'Mañana' : item.turno === 'TARDE' ? 'Tarde' : item.turno}
+            </span>
+          )}
+          {item.personas != null && <span>👥 {item.personas} persona{item.personas !== 1 ? 's' : ''}</span>}
+        </>
+      )}
+    </div>
+  </div>
+);
+
 const Checkout: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { state: cartState, clearCart } = useCart();
   const { state: authState } = useAuth();
 
-  const [item, setItem] = useState<CheckoutItem | null>(null);
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
     nombreContacto: authState.user?.nombreCompleto || '',
     emailContacto: authState.user?.email || '',
@@ -49,141 +96,85 @@ const Checkout: React.FC = () => {
   const [tipoPago, setTipoPago] = useState<'TOTAL' | 'SENA'>('TOTAL');
   const [alternativasSendero, setAlternativasSendero] = useState<Array<{ id: string; nombre: string }>>([]);
 
-  useEffect(() => {
-    // Check if item was passed via navigation state
-    const navState = location.state as CheckoutItem | null;
-    if (navState) {
-      setItem(navState);
-    } else if (cartState.items && cartState.items.length > 0) {
-      // Use first cart item
-      const cartItem = cartState.items[0];
-      const dateStr = cartItem.date ? new Date(cartItem.date).toISOString().split('T')[0] : '';
-      const checkInStr = cartItem.checkIn ? new Date(cartItem.checkIn).toISOString().split('T')[0] : dateStr;
-      const checkOutStr = cartItem.checkOut ? new Date(cartItem.checkOut).toISOString().split('T')[0] : dateStr;
+  const items = cartState.items;
+  const totalBruto = items.reduce((sum, i) => sum + i.price, 0);
+  const montoAPagar = tipoPago === 'SENA' ? totalBruto * 0.3 : totalBruto;
+  const currency = items[0]?.currency || 'UYU';
 
-      setItem({
-        type: cartItem.type === 'accommodation' ? 'alojamiento' : 'sendero',
-        id: cartItem.id,
-        nombre: cartItem.name,
-        precio: cartItem.price,
-        fechaInicio: dateStr,
-        fechaFin: dateStr,
-        personas: cartItem.participants || cartItem.guests || 1,
-        turno: 'MANANA',
-        checkIn: checkInStr,
-        checkOut: checkOutStr,
-        huespedes: cartItem.guests || cartItem.participants || 1,
-      });
+  useEffect(() => {
+    if (authState.user?.nombreCompleto && !contactInfo.nombreContacto) {
+      setContactInfo(prev => ({ ...prev, nombreContacto: authState.user!.nombreCompleto }));
     }
-  }, [location.state, cartState.items]);
+    if (authState.user?.email && !contactInfo.emailContacto) {
+      setContactInfo(prev => ({ ...prev, emailContacto: authState.user!.email }));
+    }
+  }, [authState.user]);
 
   const handleContactChange = (field: keyof ContactInfo, value: string) => {
     setContactInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  const isContactValid = () => {
-    return contactInfo.nombreContacto.trim() !== '' &&
-           contactInfo.emailContacto.trim() !== '' &&
-           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactInfo.emailContacto);
-  };
+  const isContactValid = () =>
+    contactInfo.nombreContacto.trim() !== '' &&
+    contactInfo.emailContacto.trim() !== '' &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactInfo.emailContacto);
 
   const handleProceedToPayment = async () => {
-    if (!item || !isContactValid()) return;
+    if (items.length === 0 || !isContactValid()) return;
 
     setLoading(true);
     setError(null);
     setStep('processing');
 
     try {
-      let reservaResponse: any;
+      const payload = {
+        emailContacto: contactInfo.emailContacto,
+        nombreContacto: contactInfo.nombreContacto,
+        telefonoContacto: contactInfo.telefonoContacto || undefined,
+        observaciones: contactInfo.observaciones || undefined,
+        tipoPago,
+        items: items.map(itemToOrdenItem),
+      };
 
-      if (item.type === 'sendero') {
-        // Create sendero reservation
-        const senderoPayload: any = {
-          tipoReserva: 'SENDERO',
-          emailContacto: contactInfo.emailContacto,
-          nombreContacto: contactInfo.nombreContacto,
-          telefonoContacto: contactInfo.telefonoContacto,
-          numeroPersonas: item.personas || 1,
-          fechaInicio: item.fechaInicio || '',
-          fechaFin: item.fechaFin || item.fechaInicio || '',
-          senderoId: item.id,
-          turno: item.turno || 'MANANA',
-          observaciones: contactInfo.observaciones,
-        };
-        if (item.guiaId) {
-          senderoPayload.guiaId = item.guiaId;
-        }
-        reservaResponse = await apiService.createSenderoReservation(senderoPayload);
-      } else {
-        // Create alojamiento reservation
-        reservaResponse = await apiService.createAlojamientoReservation({
-          emailContacto: contactInfo.emailContacto,
-          nombreContacto: contactInfo.nombreContacto,
-          telefonoContacto: contactInfo.telefonoContacto,
-          alojamientoId: item.id,
-          fechaCheckIn: item.checkIn || item.fechaInicio || '',
-          fechaCheckOut: item.checkOut || item.fechaFin || '',
-          numeroHuespedes: item.huespedes || item.personas || 1,
-          observaciones: contactInfo.observaciones,
-        });
-      }
+      const response: any = await apiService.createOrdenCheckout(payload);
+      const data = response?.data || response;
 
-      const reservaData = reservaResponse?.data || reservaResponse;
-      const reservaId = reservaData?.id;
-
-      if (!reservaId) {
-        throw new Error('No se pudo crear la reserva');
-      }
-
-      // Create PlacetoPay payment session
-      const paymentResponse: any = await apiService.createPaymentSession(
-        reservaId,
-        item.type === 'sendero' ? 'SENDERO' : 'ALOJAMIENTO',
-        tipoPago
-      );
-
-      const paymentData = paymentResponse?.data || paymentResponse;
-
-      if (paymentData?.processUrl) {
-        // Clear cart and redirect to PlacetoPay
+      if (data?.processUrl) {
         clearCart();
-        window.location.href = paymentData.processUrl;
-      } else if (paymentData?.status === 'MOCK') {
-        // PlacetoPay not configured - redirect to result page with mock
+        window.location.href = data.processUrl;
+      } else if (data?.status === 'MOCK') {
         clearCart();
-        navigate(`/pago/resultado?reservaId=${reservaId}&tipo=${item.type === 'sendero' ? 'SENDERO' : 'ALOJAMIENTO'}&mock=true`);
+        navigate(
+          `/pago/resultado?ordenId=${data.ordenId}&mock=true`
+        );
       } else {
-        throw new Error(paymentData?.message || 'Error al crear sesión de pago');
+        throw new Error(data?.message || 'Error al crear la sesión de pago.');
       }
-
     } catch (err: any) {
-      console.error('Error in checkout:', err);
-      setError(err.message || 'Error al procesar el pago. Por favor intenta nuevamente.');
-      // If backend returned alternative senderos (409 conflict), surface them
       const alts = err.responseData?.alternativas;
       if (Array.isArray(alts) && alts.length > 0) {
         setAlternativasSendero(alts);
       } else {
         setAlternativasSendero([]);
       }
+      setError(err.message || 'Error al procesar el pago. Por favor intentá nuevamente.');
       setStep('contact');
     } finally {
       setLoading(false);
     }
   };
 
-  if (!item) {
+  if (items.length === 0) {
     return (
       <div className="checkout-page">
         <div className="checkout-container">
           <div className="checkout-empty">
-            <h2>No hay items para pagar</h2>
-            <p>Selecciona un sendero o alojamiento para realizar una reserva.</p>
-            <button className="btn-primary" onClick={() => navigate('/activities')}>
+            <h2>Tu carrito está vacío</h2>
+            <p>Agregá senderos o alojamientos para realizar una reserva.</p>
+            <button className="btn btn-primary me-2" onClick={() => navigate('/actividades')}>
               Ver Senderos
             </button>
-            <button className="btn-secondary" onClick={() => navigate('/alojamientos')}>
+            <button className="btn btn-outline-secondary" onClick={() => navigate('/alojamientos')}>
               Ver Alojamientos
             </button>
           </div>
@@ -199,7 +190,7 @@ const Checkout: React.FC = () => {
 
         {/* Progress Steps */}
         <div className="checkout-steps">
-          <div className={`step ${step === 'review' ? 'active' : step !== 'review' ? 'completed' : ''}`}>
+          <div className={`step ${step === 'review' ? 'active' : 'completed'}`}>
             <span className="step-number">1</span>
             <span className="step-label">Revisar</span>
           </div>
@@ -218,55 +209,18 @@ const Checkout: React.FC = () => {
         <div className="checkout-content">
           {/* Order Summary */}
           <div className="checkout-summary">
-            <h2>Resumen de Reserva</h2>
-            <div className="summary-card">
-              <div className="summary-type">
-                {item.type === 'sendero' ? 'Sendero / Actividad' : 'Alojamiento'}
-              </div>
-              <h3>{item.nombre}</h3>
-              
-              {item.type === 'sendero' ? (
-                <div className="summary-details">
-                  <div className="detail-row">
-                    <span>Fecha:</span>
-                    <span>{item.fechaInicio}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Turno:</span>
-                    <span>{item.turno === 'MANANA' ? 'Mañana' : 'Tarde'}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Personas:</span>
-                    <span>{item.personas}</span>
-                  </div>
-                  {/* Guide name intentionally not shown to users */}
-                </div>
-              ) : (
-                <div className="summary-details">
-                  <div className="detail-row">
-                    <span>Check-in:</span>
-                    <span>{item.checkIn || item.fechaInicio}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Check-out:</span>
-                    <span>{item.checkOut || item.fechaFin}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Huéspedes:</span>
-                    <span>{item.huespedes || item.personas}</span>
-                  </div>
-                  {item.noches && (
-                    <div className="detail-row">
-                      <span>Noches:</span>
-                      <span>{item.noches}</span>
-                    </div>
-                  )}
-                </div>
-              )}
+            <h2>Estos son los servicios que estás por pagar</h2>
 
-              <div className="summary-total">
-                <span>Total:</span>
-                <span className="total-price">$${item.precio?.toFixed(2)} UYU</span>
+            <div className="summary-card">
+              {items.map(item => (
+                <CartItemSummary key={item.cartItemId} item={item} currency={currency} />
+              ))}
+
+              <div className="summary-divider" />
+
+              <div className="summary-subtotal-row">
+                <span>Subtotal ({items.length} ítem{items.length !== 1 ? 's' : ''}):</span>
+                <span>{formatCurrency(totalBruto, currency)}</span>
               </div>
 
               {/* Payment type selector */}
@@ -275,40 +229,49 @@ const Checkout: React.FC = () => {
 
                 <div className={`payment-type-option ${tipoPago === 'TOTAL' ? 'payment-option-selected' : ''}`}>
                   <label>
-                    <input type="radio" name="tipoPago" value="TOTAL" checked={tipoPago === 'TOTAL'} onChange={() => setTipoPago('TOTAL')} />
+                    <input
+                      type="radio"
+                      name="tipoPago"
+                      value="TOTAL"
+                      checked={tipoPago === 'TOTAL'}
+                      onChange={() => setTipoPago('TOTAL')}
+                    />
                     <strong>Pago total</strong>
-                    <span className="payment-option-amount">${item.precio?.toFixed(2)} UYU</span>
+                    <span className="payment-option-amount">{formatCurrency(totalBruto, currency)}</span>
                   </label>
                 </div>
 
                 <div className={`payment-type-option sena-highlight ${tipoPago === 'SENA' ? 'payment-option-selected' : ''}`}>
                   <label>
-                    <input type="radio" name="tipoPago" value="SENA" checked={tipoPago === 'SENA'} onChange={() => setTipoPago('SENA')} />
+                    <input
+                      type="radio"
+                      name="tipoPago"
+                      value="SENA"
+                      checked={tipoPago === 'SENA'}
+                      onChange={() => setTipoPago('SENA')}
+                    />
                     <strong>Reserva (30%)</strong>
-                    <span className="payment-option-amount">${(item.precio * 0.3).toFixed(2)} UYU</span>
+                    <span className="payment-option-amount">{formatCurrency(totalBruto * 0.3, currency)}</span>
                   </label>
                   <p>
-                    Saldo restante: ${(item.precio * 0.7).toFixed(2)} UYU a pagar antes de{' '}
-                    {item.type === 'alojamiento' ? 'tu check-in' : 'la excursión'}
+                    Saldo restante: {formatCurrency(totalBruto * 0.7, currency)} a pagar antes de tu reserva.
                   </p>
                 </div>
 
                 <div className={`payment-amount-summary ${tipoPago === 'SENA' ? 'is-sena' : 'is-total'}`}>
                   <span>Monto a pagar ahora:</span>
-                  <div className="payment-amount-value">
-                    ${tipoPago === 'SENA' ? (item.precio * 0.3).toFixed(2) : item.precio?.toFixed(2)} UYU
-                  </div>
+                  <div className="payment-amount-value">{formatCurrency(montoAPagar, currency)}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Contact Form or Processing */}
+          {/* Right panel */}
           <div className="checkout-form-section">
             {step === 'review' && (
               <div className="review-section">
-                <h2>Revisa tu reserva</h2>
-                <p>Verifica que los datos de tu reserva sean correctos antes de continuar.</p>
+                <h2>Revisá tu reserva</h2>
+                <p>Verificá que los datos sean correctos antes de continuar.</p>
                 <button className="btn-primary btn-full" onClick={() => setStep('contact')}>
                   Continuar
                 </button>
@@ -318,28 +281,17 @@ const Checkout: React.FC = () => {
             {step === 'contact' && (
               <div className="contact-section">
                 <h2>Datos de Contacto</h2>
-                
+
                 {error && (
                   <div className="checkout-error">
                     <p>{error}</p>
                     {alternativasSendero.length > 0 && (
-                      <div style={{ marginTop: '10px' }}>
-                        <p style={{ fontWeight: 600, marginBottom: '6px' }}>
-                          Podés reservar en cambio:
-                        </p>
+                      <div className="checkout-alternatives">
+                        <p className="alternatives-title">Podés reservar en cambio:</p>
                         {alternativasSendero.map(alt => (
                           <button
                             key={alt.id}
-                            style={{
-                              display: 'block',
-                              background: 'none',
-                              border: 'none',
-                              color: '#8a9d4a',
-                              cursor: 'pointer',
-                              textDecoration: 'underline',
-                              padding: '2px 0',
-                              fontSize: '0.9rem',
-                            }}
+                            className="alternative-link"
                             onClick={() => navigate(`/actividades/${alt.id}`)}
                           >
                             → {alt.nombre}
@@ -356,7 +308,7 @@ const Checkout: React.FC = () => {
                     type="text"
                     id="nombre"
                     value={contactInfo.nombreContacto}
-                    onChange={(e) => handleContactChange('nombreContacto', e.target.value)}
+                    onChange={e => handleContactChange('nombreContacto', e.target.value)}
                     placeholder="Tu nombre completo"
                     required
                   />
@@ -369,10 +321,10 @@ const Checkout: React.FC = () => {
                     id="email"
                     value={contactInfo.emailContacto}
                     readOnly={!!authState.user?.email}
-                    onChange={(e) => handleContactChange('emailContacto', e.target.value)}
+                    onChange={e => handleContactChange('emailContacto', e.target.value)}
                     placeholder="tu@email.com"
                     required
-                    style={authState.user?.email ? { opacity: 0.7, cursor: 'not-allowed' } : {}}
+                    className={authState.user?.email ? 'input-readonly' : ''}
                   />
                 </div>
 
@@ -382,7 +334,7 @@ const Checkout: React.FC = () => {
                     type="tel"
                     id="telefono"
                     value={contactInfo.telefonoContacto}
-                    onChange={(e) => handleContactChange('telefonoContacto', e.target.value)}
+                    onChange={e => handleContactChange('telefonoContacto', e.target.value)}
                     placeholder="+598 99 123 456"
                   />
                 </div>
@@ -392,7 +344,7 @@ const Checkout: React.FC = () => {
                   <textarea
                     id="observaciones"
                     value={contactInfo.observaciones}
-                    onChange={(e) => handleContactChange('observaciones', e.target.value)}
+                    onChange={e => handleContactChange('observaciones', e.target.value)}
                     placeholder="Comentarios adicionales para tu reserva..."
                     rows={3}
                   />
@@ -416,7 +368,7 @@ const Checkout: React.FC = () => {
               <div className="processing-section">
                 <LoadingSpinner />
                 <h2>Procesando tu reserva...</h2>
-                <p>Por favor espera mientras preparamos tu pago.</p>
+                <p>Por favor esperá mientras preparamos tu pago.</p>
               </div>
             )}
           </div>

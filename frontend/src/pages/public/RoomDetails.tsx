@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ImageGridGallery from '../../components/common/ImageGridGallery';
 import LoginRequiredModal from '../../components/common/LoginRequiredModal';
+import AddedToCartModal from '../../components/common/AddedToCartModal';
 import './RoomDetails.css';
 
 interface RoomDetails {
@@ -63,6 +64,7 @@ const RoomDetails: React.FC = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showAddedModal, setShowAddedModal] = useState(false);
 
   // Ref to track if booking state was restored from sessionStorage
   const restoredBookingRef = useRef(false);
@@ -298,32 +300,19 @@ const RoomDetails: React.FC = () => {
 
     addItem({
       id: room.id,
-      type: 'accommodation',
+      type: 'alojamiento',
       name: room.nombre,
       description: room.descripcion,
       image: room.imagenes[0]?.url || '/placeholder-sendero.svg',
       price: room.precioPorNoche * guestsCount * nights,
       currency: 'UYU',
-      checkIn: checkInDate,
-      checkOut: checkOutDate,
-      guests: guestsCount
+      checkIn: formatDate(checkInDate),
+      checkOut: formatDate(checkOutDate),
+      huespedes: guestsCount,
+      noches: nights,
     });
 
-    // Navigate to checkout with accommodation data
-    navigate('/checkout', {
-      state: {
-        type: 'alojamiento',
-        id: room.id,
-        nombre: room.nombre,
-        precio: room.precioPorNoche * guestsCount * nights,
-        checkIn: formatDate(checkInDate),
-        checkOut: formatDate(checkOutDate),
-        fechaInicio: formatDate(checkInDate),
-        fechaFin: formatDate(checkOutDate),
-        huespedes: guestsCount,
-        noches: nights,
-      }
-    });
+    setShowAddedModal(true);
   };
 
   const handleBookNow = () => {
@@ -685,6 +674,14 @@ const RoomDetails: React.FC = () => {
         show={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         returnPath={`/alojamientos/${id}`}
+      />
+
+      {/* Added to Cart Modal */}
+      <AddedToCartModal
+        isOpen={showAddedModal}
+        onClose={() => setShowAddedModal(false)}
+        itemName={room?.nombre || ''}
+        itemType="alojamiento"
       />
     </div>
   );

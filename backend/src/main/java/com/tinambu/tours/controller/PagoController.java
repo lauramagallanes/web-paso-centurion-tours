@@ -3,6 +3,7 @@ package com.tinambu.tours.controller;
 import com.tinambu.tours.dto.request.CrearSesionPagoRequest;
 import com.tinambu.tours.dto.response.ApiResponse;
 import com.tinambu.tours.dto.response.EstadoPagoResponse;
+import com.tinambu.tours.dto.response.OrdenEstadoResponse;
 import com.tinambu.tours.dto.response.SesionPagoResponse;
 import com.tinambu.tours.service.PlacetoPayService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -100,6 +101,24 @@ public class PagoController {
             log.error("Error querying payment status", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Error al consultar estado de pago: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/estado/orden/{ordenId}")
+    public ResponseEntity<?> consultarEstadoPagoOrden(@PathVariable UUID ordenId) {
+        try {
+            log.info("GET /pagos/estado/orden/{} - Querying payment status for orden", ordenId);
+
+            OrdenEstadoResponse response = placetoPayService.consultarEstadoPagoOrden(ordenId);
+            return ResponseEntity.ok(ApiResponse.success(response, "Estado de orden consultado"));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error querying orden payment status", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error al consultar estado de orden: " + e.getMessage()));
         }
     }
 

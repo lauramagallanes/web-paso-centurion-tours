@@ -146,3 +146,35 @@
   cursor: pointer;
   width: 100%;
 }
+
+/* Multi-item order result */
+.result-items {
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.result-items-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.result-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--color-border, #333);
+}
+
+.result-item-type {
+  flex: 1;
+  color: var(--color-text-primary, #e0e0e0);
+}
+
+.result-item-subtotal {
+  font-weight: 600;
+  color: var(--color-text-primary, #e0e0e0);
+}

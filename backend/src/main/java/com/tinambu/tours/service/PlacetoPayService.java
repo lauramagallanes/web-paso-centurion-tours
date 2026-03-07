@@ -576,11 +576,14 @@ public class PlacetoPayService {
         request.put("expiration", expiration.atOffset(ZoneOffset.UTC)
                 .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
 
-        // Return URL with reservation info
-        String returnUrl = config.getReturnUrl() + "?reservaId=" + reservaId + "&tipo=" + tipoReserva;
+        // Return URL with reservation/order info
+        String idParam = "ORDEN".equals(tipoReserva)
+                ? "ordenId=" + reservaId
+                : "reservaId=" + reservaId + "&tipo=" + tipoReserva;
+        String returnUrl = config.getReturnUrl() + "?" + idParam;
         request.put("returnUrl", returnUrl);
 
-        String cancelUrl = config.getCancelUrl() + "?reservaId=" + reservaId + "&tipo=" + tipoReserva;
+        String cancelUrl = config.getCancelUrl() + "?" + idParam;
         request.put("cancelUrl", cancelUrl);
 
         // IP and User Agent

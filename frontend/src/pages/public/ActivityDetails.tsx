@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/apiService';
 import { imageStorageService } from '../../services/imageStorageService';
 import { fixArrayEncoding } from '../../utils/encodingFixer';
 import { useCart } from '../../contexts/CartContext';
+import { useAuth } from '../../contexts/AuthContext';
 import SenderoCardV2 from '../../components/common/SenderoCardV2';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ImageGridGallery from '../../components/common/ImageGridGallery';
+import LoginRequiredModal from '../../components/common/LoginRequiredModal';
 import './ActivityDetails.css';
 
 interface SenderoDetails {
@@ -44,6 +46,8 @@ const ActivityDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { state: authState } = useAuth();
+  const restoredBookingRef = useRef(false);
 
   // State
   const [sendero, setSendero] = useState<SenderoDetails | null>(null);
@@ -56,6 +60,7 @@ const ActivityDetails: React.FC = () => {
   const [participantsCount, setParticipantsCount] = useState(1);
   const [selectedTurno, setSelectedTurno] = useState<string>('MANANA');
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Availability state
   const [disponibilidad, setDisponibilidad] = useState<{
@@ -72,6 +77,21 @@ const ActivityDetails: React.FC = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  // Restore booking state from sessionStorage after login redirect
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(`booking_sendero_${id}`);
+      if (saved) {
+        const data = JSON.parse(saved);
+        sessionStorage.removeItem(`booking_sendero_${id}`);
+        if (data.date) setSelectedDate(data.date);
+        if (data.participants) setParticipantsCount(data.participants);
+        if (data.turno) setSelectedTurno(data.turno);
+        restoredBookingRef.current = true;
+      }
+    } catch { /* ignore */ }
+  }, [id]);
 
   // Load sendero details
   useEffect(() => {
@@ -257,6 +277,16 @@ const ActivityDetails: React.FC = () => {
   const handleAddToCart = () => {
     if (!sendero) return;
 
+    if (!authState.isAuthenticated) {
+      sessionStorage.setItem(`booking_sendero_${id}`, JSON.stringify({
+        date: selectedDate,
+        participants: participantsCount,
+        turno: selectedTurno,
+      }));
+      setShowLoginModal(true);
+      return;
+    }
+
     addItem({
       id: sendero.id,
       type: 'activity',
@@ -270,7 +300,6 @@ const ActivityDetails: React.FC = () => {
       duration: sendero.duracion
     });
 
-    // Navigate to checkout with sendero data
     const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     navigate('/checkout', {
       state: {
@@ -287,22 +316,7 @@ const ActivityDetails: React.FC = () => {
   };
 
   const handleBookNow = () => {
-    if (!sendero) return;
-
-    // Navigate to checkout with sendero data
-    const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    navigate('/checkout', {
-      state: {
-        type: 'sendero',
-        id: sendero.id,
-        nombre: sendero.nombre,
-        precio: totalPrice,
-        fechaInicio: selectedDate || defaultDate,
-        fechaFin: selectedDate || defaultDate,
-        personas: participantsCount,
-        turno: selectedTurno,
-      }
-    });
+    handleAddToCart();
   };
 
   const handleRelatedSenderoClick = (senderoId: string) => {
@@ -601,6 +615,13 @@ const ActivityDetails: React.FC = () => {
         )}
 
       </div>
+
+      {/* Login Required Modal */}
+      <LoginRequiredModal
+        show={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        returnPath={`/actividades/${id}`}
+      />
     </div>
   );
 };

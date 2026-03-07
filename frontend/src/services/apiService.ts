@@ -40,18 +40,21 @@ class ApiService {
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       if (response.status === 401) {
-        // Token expirado, intentar refresh
         const refreshed = await this.refreshToken();
         if (!refreshed) {
-          // Redirect to login o limpiar localStorage
           localStorage.clear();
           window.location.href = '/login';
         }
         throw new Error('Token expirado');
       }
-      
+
       const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-      throw new Error(errorData.error || `HTTP ${response.status}`);
+      // Attach full errorData to the error so callers can inspect structured fields
+      // (e.g. alternativas from SinDisponibilidadException responses)
+      const err = new Error(errorData.error || `HTTP ${response.status}`) as any;
+      err.responseData = errorData;
+      err.httpStatus = response.status;
+      throw err;
     }
 
     return response.json();
@@ -777,6 +780,34 @@ class ApiService {
       body: JSON.stringify(data),
     });
 
+    return this.handleResponse(response);
+  }
+
+  /**
+   * Pre-check availability for a sendero before entering checkout.
+   * Never returns guide names — only cupos and a boolean flag.
+   */
+  async checkSenderoDisponibilidad(
+    senderoId: string,
+    fecha: string,
+    turno: 'MANANA' | 'TARDE'
+  ): Promise<{
+    success: boolean;
+    data: {
+      disponible: boolean;
+      cuposTotal: number;
+      cuposOcupados: number;
+      cuposRestantes: number;
+      hayGuiaDisponible: boolean;
+      senderoNombre: string;
+      mensajeUsuario?: string;
+      alternativas?: Array<{ id: string; nombre: string }>;
+    };
+  }> {
+    const response = await fetch(
+      `${this.baseURL}/reservas/sendero/disponibilidad?senderoId=${senderoId}&fecha=${fecha}&turno=${turno}`,
+      { headers: this.getHeaders() }
+    );
     return this.handleResponse(response);
   }
 

@@ -3,14 +3,16 @@ package com.tinambu.tours.service;
 import com.tinambu.tours.dto.request.AlojamientoReservaRequest;
 import com.tinambu.tours.dto.request.ReservaRequest;
 import com.tinambu.tours.dto.response.AlojamientoReservaResponse;
+import com.tinambu.tours.dto.response.DisponibilidadSenderoResponse;
 import com.tinambu.tours.dto.response.ReservaResponse;
 import com.tinambu.tours.entity.alojamiento.Alojamiento;
-import com.tinambu.tours.entity.alojamiento.AlojamientoReservaBloqueo;
 import com.tinambu.tours.entity.guia.Guia;
 import com.tinambu.tours.entity.guia.GuiaReservaBloqueo;
 import com.tinambu.tours.entity.reserva.*;
 import com.tinambu.tours.entity.sendero.Sendero;
+import com.tinambu.tours.entity.sendero.SenderoDisponibilidad;
 import com.tinambu.tours.entity.sendero.TurnoSendero;
+import com.tinambu.tours.exception.SinDisponibilidadException;
 import com.tinambu.tours.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,12 +56,18 @@ public class ReservaService {
     @Autowired
     private AlojamientoService alojamientoService;
 
+    @Autowired
+    private SenderoDisponibilidadRepository disponibilidadRepository;
+
+    @Autowired
+    private SenderoDisponibilidadGuiaRepository disponibilidadGuiaRepository;
+
     // ==================== SENDERO RESERVATIONS ====================
 
     public ReservaResponse crearReservaSendero(ReservaRequest request) {
         log.info("Creating sendero reservation for: {}", request.getEmailContacto());
 
-        // Validate sendero exists and is active
+        // 1. Validate sendero
         Sendero sendero = senderoRepository.findById(request.getSenderoId())
                 .orElseThrow(() -> new IllegalArgumentException("Sendero no encontrado: " + request.getSenderoId()));
 
@@ -67,46 +75,104 @@ public class ReservaService {
             throw new IllegalArgumentException("El sendero no está disponible");
         }
 
-        // Validate capacity
         if (!sendero.puedeAcomodarGrupo(request.getNumeroPersonas())) {
             throw new IllegalArgumentException(
-                String.format("Sendero %s no puede acomodar %d personas (máximo: %d)",
-                    sendero.getNombre(), request.getNumeroPersonas(), sendero.getCapacidadMaximaGrupo())
-            );
+                String.format("El sendero %s no puede acomodar %d personas (máximo: %d)",
+                    sendero.getNombre(), request.getNumeroPersonas(), sendero.getCapacidadMaximaGrupo()));
         }
 
-        // Validate or auto-assign guide
-        Guia guia;
+        // 2. If admin explicitly provides a guide, use it (skip availability logic)
         if (request.getGuiaId() != null) {
-            guia = guiaRepository.findById(request.getGuiaId())
-                    .orElseThrow(() -> new IllegalArgumentException("Guía no encontrado: " + request.getGuiaId()));
-
-            if (!guia.getActivo()) {
-                throw new IllegalArgumentException("El guía seleccionado no está disponible");
-            }
-
-            // Validate guide is not blocked for the requested date/shift
-            boolean guiaBloqueado = guiaBloqueoRepository.isGuiaBlocked(
-                    guia.getId(), request.getFechaInicio(), request.getTurno());
-
-            if (guiaBloqueado) {
-                throw new IllegalArgumentException(
-                    String.format("El guía %s no está disponible para la fecha %s turno %s",
-                        guia.getNombreCompleto(), request.getFechaInicio(), request.getTurno()));
-            }
-        } else {
-            // Auto-assign an available guide
-            List<Guia> guiasActivos = guiaRepository.findByActivoTrue();
-            guia = guiasActivos.stream()
-                    .filter(g -> !guiaBloqueoRepository.isGuiaBlocked(
-                            g.getId(), request.getFechaInicio(), request.getTurno()))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "No hay guías disponibles para la fecha " + request.getFechaInicio() + " turno " + request.getTurno()));
-            log.info("Auto-assigned guide: {} for date {} turno {}", guia.getNombreCompleto(), request.getFechaInicio(), request.getTurno());
+            return crearReservaConGuiaExplicito(request, sendero);
         }
 
-        // Create the sendero reservation
+        // 3. Find active availability windows for this sendero / date / turno
+        List<SenderoDisponibilidad> ventanas = disponibilidadRepository
+                .findVentanasActivas(sendero.getId(), request.getFechaInicio(), request.getTurno())
+                .stream()
+                .filter(v -> v.matchesDiaSemana(request.getFechaInicio()))
+                .collect(Collectors.toList());
+
+        if (ventanas.isEmpty()) {
+            List<SinDisponibilidadException.AlternativaSendero> alts =
+                    buscarAlternativas(sendero.getId(), request.getFechaInicio(), request.getTurno());
+            throw new SinDisponibilidadException(
+                    "Este sendero no tiene disponibilidad configurada para la fecha y horario seleccionados.", alts);
+        }
+
+        // 4. Check cupos (total capacity across windows vs. already-booked persons)
+        int cuposTotal = ventanas.stream().mapToInt(SenderoDisponibilidad::getCuposTotal).max().orElse(8);
+        int cuposOcupados = senderoReservaRepository.sumPersonasReservadas(
+                sendero.getId(), request.getFechaInicio(), request.getTurno());
+        int cuposRestantes = cuposTotal - cuposOcupados;
+
+        if (cuposRestantes < request.getNumeroPersonas()) {
+            List<SinDisponibilidadException.AlternativaSendero> alts =
+                    buscarAlternativas(sendero.getId(), request.getFechaInicio(), request.getTurno());
+            throw new SinDisponibilidadException(
+                    String.format("Este sendero ya no tiene cupos suficientes para %d personas (disponibles: %d).",
+                            request.getNumeroPersonas(), Math.max(0, cuposRestantes)), alts);
+        }
+
+        // 5. Collect guides assigned to the matching windows (intersection with active guides)
+        List<UUID> guiasHabilitados = ventanas.stream()
+                .flatMap(v -> v.obtenerGuiaIds().stream())
+                .distinct()
+                .collect(Collectors.toList());
+
+        // Fallback: if no guides assigned to windows, use all active guides
+        if (guiasHabilitados.isEmpty()) {
+            log.warn("No guides assigned to availability windows for sendero {}. Falling back to all active guides.", sendero.getNombre());
+            guiasHabilitados = guiaRepository.findByActivoTrue().stream()
+                    .map(Guia::getId)
+                    .collect(Collectors.toList());
+        }
+
+        // 6. Exclude guides already blocked on this date/shift (cross-sendero constraint)
+        List<UUID> guiasBloqueados = guiaBloqueoRepository.findBlockedGuiaIds(
+                request.getFechaInicio(), request.getTurno());
+
+        Optional<UUID> guiaIdOpt = guiasHabilitados.stream()
+                .filter(gid -> !guiasBloqueados.contains(gid))
+                .findFirst();
+
+        if (guiaIdOpt.isEmpty()) {
+            List<SinDisponibilidadException.AlternativaSendero> alts =
+                    buscarAlternativas(sendero.getId(), request.getFechaInicio(), request.getTurno());
+            throw new SinDisponibilidadException(
+                    "No hay guías disponibles para la fecha y horario seleccionados.", alts);
+        }
+
+        Guia guia = guiaRepository.findById(guiaIdOpt.get())
+                .orElseThrow(() -> new IllegalArgumentException("Guía no encontrado internamente"));
+
+        log.info("Auto-assigned guide (internal id {}) for sendero {} on {} {}", 
+                guia.getId(), sendero.getNombre(), request.getFechaInicio(), request.getTurno());
+
+        return persistirReserva(request, sendero, guia);
+    }
+
+    /** Used only when admin explicitly specifies a guide (e.g. from backoffice). */
+    private ReservaResponse crearReservaConGuiaExplicito(ReservaRequest request, Sendero sendero) {
+        Guia guia = guiaRepository.findById(request.getGuiaId())
+                .orElseThrow(() -> new IllegalArgumentException("Guía no encontrado: " + request.getGuiaId()));
+
+        if (!guia.getActivo()) {
+            throw new IllegalArgumentException("El guía seleccionado no está activo");
+        }
+
+        boolean bloqueado = guiaBloqueoRepository.isGuiaBlocked(
+                guia.getId(), request.getFechaInicio(), request.getTurno());
+        if (bloqueado) {
+            throw new IllegalArgumentException(
+                    "El guía seleccionado no está disponible para esa fecha y horario");
+        }
+
+        return persistirReserva(request, sendero, guia);
+    }
+
+    /** Builds, validates, saves the reservation and creates the guide block. */
+    private ReservaResponse persistirReserva(ReservaRequest request, Sendero sendero, Guia guia) {
         SenderoReserva reserva = new SenderoReserva(
                 request.getEmailContacto(),
                 request.getNombreContacto(),
@@ -121,26 +187,171 @@ public class ReservaService {
         reserva.setTelefonoContacto(request.getTelefonoContacto());
         reserva.setObservaciones(request.getObservaciones());
 
-        // Calculate price
         BigDecimal precio = sendero.calcularPrecioTotal(request.getNumeroPersonas());
         reserva.setPrecioTotal(precio);
         reserva.setSaldoPendiente(precio);
-
-        // Set payment deadline (48 hours before start date)
         reserva.setFechaLimitePago(request.getFechaInicio().minusDays(2));
 
-        // Validate the reservation
         reserva.validarReserva();
 
-        // Save the reservation
         reserva = senderoReservaRepository.save(reserva);
         log.info("Sendero reservation created: {}", reserva.getCodigoReserva());
 
-        // Block the guide for this date/shift across all senderos
-        bloquearGuiaParaReserva(guia.getId(), reserva.getId(), 
+        bloquearGuiaParaReserva(guia.getId(), reserva.getId(),
                 request.getFechaInicio(), request.getTurno(), sendero.getNombre());
 
         return convertirSenderoReservaAResponse(reserva);
+    }
+
+    // ==================== AVAILABILITY CHECK ====================
+
+    /**
+     * Public availability check used by the frontend before entering checkout.
+     * Never exposes guide names.
+     */
+    @Transactional(readOnly = true)
+    public DisponibilidadSenderoResponse verificarDisponibilidadSendero(
+            UUID senderoId, LocalDate fecha, TurnoSendero turno) {
+
+        DisponibilidadSenderoResponse resp = new DisponibilidadSenderoResponse();
+
+        Sendero sendero = senderoRepository.findById(senderoId).orElse(null);
+        if (sendero == null || !sendero.getActivo()) {
+            resp.setDisponible(false);
+            resp.setMensajeUsuario("Sendero no disponible.");
+            resp.setAlternativas(List.of());
+            return resp;
+        }
+
+        resp.setSenderoNombre(sendero.getNombre());
+
+        // Find matching windows
+        List<SenderoDisponibilidad> ventanas = disponibilidadRepository
+                .findVentanasActivas(senderoId, fecha, turno)
+                .stream()
+                .filter(v -> v.matchesDiaSemana(fecha))
+                .collect(Collectors.toList());
+
+        if (ventanas.isEmpty()) {
+            resp.setDisponible(false);
+            resp.setHayGuiaDisponible(false);
+            resp.setCuposTotal(0);
+            resp.setCuposOcupados(0);
+            resp.setCuposRestantes(0);
+            resp.setMensajeUsuario("Este sendero no opera en la fecha y horario seleccionados.");
+            resp.setAlternativas(toAlternativaResponse(
+                    buscarAlternativas(senderoId, fecha, turno)));
+            return resp;
+        }
+
+        // Cupos
+        int cuposTotal    = ventanas.stream().mapToInt(SenderoDisponibilidad::getCuposTotal).max().orElse(8);
+        int cuposOcupados = senderoReservaRepository.sumPersonasReservadas(senderoId, fecha, turno);
+        int cuposRestantes = Math.max(0, cuposTotal - cuposOcupados);
+
+        // Guide availability
+        List<UUID> guiasHabilitados = ventanas.stream()
+                .flatMap(v -> v.obtenerGuiaIds().stream())
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (guiasHabilitados.isEmpty()) {
+            guiasHabilitados = guiaRepository.findByActivoTrue().stream()
+                    .map(Guia::getId).collect(Collectors.toList());
+        }
+
+        List<UUID> guiasBloqueados = guiaBloqueoRepository.findBlockedGuiaIds(fecha, turno);
+        boolean hayGuia = guiasHabilitados.stream().anyMatch(gid -> !guiasBloqueados.contains(gid));
+
+        resp.setCuposTotal(cuposTotal);
+        resp.setCuposOcupados(cuposOcupados);
+        resp.setCuposRestantes(cuposRestantes);
+        resp.setHayGuiaDisponible(hayGuia);
+
+        boolean disponible = hayGuia && cuposRestantes > 0;
+        resp.setDisponible(disponible);
+
+        if (!disponible) {
+            List<SinDisponibilidadException.AlternativaSendero> alts =
+                    buscarAlternativas(senderoId, fecha, turno);
+            resp.setAlternativas(toAlternativaResponse(alts));
+
+            if (!hayGuia) {
+                resp.setMensajeUsuario(buildMensajeSinGuia(alts));
+            } else {
+                resp.setMensajeUsuario(String.format(
+                        "Este sendero no tiene cupos disponibles para esa fecha y horario (disponibles: %d).",
+                        cuposRestantes));
+            }
+        }
+
+        return resp;
+    }
+
+    // ==================== HELPER: alternatives ============================
+
+    /**
+     * Returns senderos (other than the given one) that have at least one free guide
+     * for the requested date/turno, respecting the day-of-week constraint.
+     */
+    private List<SinDisponibilidadException.AlternativaSendero> buscarAlternativas(
+            UUID excluirSenderoId, LocalDate fecha, TurnoSendero turno) {
+
+        List<UUID> guiasBloqueados = guiaBloqueoRepository.findBlockedGuiaIds(fecha, turno);
+
+        List<UUID> otrosSenderoIds = disponibilidadRepository
+                .findOtrosSenderoIdsConVentana(excluirSenderoId, fecha, turno);
+
+        return otrosSenderoIds.stream()
+                .filter(sid -> {
+                    List<SenderoDisponibilidad> ventanas = disponibilidadRepository
+                            .findVentanasActivas(sid, fecha, turno)
+                            .stream()
+                            .filter(v -> v.matchesDiaSemana(fecha))
+                            .collect(Collectors.toList());
+                    if (ventanas.isEmpty()) return false;
+
+                    // Check guide availability
+                    List<UUID> guiasH = ventanas.stream()
+                            .flatMap(v -> v.obtenerGuiaIds().stream())
+                            .distinct().collect(Collectors.toList());
+                    if (guiasH.isEmpty()) {
+                        guiasH = guiaRepository.findByActivoTrue().stream()
+                                .map(Guia::getId).collect(Collectors.toList());
+                    }
+                    List<UUID> guiasHFinal = guiasH;
+                    boolean hayGuia = guiasHFinal.stream().anyMatch(gid -> !guiasBloqueados.contains(gid));
+                    if (!hayGuia) return false;
+
+                    // Check cupos
+                    int cuposTotal = ventanas.stream().mapToInt(SenderoDisponibilidad::getCuposTotal).max().orElse(8);
+                    int ocupados   = senderoReservaRepository.sumPersonasReservadas(sid, fecha, turno);
+                    return (cuposTotal - ocupados) > 0;
+                })
+                .map(sid -> senderoRepository.findById(sid).orElse(null))
+                .filter(Objects::nonNull)
+                .filter(Sendero::getActivo)
+                .map(s -> new SinDisponibilidadException.AlternativaSendero(s.getId().toString(), s.getNombre()))
+                .collect(Collectors.toList());
+    }
+
+    private List<DisponibilidadSenderoResponse.AlternativaSendero> toAlternativaResponse(
+            List<SinDisponibilidadException.AlternativaSendero> alts) {
+        return alts.stream()
+                .map(a -> new DisponibilidadSenderoResponse.AlternativaSendero(a.getId(), a.getNombre()))
+                .collect(Collectors.toList());
+    }
+
+    private String buildMensajeSinGuia(List<SinDisponibilidadException.AlternativaSendero> alts) {
+        if (alts.isEmpty()) {
+            return "No hay disponibilidad para la fecha y horario seleccionados.";
+        }
+        String nombres = alts.stream()
+                .map(SinDisponibilidadException.AlternativaSendero::getNombre)
+                .collect(Collectors.joining(", "));
+        return "Para esa fecha y horario este sendero ya no está disponible. " +
+               "Sendero" + (alts.size() > 1 ? "s disponibles" : " disponible") +
+               " en ese horario: " + nombres + ".";
     }
 
     // ==================== ALOJAMIENTO RESERVATIONS ====================

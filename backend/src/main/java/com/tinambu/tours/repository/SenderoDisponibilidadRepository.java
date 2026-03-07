@@ -14,56 +14,51 @@ import java.util.UUID;
 @Repository
 public interface SenderoDisponibilidadRepository extends JpaRepository<SenderoDisponibilidad, UUID> {
 
-    // Find all active availabilities for a sendero
+    // All active availability windows for a sendero
     List<SenderoDisponibilidad> findBySenderoIdAndActivoTrueOrderByFechaInicioAsc(UUID senderoId);
 
-    // Find availabilities that include a specific date
-    @Query("SELECT sd FROM SenderoDisponibilidad sd WHERE sd.senderoId = :senderoId " +
-           "AND sd.activo = true AND :fecha BETWEEN sd.fechaInicio AND sd.fechaFin")
-    List<SenderoDisponibilidad> findBySenderoIdAndDateInRange(@Param("senderoId") UUID senderoId, 
-                                                            @Param("fecha") LocalDate fecha);
-
-    // Find availabilities for specific date and shift
-    @Query("SELECT sd FROM SenderoDisponibilidad sd WHERE sd.senderoId = :senderoId " +
-           "AND sd.activo = true AND :fecha BETWEEN sd.fechaInicio AND sd.fechaFin " +
-           "AND ((:turno = 'MANANA' AND sd.turnoManana = true) OR (:turno = 'TARDE' AND sd.turnoTarde = true))")
-    List<SenderoDisponibilidad> findBySenderoIdAndDateAndShift(@Param("senderoId") UUID senderoId,
-                                                              @Param("fecha") LocalDate fecha,
-                                                              @Param("turno") String turno);
-
-    // Find overlapping availabilities for validation
-    @Query("SELECT sd FROM SenderoDisponibilidad sd WHERE sd.senderoId = :senderoId " +
-           "AND sd.activo = true AND sd.id != :excludeId " +
-           "AND NOT (sd.fechaFin < :fechaInicio OR sd.fechaInicio > :fechaFin)")
-    List<SenderoDisponibilidad> findOverlappingAvailabilities(@Param("senderoId") UUID senderoId,
-                                                              @Param("fechaInicio") LocalDate fechaInicio,
-                                                              @Param("fechaFin") LocalDate fechaFin,
-                                                              @Param("excludeId") UUID excludeId);
-
-    // Find availabilities in a date range
-    @Query("SELECT sd FROM SenderoDisponibilidad sd WHERE sd.senderoId = :senderoId " +
+    /**
+     * Returns availability windows for a sendero that cover the given date and match the given turno.
+     * Day-of-week filtering is done in Java because SQL can't trivially parse the CSV column.
+     */
+    @Query("SELECT sd FROM SenderoDisponibilidad sd " +
+           "WHERE sd.senderoId = :senderoId " +
            "AND sd.activo = true " +
-           "AND NOT (sd.fechaFin < :fechaDesde OR sd.fechaInicio > :fechaHasta) " +
-           "ORDER BY sd.fechaInicio ASC")
-    List<SenderoDisponibilidad> findBySenderoIdInDateRange(@Param("senderoId") UUID senderoId,
-                                                           @Param("fechaDesde") LocalDate fechaDesde,
-                                                           @Param("fechaHasta") LocalDate fechaHasta);
-
-    // Check if sendero is available on specific date and shift
-    @Query("SELECT COUNT(sd) > 0 FROM SenderoDisponibilidad sd WHERE sd.senderoId = :senderoId " +
-           "AND sd.activo = true AND :fecha BETWEEN sd.fechaInicio AND sd.fechaFin " +
-           "AND ((:turno = 'MANANA' AND sd.turnoManana = true) OR (:turno = 'TARDE' AND sd.turnoTarde = true))")
-    boolean isSenderoAvailableOnDateAndShift(@Param("senderoId") UUID senderoId,
-                                           @Param("fecha") LocalDate fecha,
-                                           @Param("turno") String turno);
-
-    // Find all sendero IDs that are available on a specific date and shift
-    @Query("SELECT DISTINCT sd.senderoId FROM SenderoDisponibilidad sd WHERE sd.activo = true " +
            "AND :fecha BETWEEN sd.fechaInicio AND sd.fechaFin " +
-           "AND ((:turno = 'MANANA' AND sd.turnoManana = true) OR (:turno = 'TARDE' AND sd.turnoTarde = true))")
-    List<UUID> findSenderoIdsAvailableOnDateAndShift(@Param("fecha") LocalDate fecha,
-                                                     @Param("turno") String turno);
+           "AND sd.turno = :turno")
+    List<SenderoDisponibilidad> findVentanasActivas(
+            @Param("senderoId") UUID senderoId,
+            @Param("fecha")     LocalDate fecha,
+            @Param("turno")     TurnoSendero turno);
 
-    // Delete all availabilities for a sendero
+    /**
+     * Returns sendero IDs (excluding the given one) that have active availability
+     * on the requested date + turno.  Used to suggest alternatives.
+     */
+    @Query("SELECT DISTINCT sd.senderoId FROM SenderoDisponibilidad sd " +
+           "WHERE sd.activo = true " +
+           "AND :fecha BETWEEN sd.fechaInicio AND sd.fechaFin " +
+           "AND sd.turno = :turno " +
+           "AND sd.senderoId <> :excluirId")
+    List<UUID> findOtrosSenderoIdsConVentana(
+            @Param("excluirId") UUID excluirId,
+            @Param("fecha")     LocalDate fecha,
+            @Param("turno")     TurnoSendero turno);
+
+    /** Find overlapping windows for a sendero (for admin validation). */
+    @Query("SELECT sd FROM SenderoDisponibilidad sd " +
+           "WHERE sd.senderoId = :senderoId " +
+           "AND sd.activo = true " +
+           "AND sd.turno = :turno " +
+           "AND sd.id <> :excludeId " +
+           "AND NOT (sd.fechaFin < :fechaInicio OR sd.fechaInicio > :fechaFin)")
+    List<SenderoDisponibilidad> findOverlappingAvailabilities(
+            @Param("senderoId")   UUID senderoId,
+            @Param("turno")       TurnoSendero turno,
+            @Param("fechaInicio") LocalDate fechaInicio,
+            @Param("fechaFin")    LocalDate fechaFin,
+            @Param("excludeId")   UUID excludeId);
+
+    // Delete all availabilities for a sendero (admin/cascade use)
     void deleteBySenderoId(UUID senderoId);
 }

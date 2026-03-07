@@ -47,6 +47,7 @@ const Checkout: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'review' | 'contact' | 'processing'>('review');
   const [tipoPago, setTipoPago] = useState<'TOTAL' | 'SENA'>('TOTAL');
+  const [alternativasSendero, setAlternativasSendero] = useState<Array<{ id: string; nombre: string }>>([]);
 
   useEffect(() => {
     // Check if item was passed via navigation state
@@ -159,6 +160,13 @@ const Checkout: React.FC = () => {
     } catch (err: any) {
       console.error('Error in checkout:', err);
       setError(err.message || 'Error al procesar el pago. Por favor intenta nuevamente.');
+      // If backend returned alternative senderos (409 conflict), surface them
+      const alts = err.responseData?.alternativas;
+      if (Array.isArray(alts) && alts.length > 0) {
+        setAlternativasSendero(alts);
+      } else {
+        setAlternativasSendero([]);
+      }
       setStep('contact');
     } finally {
       setLoading(false);
@@ -231,12 +239,7 @@ const Checkout: React.FC = () => {
                     <span>Personas:</span>
                     <span>{item.personas}</span>
                   </div>
-                  {item.guiaNombre && (
-                    <div className="detail-row">
-                      <span>Guía:</span>
-                      <span>{item.guiaNombre}</span>
-                    </div>
-                  )}
+                  {/* Guide name intentionally not shown to users */}
                 </div>
               ) : (
                 <div className="summary-details">
@@ -324,6 +327,31 @@ const Checkout: React.FC = () => {
                 {error && (
                   <div className="checkout-error">
                     <p>{error}</p>
+                    {alternativasSendero.length > 0 && (
+                      <div style={{ marginTop: '10px' }}>
+                        <p style={{ fontWeight: 600, marginBottom: '6px' }}>
+                          Podés reservar en cambio:
+                        </p>
+                        {alternativasSendero.map(alt => (
+                          <button
+                            key={alt.id}
+                            style={{
+                              display: 'block',
+                              background: 'none',
+                              border: 'none',
+                              color: '#8a9d4a',
+                              cursor: 'pointer',
+                              textDecoration: 'underline',
+                              padding: '2px 0',
+                              fontSize: '0.9rem',
+                            }}
+                            onClick={() => navigate(`/actividades/${alt.id}`)}
+                          >
+                            → {alt.nombre}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 

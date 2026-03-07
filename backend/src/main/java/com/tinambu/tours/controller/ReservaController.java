@@ -4,7 +4,10 @@ import com.tinambu.tours.dto.request.AlojamientoReservaRequest;
 import com.tinambu.tours.dto.request.ReservaRequest;
 import com.tinambu.tours.dto.response.AlojamientoReservaResponse;
 import com.tinambu.tours.dto.response.ApiResponse;
+import com.tinambu.tours.dto.response.DisponibilidadSenderoResponse;
 import com.tinambu.tours.dto.response.ReservaResponse;
+import com.tinambu.tours.entity.sendero.TurnoSendero;
+import com.tinambu.tours.exception.SinDisponibilidadException;
 import com.tinambu.tours.service.ReservaService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -14,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +42,13 @@ public class ReservaController {
             ReservaResponse response = reservaService.crearReservaSendero(request);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success(response, "Reserva de sendero creada exitosamente"));
+        } catch (SinDisponibilidadException e) {
+            log.warn("No availability for sendero reservation: {}", e.getMessage());
+            // Return structured 409 so the frontend can show alternatives
+            Map<String, Object> body = new HashMap<>();
+            body.put("error", e.getMessage());
+            body.put("alternativas", e.getAlternativas());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
         } catch (IllegalArgumentException e) {
             log.warn("Validation error creating sendero reservation: {}", e.getMessage());
             return ResponseEntity.badRequest()
@@ -46,6 +57,32 @@ public class ReservaController {
             log.error("Error creating sendero reservation", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Error interno al crear reserva: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Public availability check — called from the booking sidebar before checkout.
+     * Never exposes guide names or internal data.
+     * GET /reservas/sendero/disponibilidad?senderoId=X&fecha=YYYY-MM-DD&turno=MANANA|TARDE
+     */
+    @GetMapping("/sendero/disponibilidad")
+    public ResponseEntity<?> checkDisponibilidad(
+            @RequestParam UUID senderoId,
+            @RequestParam String fecha,
+            @RequestParam String turno) {
+        try {
+            log.info("GET /reservas/sendero/disponibilidad - sendero={} fecha={} turno={}", senderoId, fecha, turno);
+            LocalDate fechaDate = LocalDate.parse(fecha);
+            TurnoSendero turnoEnum = TurnoSendero.valueOf(turno.toUpperCase());
+            DisponibilidadSenderoResponse response =
+                    reservaService.verificarDisponibilidadSendero(senderoId, fechaDate, turnoEnum);
+            return ResponseEntity.ok(ApiResponse.success(response, "Disponibilidad consultada"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error checking sendero availability", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error al consultar disponibilidad"));
         }
     }
 

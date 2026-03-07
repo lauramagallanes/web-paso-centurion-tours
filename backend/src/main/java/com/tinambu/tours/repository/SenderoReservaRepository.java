@@ -43,4 +43,19 @@ public interface SenderoReservaRepository extends JpaRepository<SenderoReserva, 
 
     @Query("SELECT COUNT(sr) FROM SenderoReserva sr WHERE sr.estado = :estado")
     Long countByEstado(@Param("estado") EstadoReserva estado);
+
+    /**
+     * Returns the total number of persons already reserved for a specific
+     * sendero / date / shift (active reservations only).
+     * Used to calculate remaining cupos.
+     */
+    @Query("SELECT COALESCE(SUM(sr.numeroPersonas), 0) FROM SenderoReserva sr " +
+           "WHERE sr.sendero.id = :senderoId " +
+           "AND sr.fechaInicio = :fecha " +
+           "AND sr.turno = :turno " +
+           "AND sr.estado IN ('CONFIRMADA', 'PENDIENTE')")
+    int sumPersonasReservadas(
+            @Param("senderoId") UUID senderoId,
+            @Param("fecha")     LocalDate fecha,
+            @Param("turno")     TurnoSendero turno);
 }

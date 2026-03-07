@@ -56,6 +56,16 @@ const ActivityDetails: React.FC = () => {
   const [participantsCount, setParticipantsCount] = useState(1);
   const [selectedTurno, setSelectedTurno] = useState<string>('MANANA');
   const [isFavorite, setIsFavorite] = useState(false);
+
+  // Availability state
+  const [disponibilidad, setDisponibilidad] = useState<{
+    disponible: boolean;
+    cuposRestantes: number;
+    cuposTotal: number;
+    mensajeUsuario?: string;
+    alternativas?: Array<{ id: string; nombre: string }>;
+  } | null>(null);
+  const [checkingDisponibilidad, setCheckingDisponibilidad] = useState(false);
   
 
   // Scroll to top when component mounts
@@ -185,6 +195,32 @@ const ActivityDetails: React.FC = () => {
     const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
     setIsFavorite(favorites.some((fav: any) => fav.id === id));
   }, [id]);
+
+  // Check availability whenever date or turno changes
+  useEffect(() => {
+    if (!sendero || !selectedDate) {
+      setDisponibilidad(null);
+      return;
+    }
+    const checkAvailability = async () => {
+      setCheckingDisponibilidad(true);
+      try {
+        const res = await apiService.checkSenderoDisponibilidad(
+          sendero.id,
+          selectedDate,
+          selectedTurno as 'MANANA' | 'TARDE'
+        );
+        if (res.success) {
+          setDisponibilidad(res.data);
+        }
+      } catch {
+        setDisponibilidad(null);
+      } finally {
+        setCheckingDisponibilidad(false);
+      }
+    };
+    checkAvailability();
+  }, [sendero, selectedDate, selectedTurno]);
 
   // Handlers
   const handleFavoriteToggle = () => {
@@ -410,9 +446,9 @@ const ActivityDetails: React.FC = () => {
             <div className="booking-form">
               {/* Date */}
               <div className="form-group">
-                <label className="form-label">Fechas</label>
-                <input 
-                  type="date" 
+                <label className="form-label">Fecha</label>
+                <input
+                  type="date"
                   className="form-input"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
@@ -426,21 +462,17 @@ const ActivityDetails: React.FC = () => {
                 <div className="participants-control">
                   <span>Agregar participantes</span>
                   <div className="participants-buttons">
-                    <button 
+                    <button
                       className="participant-btn"
                       onClick={() => handleParticipantsChange(-1)}
                       disabled={participantsCount <= 1}
-                    >
-                      −
-                    </button>
+                    >−</button>
                     <span className="participant-count">{participantsCount}</span>
-                    <button 
+                    <button
                       className="participant-btn"
                       onClick={() => handleParticipantsChange(1)}
                       disabled={participantsCount >= sendero.maxParticipantes}
-                    >
-                      +
-                    </button>
+                    >+</button>
                   </div>
                 </div>
               </div>
@@ -453,10 +485,49 @@ const ActivityDetails: React.FC = () => {
                   value={selectedTurno}
                   onChange={(e) => setSelectedTurno(e.target.value)}
                 >
-                  <option value="MANANA">Am</option>
-                  <option value="TARDE">Pm</option>
+                  <option value="MANANA">Mañana</option>
+                  <option value="TARDE">Tarde</option>
                 </select>
               </div>
+
+              {/* Cupos / Availability feedback */}
+              {selectedDate && (
+                <div className="form-group">
+                  {checkingDisponibilidad ? (
+                    <p style={{ fontSize: '0.85rem', color: '#888' }}>Verificando disponibilidad…</p>
+                  ) : disponibilidad ? (
+                    disponibilidad.disponible ? (
+                      <p style={{ fontSize: '0.85rem', color: '#6b792e', fontWeight: 600 }}>
+                        ✓ Disponible · {disponibilidad.cuposRestantes} cupo{disponibilidad.cuposRestantes !== 1 ? 's' : ''} restante{disponibilidad.cuposRestantes !== 1 ? 's' : ''}
+                      </p>
+                    ) : (
+                      <div style={{ fontSize: '0.85rem' }}>
+                        <p style={{ color: '#dc6b6b', fontWeight: 600, margin: '0 0 4px' }}>
+                          ✗ No disponible
+                        </p>
+                        {disponibilidad.mensajeUsuario && (
+                          <p style={{ color: '#666', margin: '0 0 4px', lineHeight: 1.4 }}>
+                            {disponibilidad.mensajeUsuario}
+                          </p>
+                        )}
+                        {disponibilidad.alternativas && disponibilidad.alternativas.length > 0 && (
+                          <div style={{ marginTop: 6 }}>
+                            {disponibilidad.alternativas.map(alt => (
+                              <button
+                                key={alt.id}
+                                style={{ fontSize: '0.8rem', color: '#6b792e', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                                onClick={() => navigate(`/actividades/${alt.id}`)}
+                              >
+                                → Ver {alt.nombre}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  ) : null}
+                </div>
+              )}
             </div>
 
             {/* Total */}
@@ -472,14 +543,29 @@ const ActivityDetails: React.FC = () => {
             </div>
 
             {/* Buttons */}
-            <div className="booking-buttons">
-              <button className="btn-primary" onClick={handleBookNow}>
-                Reservar Ahora
-              </button>
-              <button className="btn-secondary" onClick={handleAddToCart}>
-                Agregar al carrito
-              </button>
-            </div>
+            {(() => {
+              const noDisponible = selectedDate && disponibilidad && !disponibilidad.disponible;
+              return (
+                <div className="booking-buttons">
+                  <button
+                    className="btn-primary"
+                    onClick={handleBookNow}
+                    disabled={!!noDisponible || checkingDisponibilidad}
+                    style={noDisponible ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                  >
+                    Reservar Ahora
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    onClick={handleAddToCart}
+                    disabled={!!noDisponible || checkingDisponibilidad}
+                    style={noDisponible ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                  >
+                    Agregar al carrito
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* Note */}
             <div className="booking-note">

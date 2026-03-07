@@ -47,7 +47,7 @@ public class PagoController {
 
             if ("SENDERO".equalsIgnoreCase(request.getTipoReserva())) {
                 response = placetoPayService.crearSesionPagoSendero(
-                        request.getReservaId(), ipAddress, userAgent);
+                        request.getReservaId(), tipoPago, ipAddress, userAgent);
             } else if ("ALOJAMIENTO".equalsIgnoreCase(request.getTipoReserva())) {
                 response = placetoPayService.crearSesionPagoAlojamiento(
                         request.getReservaId(), tipoPago, ipAddress, userAgent);

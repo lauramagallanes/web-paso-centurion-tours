@@ -44,8 +44,8 @@ public class PlacetoPayService {
 
     // ==================== CREATE PAYMENT SESSION ====================
 
-    public SesionPagoResponse crearSesionPagoSendero(UUID reservaId, String ipAddress, String userAgent) {
-        log.info("Creating PlacetoPay session for sendero reservation: {}", reservaId);
+    public SesionPagoResponse crearSesionPagoSendero(UUID reservaId, String tipoPago, String ipAddress, String userAgent) {
+        log.info("Creating PlacetoPay session for sendero reservation: {} (tipoPago: {})", reservaId, tipoPago);
 
         if (!config.isConfigured()) {
             log.warn("PlacetoPay not configured, returning mock response");
@@ -55,14 +55,42 @@ public class PlacetoPayService {
         SenderoReserva reserva = senderoReservaRepository.findById(reservaId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva de sendero no encontrada: " + reservaId));
 
-        String description = String.format("Reserva Sendero: %s - %s",
+        // Calculate amount based on tipoPago (same logic as alojamiento)
+        BigDecimal montoACobrar;
+        boolean esSena = "SENA".equalsIgnoreCase(tipoPago);
+        boolean esSaldo = "SALDO".equalsIgnoreCase(tipoPago);
+
+        if (esSaldo) {
+            BigDecimal saldo = reserva.getSaldoPendiente();
+            if (saldo == null || saldo.compareTo(BigDecimal.ZERO) <= 0) {
+                saldo = reserva.getPrecioTotal().subtract(
+                        reserva.getMontoPagado() != null ? reserva.getMontoPagado() : BigDecimal.ZERO);
+            }
+            if (saldo.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("No hay saldo pendiente para esta reserva");
+            }
+            montoACobrar = saldo;
+            reserva.setTipoPago("SALDO");
+        } else if (esSena) {
+            montoACobrar = reserva.calcularMontoSeña();
+            reserva.setTipoPago("SENA");
+        } else {
+            montoACobrar = reserva.getPrecioTotal();
+            reserva.setTipoPago("TOTAL");
+        }
+
+        log.info("Amount to charge: {} (total: {}, tipoPago: {})", montoACobrar, reserva.getPrecioTotal(), tipoPago);
+
+        String suffixDesc = esSena ? " (Reserva 30%)" : esSaldo ? " (Saldo pendiente)" : "";
+        String description = String.format("Reserva Sendero: %s - %s%s",
                 reserva.getSendero() != null ? reserva.getSendero().getNombre() : "N/A",
-                reserva.getCodigoReserva());
+                reserva.getCodigoReserva(),
+                suffixDesc);
 
         Map<String, Object> sessionRequest = buildSessionRequest(
                 reserva.getCodigoReserva(),
                 description,
-                reserva.getPrecioTotal(),
+                montoACobrar,
                 reserva.getEmailContacto(),
                 reserva.getNombreContacto(),
                 ipAddress,
@@ -77,7 +105,6 @@ public class PlacetoPayService {
             Long requestId = getLongValue(response, "requestId");
             String processUrl = (String) response.get("processUrl");
 
-            // Save requestId on the reservation
             reserva.setPlacetoPayRequestId(requestId);
             reserva.setMetodoPago("PLACETOPAY");
             senderoReservaRepository.save(reserva);
@@ -311,13 +338,28 @@ public class PlacetoPayService {
             String p2pMessage = getNestedString(response, "status", "message");
 
             if ("APPROVED".equals(p2pStatus)) {
+                // Determine amount paid based on tipoPago saved on the reservation
+                BigDecimal montoPagado;
+                if ("SENA".equals(reserva.getTipoPago())) {
+                    montoPagado = reserva.calcularMontoSeña();
+                } else if ("SALDO".equals(reserva.getTipoPago())) {
+                    BigDecimal saldo = reserva.getSaldoPendiente();
+                    if (saldo == null || saldo.compareTo(BigDecimal.ZERO) <= 0) {
+                        saldo = reserva.getPrecioTotal().subtract(
+                                reserva.getMontoPagado() != null ? reserva.getMontoPagado() : BigDecimal.ZERO);
+                    }
+                    montoPagado = saldo;
+                } else {
+                    montoPagado = reserva.getPrecioTotal();
+                }
+
                 reserva.cambiarEstado(EstadoReserva.CONFIRMADA);
-                reserva.registrarPago(reserva.getPrecioTotal(), "PLACETOPAY");
+                reserva.registrarPago(montoPagado, "PLACETOPAY");
                 senderoReservaRepository.save(reserva);
 
                 return buildEstadoResponse(reservaId, codigoReserva, tipoReserva,
-                        reserva.getPrecioTotal(), reserva.getPrecioTotal(), BigDecimal.ZERO,
-                        "CONFIRMADA", "COMPLETO", p2pStatus, p2pMessage, requestId);
+                        reserva.getPrecioTotal(), reserva.getMontoPagado(), reserva.getSaldoPendiente(),
+                        "CONFIRMADA", reserva.getEstadoPago().name(), p2pStatus, p2pMessage, requestId);
             }
 
             if ("REJECTED".equals(p2pStatus)) {

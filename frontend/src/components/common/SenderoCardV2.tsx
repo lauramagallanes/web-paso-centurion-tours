@@ -113,7 +113,7 @@ const SenderoCardV2: React.FC<SenderoCardV2Props> = ({
         <div className="sendero-card-v2-footer">
           <span className="sendero-card-v2-icon">📷</span>
           <span className="sendero-card-v2-price">
-            ${precio.toLocaleString()} {moneda}
+            ${(precio ?? 0).toLocaleString()} {moneda}
           </span>
           <span className="sendero-card-v2-per-person">Por persona</span>
         </div>

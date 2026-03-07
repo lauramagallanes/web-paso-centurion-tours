@@ -536,7 +536,7 @@ const RoomDetails: React.FC = () => {
           <div className="booking-sidebar">
             {/* Price */}
             <div className="booking-price">
-              <div className="price-amount">${room.precioPorNoche.toLocaleString()} UYU</div>
+              <div className="price-amount">${(room.precioPorNoche ?? 0).toLocaleString()} UYU</div>
               <div className="price-unit">Por noche por persona</div>
             </div>
 
@@ -608,7 +608,7 @@ const RoomDetails: React.FC = () => {
             <div className="booking-total">
               <div className="total-row">
                 <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>Total</span>
-                <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>${totalPrice.toLocaleString()} UYU</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>${(totalPrice ?? 0).toLocaleString()} UYU</span>
               </div>
             </div>
 
@@ -657,7 +657,7 @@ const RoomDetails: React.FC = () => {
                     <p className="related-room-description">{related.descripcion}</p>
                     <div className="related-room-info">
                       <span>Hasta {related.capacidadMaxima} personas</span>
-                      <span className="related-room-price">${related.precioPorNoche.toLocaleString()} UYU/noche</span>
+                      <span className="related-room-price">${(related.precioPorNoche ?? 0).toLocaleString()} UYU/noche</span>
                     </div>
                   </div>
                 </div>

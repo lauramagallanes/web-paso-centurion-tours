@@ -437,7 +437,7 @@ const ActivityDetails: React.FC = () => {
           <div className="booking-sidebar">
             {/* Price */}
             <div className="booking-price">
-              <div className="price-amount">${sendero.precio.toLocaleString()} UYU</div>
+              <div className="price-amount">${(sendero.precio ?? 0).toLocaleString()} UYU</div>
               <div className="price-unit">Por persona</div>
             </div>
 
@@ -528,12 +528,12 @@ const ActivityDetails: React.FC = () => {
             {/* Total */}
             <div className="booking-total">
               <div className="total-row">
-                <span className="total-label">${sendero.precio.toLocaleString()} UYU × {participantsCount} asistentes</span>
-                <span className="total-amount">${totalPrice.toLocaleString()} UYU</span>
+                <span className="total-label">${(sendero.precio ?? 0).toLocaleString()} UYU × {participantsCount} asistentes</span>
+                <span className="total-amount">${(totalPrice ?? 0).toLocaleString()} UYU</span>
               </div>
               <div className="total-row">
                 <span>Total</span>
-                <span>${totalPrice.toLocaleString()} UYU</span>
+                <span>${(totalPrice ?? 0).toLocaleString()} UYU</span>
               </div>
             </div>
 

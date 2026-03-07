@@ -48,7 +48,7 @@ spring:
   
   jpa:
     hibernate:
-      ddl-auto: validate  # Cambiado de 'update' a 'validate' para evitar DDL durante inicialización en Lambda
+      ddl-auto: update  # Temporalmente en update para que Hibernate cree las nuevas tablas de OrdenCompra
     show-sql: ${SHOW_SQL:false}
     properties:
       hibernate:

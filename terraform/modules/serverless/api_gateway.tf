@@ -145,6 +145,30 @@ resource "aws_apigatewayv2_route" "senderos_list" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "senderos_admin_list" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /senderos/admin"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_create" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /senderos/admin"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_update" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /senderos/admin/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_delete" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /senderos/admin/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Contact Form Route
 resource "aws_apigatewayv2_route" "contacto" {
   api_id    = aws_apigatewayv2_api.main.id
@@ -383,9 +407,33 @@ resource "aws_apigatewayv2_route" "reservas_update_estado_alojamiento" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "reservas_update_estado_sendero" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /reservas/admin/{id}/estado-sendero"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "reservas_update_estado_pago_alojamiento" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "PUT /reservas/admin/{id}/estado-pago-alojamiento"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_update_estado_pago_sendero" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /reservas/admin/{id}/estado-pago-sendero"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_posponer_sendero" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /reservas/admin/{id}/posponer-sendero"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_posponer_alojamiento" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /reservas/admin/{id}/posponer-alojamiento"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 

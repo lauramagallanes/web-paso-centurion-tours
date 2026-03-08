@@ -128,6 +128,21 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  // Alias used by RoomDetails for related accommodations
+  async getAlojamientos() {
+    return this.getHabitaciones();
+  }
+
+  async verificarDisponibilidadAlojamiento(id: string, fechaCheckIn: string, fechaCheckOut: string, numeroHuespedes: number) {
+    const response = await fetch(`${this.baseURL}/alojamientos/${id}/verificar-disponibilidad`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ fechaCheckIn, fechaCheckOut, numeroHuespedes }),
+    });
+    if (!response.ok) return { disponible: false };
+    return response.json();
+  }
+
   async getAlojamientoById(id: string) {
     const response = await fetch(`${this.baseURL}/alojamientos/${id}`, {
       headers: this.getHeaders(),

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import DatePicker from 'react-datepicker';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { es } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
+registerLocale('es', es);
 import { apiService } from '../../services/apiService';
 import { useCart } from '../../contexts/CartContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -65,6 +67,8 @@ const RoomDetails: React.FC = () => {
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAddedModal, setShowAddedModal] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
 
   // Ref to track if booking state was restored from sessionStorage
   const restoredBookingRef = useRef(false);
@@ -267,6 +271,31 @@ const RoomDetails: React.FC = () => {
     setIsFavorite(!isFavorite);
   };
 
+  // Check availability whenever dates change
+  useEffect(() => {
+    if (!checkInDate || !checkOutDate || !id) {
+      setAvailabilityError(null);
+      return;
+    }
+    const checkAvailability = async () => {
+      setCheckingAvailability(true);
+      setAvailabilityError(null);
+      try {
+        const desde = checkInDate.toISOString().split('T')[0];
+        const hasta = checkOutDate.toISOString().split('T')[0];
+        const result = await apiService.verificarDisponibilidadAlojamiento(id, desde, hasta, guestsCount);
+        if (result && result.disponible === false) {
+          setAvailabilityError('Este alojamiento no está disponible para las fechas seleccionadas.');
+        }
+      } catch {
+        // silently ignore — backend will validate at checkout
+      } finally {
+        setCheckingAvailability(false);
+      }
+    };
+    checkAvailability();
+  }, [checkInDate, checkOutDate, id, guestsCount]);
+
   const handleGuestsChange = (change: number) => {
     const newCount = Math.max(room?.capacidadMinima || 1, Math.min(room?.capacidadMaxima || 10, guestsCount + change));
     setGuestsCount(newCount);
@@ -275,6 +304,10 @@ const RoomDetails: React.FC = () => {
   const handleAddToCart = () => {
     if (!room || !checkInDate || !checkOutDate) {
       alert('Por favor selecciona las fechas de entrada y salida');
+      return;
+    }
+    if (availabilityError) {
+      alert(availabilityError);
       return;
     }
 
@@ -318,6 +351,10 @@ const RoomDetails: React.FC = () => {
   const handleBookNow = () => {
     if (!room || !checkInDate || !checkOutDate) {
       alert('Por favor selecciona las fechas de entrada y salida');
+      return;
+    }
+    if (availabilityError) {
+      alert(availabilityError);
       return;
     }
 
@@ -586,14 +623,14 @@ const RoomDetails: React.FC = () => {
                   selected={checkInDate}
                   onChange={(date: Date | null) => {
                     setCheckInDate(date);
-                    // Reset checkout if it's before new checkin
                     if (checkOutDate && date && date >= checkOutDate) {
                       setCheckOutDate(null);
                     }
                   }}
                   excludeDates={blockedDates}
                   minDate={new Date()}
-                  dateFormat="dd/MM/yyyy"
+                  dateFormat="EEE dd/MM/yyyy"
+                  locale="es"
                   placeholderText="Seleccionar fecha"
                   className="form-input"
                   calendarClassName="room-datepicker"
@@ -607,13 +644,26 @@ const RoomDetails: React.FC = () => {
                   selected={checkOutDate}
                   onChange={(date: Date | null) => setCheckOutDate(date)}
                   excludeDates={blockedDates}
-                  minDate={checkInDate || new Date()}
-                  dateFormat="dd/MM/yyyy"
+                  minDate={checkInDate ? new Date(checkInDate.getTime() + 86400000) : new Date()}
+                  dateFormat="EEE dd/MM/yyyy"
+                  locale="es"
                   placeholderText="Seleccionar fecha"
                   className="form-input"
                   calendarClassName="room-datepicker"
                 />
               </div>
+
+              {/* Availability error */}
+              {availabilityError && (
+                <div className="availability-error">
+                  ⚠ {availabilityError}
+                </div>
+              )}
+              {checkingAvailability && checkInDate && checkOutDate && (
+                <div className="availability-checking">
+                  Verificando disponibilidad...
+                </div>
+              )}
 
               {/* Guests */}
               <div className="form-group">

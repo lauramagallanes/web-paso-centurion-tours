@@ -133,14 +133,16 @@ class ApiService {
     return this.getHabitaciones();
   }
 
-  async verificarDisponibilidadAlojamiento(id: string, fechaCheckIn: string, fechaCheckOut: string, numeroHuespedes: number) {
-    const response = await fetch(`${this.baseURL}/alojamientos/${id}/verificar-disponibilidad`, {
+  async verificarDisponibilidadAlojamiento(id: string, fechaCheckIn: string, fechaCheckOut: string, _numeroHuespedes?: number) {
+    const params = new URLSearchParams({ checkIn: fechaCheckIn, checkOut: fechaCheckOut });
+    const response = await fetch(`${this.baseURL}/alojamientos/${id}/verificar-disponibilidad?${params}`, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify({ fechaCheckIn, fechaCheckOut, numeroHuespedes }),
     });
-    if (!response.ok) return { disponible: false };
-    return response.json();
+    if (!response.ok) return null; // ignore 500 errors — backend will validate at checkout
+    const result = await response.json();
+    // Backend returns a plain boolean
+    return { disponible: result === true };
   }
 
   async getAlojamientoById(id: string) {

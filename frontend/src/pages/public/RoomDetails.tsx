@@ -284,7 +284,8 @@ const RoomDetails: React.FC = () => {
         const desde = checkInDate.toISOString().split('T')[0];
         const hasta = checkOutDate.toISOString().split('T')[0];
         const result = await apiService.verificarDisponibilidadAlojamiento(id, desde, hasta, guestsCount);
-        if (result && result.disponible === false) {
+        // result is null when the server had an internal error — don't show a false negative
+        if (result !== null && result.disponible === false) {
           setAvailabilityError('Este alojamiento no está disponible para las fechas seleccionadas.');
         }
       } catch {

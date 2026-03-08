@@ -19,7 +19,7 @@ interface Reserva {
   precioTotal: number;
   observaciones?: string;
   observacionesAdmin?: string;
-  estadoPago?: 'PENDIENTE' | 'PARCIAL' | 'COMPLETO';
+  estadoPago?: 'PENDIENTE' | 'PARCIAL' | 'COMPLETO' | 'NO_CORRESPONDE';
   montoPagado?: number;
   saldoPendiente?: number;
   metodoPago?: string;
@@ -57,10 +57,6 @@ const ReservationManagement: React.FC = () => {
   // Payment form state
   const [pagoTipo, setPagoTipo] = useState<'PARCIAL' | 'COMPLETO'>('COMPLETO');
   const [pagoMonto, setPagoMonto] = useState<string>('');
-
-  // Confirm modal also registers payment
-  const [confirmPagoTipo, setConfirmPagoTipo] = useState<'PARCIAL' | 'COMPLETO'>('PARCIAL');
-  const [confirmPagoMonto, setConfirmPagoMonto] = useState<string>('');
 
   // Postpone form state
   const [posponerFecha, setPosponerFecha] = useState('');
@@ -113,6 +109,7 @@ const ReservationManagement: React.FC = () => {
       case 'PENDIENTE': return <Badge bg="warning" className="d-flex align-items-center gap-1"><Icon name="clock" size="xs" />Pago Pendiente</Badge>;
       case 'PARCIAL': return <Badge bg="info" className="d-flex align-items-center gap-1"><Icon name="info" size="xs" />Pago Parcial</Badge>;
       case 'COMPLETO': return <Badge bg="success" className="d-flex align-items-center gap-1"><Icon name="check-circle" size="xs" />Pagado</Badge>;
+      case 'NO_CORRESPONDE': return <Badge bg="danger" className="d-flex align-items-center gap-1"><Icon name="close" size="xs" />Cancelada</Badge>;
       default: return <Badge bg="secondary">Sin pago</Badge>;
     }
   };
@@ -135,22 +132,13 @@ const ReservationManagement: React.FC = () => {
       const sena = Math.round(reserva.precioTotal * 0.3);
       const saldo = reserva.saldoPendiente ?? (reserva.precioTotal - (reserva.montoPagado ?? 0));
       if (reserva.estadoPago === 'PARCIAL') {
+        // Already has partial, only option is to complete payment
         setPagoTipo('COMPLETO');
-        setPagoMonto(String(saldo > 0 ? saldo : reserva.precioTotal));
+        setPagoMonto(String(Math.max(0, saldo)));
       } else {
+        // PENDIENTE: default to partial (seña)
         setPagoTipo('PARCIAL');
         setPagoMonto(String(sena));
-      }
-    }
-
-    if (action === 'confirm') {
-      const sena = Math.round(reserva.precioTotal * 0.3);
-      if (reserva.estadoPago === 'PENDIENTE') {
-        setConfirmPagoTipo('PARCIAL');
-        setConfirmPagoMonto(String(sena));
-      } else {
-        setConfirmPagoTipo('COMPLETO');
-        setConfirmPagoMonto(String(reserva.precioTotal));
       }
     }
 
@@ -182,15 +170,6 @@ const ReservationManagement: React.FC = () => {
 
     try {
       if (modalAction === 'confirm') {
-        // Register payment first if payment is pending
-        if (selectedReserva.estadoPago === 'PENDIENTE') {
-          const monto = parseFloat(confirmPagoMonto);
-          if (isNaN(monto) || monto <= 0) {
-            setActionError('Debe ingresar un monto de pago válido para confirmar la reserva.');
-            return;
-          }
-          await actualizarEstadoPago(selectedReserva.id, confirmPagoTipo, monto, selectedReserva.tipoReserva);
-        }
         await confirmarReserva(selectedReserva.id, observacionesAdmin, selectedReserva.tipoReserva);
 
       } else if (modalAction === 'cancel') {
@@ -428,8 +407,9 @@ const ReservationManagement: React.FC = () => {
                               <Icon name="search" size="sm" className="me-2" />Ver Detalles
                             </Dropdown.Item>
 
-                            {/* Gestionar Pago - disponible si no está completado y la reserva no está cancelada */}
-                            {reserva.estado !== 'CANCELADA' && reserva.estado !== 'COMPLETADA' && reserva.estadoPago !== 'COMPLETO' && (
+                            {/* Gestionar Pago - disponible si no está en estado final de pago ni cancelada */}
+                            {reserva.estado !== 'CANCELADA' && reserva.estado !== 'COMPLETADA'
+                              && reserva.estadoPago !== 'COMPLETO' && reserva.estadoPago !== 'NO_CORRESPONDE' && (
                               <Dropdown.Item onClick={() => handleAction(reserva, 'pago')} className="text-primary">
                                 <Icon name="info" size="sm" className="me-2" />Registrar Pago
                               </Dropdown.Item>
@@ -598,42 +578,14 @@ const ReservationManagement: React.FC = () => {
                   <hr />
                   {selectedReserva.estadoPago === 'PENDIENTE' ? (
                     <Alert variant="warning">
-                      <strong>Pago pendiente.</strong> Para confirmar esta reserva debe registrar al menos la seña.
+                      <strong>Atención:</strong> Esta reserva tiene pago pendiente. Al confirmar quedará como <strong>Confirmada con pago pendiente</strong>. Si desea que el pago quede registrado, use la opción <strong>"Registrar Pago"</strong> que además confirmará la reserva automáticamente.
                     </Alert>
                   ) : (
                     <Alert variant="success">
-                      Esta reserva tiene pago registrado ({getEstadoPagoBadge(selectedReserva.estadoPago)}).
+                      Estado de pago: {getEstadoPagoBadge(selectedReserva.estadoPago)}{' '}
+                      {selectedReserva.montoPagado ? `(${formatPrice(selectedReserva.montoPagado)} pagado)` : ''}
                     </Alert>
                   )}
-
-                  {selectedReserva.estadoPago === 'PENDIENTE' && (
-                    <div className="p-3 border rounded mb-3">
-                      <h6 className="mb-3">Registrar Pago al Confirmar</h6>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Tipo de Pago</Form.Label>
-                        <Form.Select value={confirmPagoTipo} onChange={e => {
-                          const tipo = e.target.value as 'PARCIAL' | 'COMPLETO';
-                          setConfirmPagoTipo(tipo);
-                          setConfirmPagoMonto(tipo === 'PARCIAL'
-                            ? String(Math.round(selectedReserva.precioTotal * 0.3))
-                            : String(selectedReserva.precioTotal));
-                        }}>
-                          <option value="PARCIAL">Seña (30%) - {formatPrice(Math.round(selectedReserva.precioTotal * 0.3))}</option>
-                          <option value="COMPLETO">Pago Completo - {formatPrice(selectedReserva.precioTotal)}</option>
-                        </Form.Select>
-                      </Form.Group>
-                      <Form.Group>
-                        <Form.Label>Monto Recibido ($)</Form.Label>
-                        <Form.Control
-                          type="number"
-                          min="1"
-                          value={confirmPagoMonto}
-                          onChange={e => setConfirmPagoMonto(e.target.value)}
-                        />
-                      </Form.Group>
-                    </div>
-                  )}
-
                   <Form.Group>
                     <Form.Label>Observaciones Administrativas <small className="text-muted">(opcional)</small></Form.Label>
                     <Form.Control
@@ -673,22 +625,47 @@ const ReservationManagement: React.FC = () => {
                 <>
                   <hr />
                   <h6>Registrar Pago</h6>
+
+                  {selectedReserva.estadoPago === 'PENDIENTE' && (
+                    <Alert variant="info" className="mb-3">
+                      Al registrar un pago (parcial o total) la reserva se <strong>confirmará automáticamente</strong>.
+                    </Alert>
+                  )}
+
+                  {selectedReserva.estadoPago === 'PARCIAL' && (
+                    <Alert variant="info" className="mb-3">
+                      Ya hay una seña registrada de <strong>{formatPrice(selectedReserva.montoPagado || 0)}</strong>.
+                      Saldo pendiente: <strong>{formatPrice(selectedReserva.saldoPendiente ?? (selectedReserva.precioTotal - (selectedReserva.montoPagado || 0)))}</strong>.
+                    </Alert>
+                  )}
+
                   <Form.Group className="mb-3">
                     <Form.Label>Tipo de Pago</Form.Label>
-                    <Form.Select value={pagoTipo} onChange={e => {
-                      const tipo = e.target.value as 'PARCIAL' | 'COMPLETO';
-                      setPagoTipo(tipo);
-                      if (tipo === 'PARCIAL') {
-                        const sena = Math.round(selectedReserva.precioTotal * 0.3);
-                        setPagoMonto(String(sena));
-                      } else {
-                        setPagoMonto(String(selectedReserva.precioTotal));
-                      }
-                    }}>
-                      <option value="PARCIAL">Seña (30%) - {formatPrice(Math.round(selectedReserva.precioTotal * 0.3))}</option>
-                      <option value="COMPLETO">Pago Completo - {formatPrice(selectedReserva.precioTotal)}</option>
+                    <Form.Select
+                      value={pagoTipo}
+                      onChange={e => {
+                        const tipo = e.target.value as 'PARCIAL' | 'COMPLETO';
+                        setPagoTipo(tipo);
+                        if (tipo === 'PARCIAL') {
+                          setPagoMonto(String(Math.round(selectedReserva.precioTotal * 0.3)));
+                        } else {
+                          const saldo = selectedReserva.saldoPendiente ?? (selectedReserva.precioTotal - (selectedReserva.montoPagado || 0));
+                          setPagoMonto(String(Math.max(0, saldo)));
+                        }
+                      }}
+                      disabled={selectedReserva.estadoPago === 'PARCIAL'}
+                    >
+                      {selectedReserva.estadoPago !== 'PARCIAL' && (
+                        <option value="PARCIAL">Seña (30%) — {formatPrice(Math.round(selectedReserva.precioTotal * 0.3))}</option>
+                      )}
+                      <option value="COMPLETO">
+                        {selectedReserva.estadoPago === 'PARCIAL'
+                          ? `Pagar saldo restante — ${formatPrice(selectedReserva.saldoPendiente ?? 0)}`
+                          : `Pago Completo — ${formatPrice(selectedReserva.precioTotal)}`}
+                      </option>
                     </Form.Select>
                   </Form.Group>
+
                   <Form.Group>
                     <Form.Label>Monto Recibido ($)</Form.Label>
                     <Form.Control
@@ -698,7 +675,7 @@ const ReservationManagement: React.FC = () => {
                       onChange={e => setPagoMonto(e.target.value)}
                     />
                     <Form.Text className="text-muted">
-                      Saldo pendiente actual: {formatPrice(selectedReserva.saldoPendiente ?? selectedReserva.precioTotal)}
+                      Total de la reserva: {formatPrice(selectedReserva.precioTotal)}
                     </Form.Text>
                   </Form.Group>
                 </>
@@ -762,20 +739,18 @@ const ReservationManagement: React.FC = () => {
                   <hr />
                   <h6>Cambiar Estado de la Reserva</h6>
                   <p className="text-muted">Estado actual: {getEstadoBadge(selectedReserva.estado)}</p>
-                  {selectedReserva.estadoPago === 'PENDIENTE' && (
+                  {selectedReserva.estadoPago === 'PENDIENTE' && nuevoEstado === 'CONFIRMADA' && (
                     <Alert variant="warning">
-                      Esta reserva tiene <strong>pago pendiente</strong>. No se puede confirmar sin registrar al menos la seña.
+                      Esta reserva tiene <strong>pago pendiente</strong>. Quedará confirmada pero sin pago registrado. Considere usar <strong>"Registrar Pago"</strong> en cambio, que confirma la reserva automáticamente.
                     </Alert>
                   )}
                   <Form.Group>
                     <Form.Label>Nuevo Estado</Form.Label>
                     <Form.Select value={nuevoEstado} onChange={e => setNuevoEstado(e.target.value)}>
                       <option value="">Seleccionar estado...</option>
-                      {getEstadosTransicion(selectedReserva.estado)
-                        .filter(op => !(op.value === 'CONFIRMADA' && selectedReserva.estadoPago === 'PENDIENTE'))
-                        .map(op => (
-                          <option key={op.value} value={op.value}>{op.label}</option>
-                        ))}
+                      {getEstadosTransicion(selectedReserva.estado).map(op => (
+                        <option key={op.value} value={op.value}>{op.label}</option>
+                      ))}
                     </Form.Select>
                   </Form.Group>
                   {nuevoEstado === 'CANCELADA' && (

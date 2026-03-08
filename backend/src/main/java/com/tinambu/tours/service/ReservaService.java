@@ -441,10 +441,6 @@ public class ReservaService {
         SenderoReserva reserva = senderoReservaRepository.findById(reservaId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
 
-        if (reserva.getEstadoPago() == EstadoPago.PENDIENTE) {
-            throw new IllegalStateException("No se puede confirmar una reserva con pago pendiente. Registre al menos la seña antes de confirmar.");
-        }
-
         reserva.cambiarEstado(EstadoReserva.CONFIRMADA);
         reserva = senderoReservaRepository.save(reserva);
 
@@ -457,10 +453,6 @@ public class ReservaService {
 
         AlojamientoReserva reserva = alojamientoReservaRepository.findById(reservaId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
-
-        if (reserva.getEstadoPago() == EstadoPago.PENDIENTE) {
-            throw new IllegalStateException("No se puede confirmar una reserva con pago pendiente. Registre al menos la seña antes de confirmar.");
-        }
 
         reserva.setEstado(EstadoReserva.CONFIRMADA);
         reserva.setFechaActualizacion(LocalDateTime.now());
@@ -478,9 +470,10 @@ public class ReservaService {
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
 
         reserva.cambiarEstado(EstadoReserva.CANCELADA);
+        reserva.setEstadoPago(EstadoPago.NO_CORRESPONDE);
+        reserva.setFechaActualizacion(LocalDateTime.now());
         senderoReservaRepository.save(reserva);
 
-        // Unblock the guide
         guiaBloqueoRepository.deactivateBlocksForReservation(reservaId);
         log.info("Sendero reservation cancelled and guide unblocked: {}", reserva.getCodigoReserva());
     }
@@ -492,10 +485,10 @@ public class ReservaService {
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
 
         reserva.setEstado(EstadoReserva.CANCELADA);
+        reserva.setEstadoPago(EstadoPago.NO_CORRESPONDE);
         reserva.setFechaActualizacion(LocalDateTime.now());
         alojamientoReservaRepository.save(reserva);
 
-        // Unblock the accommodation
         alojamientoService.desbloquearAlojamientoDeReserva(reservaId);
         log.info("Alojamiento reservation cancelled and accommodation unblocked: {}", reserva.getCodigoReserva());
     }
@@ -663,8 +656,8 @@ public class ReservaService {
         reserva.setEstado(nuevoEstado);
         reserva.setFechaActualizacion(LocalDateTime.now());
 
-        // If cancelled, release accommodation blocks
         if (nuevoEstado == EstadoReserva.CANCELADA) {
+            reserva.setEstadoPago(EstadoPago.NO_CORRESPONDE);
             alojamientoService.desbloquearAlojamientoDeReserva(reservaId);
         }
 
@@ -688,8 +681,15 @@ public class ReservaService {
 
         reserva.setEstadoPago(nuevoEstadoPago);
         reserva.setFechaActualizacion(LocalDateTime.now());
-        reserva = alojamientoReservaRepository.save(reserva);
 
+        // Auto-confirm reservation when payment is registered
+        if ((nuevoEstadoPago == EstadoPago.PARCIAL || nuevoEstadoPago == EstadoPago.COMPLETO)
+                && reserva.getEstado() == EstadoReserva.PENDIENTE) {
+            reserva.setEstado(EstadoReserva.CONFIRMADA);
+            log.info("Alojamiento reservation auto-confirmed after payment registration: {}", reserva.getCodigoReserva());
+        }
+
+        reserva = alojamientoReservaRepository.save(reserva);
         Alojamiento alojamiento = alojamientoRepository.findById(reserva.getAlojamientoId()).orElse(null);
         return convertirAlojamientoReservaAResponse(reserva, alojamiento);
     }
@@ -710,6 +710,7 @@ public class ReservaService {
         reserva.cambiarEstado(nuevoEstado);
 
         if (nuevoEstado == EstadoReserva.CANCELADA) {
+            reserva.setEstadoPago(EstadoPago.NO_CORRESPONDE);
             guiaBloqueoRepository.deactivateBlocksForReservation(reservaId);
         }
 
@@ -732,6 +733,14 @@ public class ReservaService {
 
         reserva.setEstadoPago(nuevoEstadoPago);
         reserva.setFechaActualizacion(LocalDateTime.now());
+
+        // Auto-confirm reservation when payment is registered
+        if ((nuevoEstadoPago == EstadoPago.PARCIAL || nuevoEstadoPago == EstadoPago.COMPLETO)
+                && reserva.getEstado() == EstadoReserva.PENDIENTE) {
+            reserva.cambiarEstado(EstadoReserva.CONFIRMADA);
+            log.info("Sendero reservation auto-confirmed after payment registration: {}", reserva.getCodigoReserva());
+        }
+
         reserva = senderoReservaRepository.save(reserva);
         return convertirSenderoReservaAResponse(reserva);
     }

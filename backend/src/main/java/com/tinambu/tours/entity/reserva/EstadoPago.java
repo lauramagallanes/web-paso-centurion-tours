@@ -7,7 +7,8 @@ import java.util.List;
 public enum EstadoPago {
     PENDIENTE("Pendiente", "Sin pagos registrados"),
     PARCIAL("Parcial", "Pago parcial recibido (seña)"),
-    COMPLETO("Completo", "Pago total recibido");
+    COMPLETO("Completo", "Pago total recibido"),
+    NO_CORRESPONDE("No corresponde", "Reserva cancelada, pago no aplicable");
 
     private final String nombre;
     private final String descripcion;
@@ -31,6 +32,7 @@ public enum EstadoPago {
             case PENDIENTE -> nuevoEstado == PARCIAL || nuevoEstado == COMPLETO;
             case PARCIAL -> nuevoEstado == COMPLETO || nuevoEstado == PENDIENTE;
             case COMPLETO -> nuevoEstado == PARCIAL; // Solo si hay devolución
+            case NO_CORRESPONDE -> false; // Estado final, solo se asigna al cancelar
         };
     }
 
@@ -73,6 +75,7 @@ public enum EstadoPago {
             case "PENDIENTE", "PENDING" -> PENDIENTE;
             case "PARCIAL", "PARTIAL" -> PARCIAL;
             case "COMPLETO", "COMPLETE", "PAID" -> COMPLETO;
+            case "NO_CORRESPONDE", "NO_APLICA" -> NO_CORRESPONDE;
             default -> throw new IllegalArgumentException("Estado de pago no válido: " + value);
         };
     }
@@ -82,6 +85,7 @@ public enum EstadoPago {
             case PENDIENTE -> "badge-warning";
             case PARCIAL -> "badge-info";
             case COMPLETO -> "badge-success";
+            case NO_CORRESPONDE -> "badge-danger";
         };
     }
 
@@ -90,6 +94,7 @@ public enum EstadoPago {
             case PENDIENTE -> "clock";
             case PARCIAL -> "info";
             case COMPLETO -> "check-circle";
+            case NO_CORRESPONDE -> "close";
         };
     }
 

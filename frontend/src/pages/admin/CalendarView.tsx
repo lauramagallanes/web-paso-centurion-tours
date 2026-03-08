@@ -214,7 +214,7 @@ const CalendarView: React.FC = () => {
                     overlay={<Tooltip>Check-in: {r.nombreCliente} · {r.habitacion?.nombre || 'Alojamiento'} · {r.cantidadPersonas}p</Tooltip>}
                   >
                     <div className="cal-event cal-event-checkin">
-                      🏠➡ {r.nombreCliente.split(' ')[0]}
+                      🏠➡ {r.nombreCliente} – {r.habitacion?.nombre || 'Aloj.'}
                       <Badge bg="light" text="dark" className="ms-1">{r.cantidadPersonas}p</Badge>
                     </div>
                   </OverlayTrigger>
@@ -228,7 +228,7 @@ const CalendarView: React.FC = () => {
                     overlay={<Tooltip>Check-out: {r.nombreCliente} · {r.habitacion?.nombre || 'Alojamiento'} · {r.cantidadPersonas}p</Tooltip>}
                   >
                     <div className="cal-event cal-event-checkout">
-                      ⬅🏠 {r.nombreCliente.split(' ')[0]}
+                      ⬅🏠 {r.nombreCliente} – {r.habitacion?.nombre || 'Aloj.'}
                       <Badge bg="light" text="dark" className="ms-1">{r.cantidadPersonas}p</Badge>
                     </div>
                   </OverlayTrigger>
@@ -242,7 +242,7 @@ const CalendarView: React.FC = () => {
                     overlay={<Tooltip>En estadía: {r.nombreCliente} · {r.habitacion?.nombre || 'Alojamiento'} · {r.cantidadPersonas}p</Tooltip>}
                   >
                     <div className="cal-event cal-event-instay">
-                      🏠 {r.habitacion?.nombre || r.nombreCliente.split(' ')[0]}
+                      🏠 {r.nombreCliente} – {r.habitacion?.nombre || 'Aloj.'}
                       <Badge bg="light" text="dark" className="ms-1">{r.cantidadPersonas}p</Badge>
                     </div>
                   </OverlayTrigger>

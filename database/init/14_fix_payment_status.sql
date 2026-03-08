@@ -1,9 +1,18 @@
 -- Migration 14: Fix payment status for existing reservations
 -- 
 -- Rules applied:
--- 1. Cancelled reservations → estado_pago = 'NO_CORRESPONDE'
--- 2. Confirmed reservations with pending payment → revert to PENDIENTE
+-- 1. Update check constraints to include NO_CORRESPONDE
+-- 2. Cancelled reservations → estado_pago = 'NO_CORRESPONDE'
+-- 3. Confirmed reservations with pending payment → revert to PENDIENTE
 --    (payment must be registered before confirming under new business rules)
+
+-- ============================================================
+-- Update check constraints to allow NO_CORRESPONDE
+-- ============================================================
+
+ALTER TABLE reservas DROP CONSTRAINT IF EXISTS reservas_estado_pago_check;
+ALTER TABLE reservas ADD CONSTRAINT reservas_estado_pago_check
+  CHECK (estado_pago IN ('PENDIENTE', 'PARCIAL', 'COMPLETO', 'NO_CORRESPONDE'));
 
 -- ============================================================
 -- Fix SENDERO reservations (reservas table)

@@ -194,12 +194,6 @@ resource "aws_apigatewayv2_route" "senderos_calculate_price" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
-resource "aws_apigatewayv2_route" "senderos_availability" {
-  api_id    = aws_apigatewayv2_api.main.id
-  route_key = "GET /senderos/{id}/disponibilidad"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-}
-
 resource "aws_apigatewayv2_route" "senderos_available_guides" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "GET /senderos/{id}/guias-disponibles"

@@ -199,7 +199,8 @@ export const useReservasAdmin = () => {
   };
 
   return { 
-    data: reservas, 
+    data: reservas,
+    reservas,
     loading, 
     error, 
     loadReservas,

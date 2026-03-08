@@ -653,6 +653,11 @@ public class ReservaService {
                     String.format("No se puede cambiar de %s a %s", reserva.getEstado(), nuevoEstado));
         }
 
+        if (nuevoEstado == EstadoReserva.COMPLETADA && reserva.getEstadoPago() == EstadoPago.PARCIAL) {
+            throw new IllegalStateException(
+                    "No se puede completar una reserva con pago parcial. Primero registre el pago completo.");
+        }
+
         reserva.setEstado(nuevoEstado);
         reserva.setFechaActualizacion(LocalDateTime.now());
 
@@ -705,6 +710,11 @@ public class ReservaService {
         if (!reserva.getEstado().puedeTransicionarA(nuevoEstado)) {
             throw new IllegalStateException(
                     String.format("No se puede cambiar de %s a %s", reserva.getEstado(), nuevoEstado));
+        }
+
+        if (nuevoEstado == EstadoReserva.COMPLETADA && reserva.getEstadoPago() == EstadoPago.PARCIAL) {
+            throw new IllegalStateException(
+                    "No se puede completar una reserva con pago parcial. Primero registre el pago completo.");
         }
 
         reserva.cambiarEstado(nuevoEstado);

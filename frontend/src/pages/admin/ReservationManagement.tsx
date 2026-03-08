@@ -240,10 +240,17 @@ const ReservationManagement: React.FC = () => {
     canceladas: reservas.filter(r => r.estado === 'CANCELADA').length
   };
 
-  const getEstadosTransicion = (estado: string) => {
+  const getEstadosTransicion = (estado: string, estadoPago?: string) => {
     switch (estado) {
       case 'PENDIENTE': return [{ value: 'CONFIRMADA', label: 'Confirmada' }, { value: 'CANCELADA', label: 'Cancelada' }];
-      case 'CONFIRMADA': return [{ value: 'COMPLETADA', label: 'Completada' }, { value: 'CANCELADA', label: 'Cancelada' }];
+      case 'CONFIRMADA': {
+        const opciones = [];
+        if (estadoPago !== 'PARCIAL') {
+          opciones.push({ value: 'COMPLETADA', label: 'Completada' });
+        }
+        opciones.push({ value: 'CANCELADA', label: 'Cancelada' });
+        return opciones;
+      }
       default: return [];
     }
   };
@@ -744,11 +751,16 @@ const ReservationManagement: React.FC = () => {
                       Esta reserva tiene <strong>pago pendiente</strong>. Quedará confirmada pero sin pago registrado. Considere usar <strong>"Registrar Pago"</strong> en cambio, que confirma la reserva automáticamente.
                     </Alert>
                   )}
+                  {selectedReserva.estadoPago === 'PARCIAL' && selectedReserva.estado === 'CONFIRMADA' && (
+                    <Alert variant="warning">
+                      Esta reserva tiene <strong>pago parcial</strong>. Para marcarla como <strong>Completada</strong> primero debe registrar el pago completo usando la opción <strong>"Registrar Pago"</strong>.
+                    </Alert>
+                  )}
                   <Form.Group>
                     <Form.Label>Nuevo Estado</Form.Label>
                     <Form.Select value={nuevoEstado} onChange={e => setNuevoEstado(e.target.value)}>
                       <option value="">Seleccionar estado...</option>
-                      {getEstadosTransicion(selectedReserva.estado).map(op => (
+                      {getEstadosTransicion(selectedReserva.estado, selectedReserva.estadoPago).map(op => (
                         <option key={op.value} value={op.value}>{op.label}</option>
                       ))}
                     </Form.Select>

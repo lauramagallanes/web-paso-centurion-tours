@@ -236,6 +236,19 @@ public class ReservaController {
         }
     }
 
+    @PutMapping("/admin/{id}/estado-sendero")
+    public ResponseEntity<?> actualizarEstadoSendero(@PathVariable UUID id,
+                                                      @RequestBody Map<String, String> body) {
+        try {
+            String nuevoEstado = body.get("estado");
+            log.info("PUT /reservas/admin/{}/estado-sendero - nuevo estado: {}", id, nuevoEstado);
+            ReservaResponse response = reservaService.actualizarEstadoSendero(id, nuevoEstado);
+            return ResponseEntity.ok(ApiResponse.success(response, "Estado actualizado"));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @PutMapping("/admin/{id}/estado-pago-alojamiento")
     public ResponseEntity<?> actualizarEstadoPagoAlojamiento(@PathVariable UUID id,
                                                               @RequestBody Map<String, Object> body) {
@@ -247,6 +260,54 @@ public class ReservaController {
             log.info("PUT /reservas/admin/{}/estado-pago-alojamiento - estadoPago: {}, montoPagado: {}", id, estadoPago, montoPagado);
             AlojamientoReservaResponse response = reservaService.actualizarEstadoPagoAlojamiento(id, estadoPago, montoPagado);
             return ResponseEntity.ok(ApiResponse.success(response, "Estado de pago actualizado"));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/admin/{id}/estado-pago-sendero")
+    public ResponseEntity<?> actualizarEstadoPagoSendero(@PathVariable UUID id,
+                                                          @RequestBody Map<String, Object> body) {
+        try {
+            String estadoPago = (String) body.get("estadoPago");
+            Number montoPagadoNum = (Number) body.get("montoPagado");
+            java.math.BigDecimal montoPagado = montoPagadoNum != null ?
+                    new java.math.BigDecimal(montoPagadoNum.toString()) : null;
+            log.info("PUT /reservas/admin/{}/estado-pago-sendero - estadoPago: {}, montoPagado: {}", id, estadoPago, montoPagado);
+            ReservaResponse response = reservaService.actualizarEstadoPagoSendero(id, estadoPago, montoPagado);
+            return ResponseEntity.ok(ApiResponse.success(response, "Estado de pago actualizado"));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/admin/{id}/posponer-sendero")
+    public ResponseEntity<?> posponerSendero(@PathVariable UUID id,
+                                              @RequestBody Map<String, String> body) {
+        try {
+            String nuevaFechaStr = body.get("nuevaFecha");
+            String turnoStr = body.get("turno");
+            LocalDate nuevaFecha = LocalDate.parse(nuevaFechaStr);
+            TurnoSendero turno = turnoStr != null ? TurnoSendero.valueOf(turnoStr.toUpperCase()) : null;
+            log.info("PUT /reservas/admin/{}/posponer-sendero - nuevaFecha: {}, turno: {}", id, nuevaFecha, turno);
+            ReservaResponse response = reservaService.posponerSendero(id, nuevaFecha, turno);
+            return ResponseEntity.ok(ApiResponse.success(response, "Reserva pospuesta exitosamente"));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/admin/{id}/posponer-alojamiento")
+    public ResponseEntity<?> posponerAlojamiento(@PathVariable UUID id,
+                                                  @RequestBody Map<String, String> body) {
+        try {
+            String checkInStr = body.get("nuevaFechaCheckIn");
+            String checkOutStr = body.get("nuevaFechaCheckOut");
+            LocalDate nuevaFechaCheckIn = LocalDate.parse(checkInStr);
+            LocalDate nuevaFechaCheckOut = LocalDate.parse(checkOutStr);
+            log.info("PUT /reservas/admin/{}/posponer-alojamiento - checkIn: {}, checkOut: {}", id, nuevaFechaCheckIn, nuevaFechaCheckOut);
+            AlojamientoReservaResponse response = reservaService.posponerAlojamiento(id, nuevaFechaCheckIn, nuevaFechaCheckOut);
+            return ResponseEntity.ok(ApiResponse.success(response, "Reserva pospuesta exitosamente"));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

@@ -441,6 +441,10 @@ public class ReservaService {
         SenderoReserva reserva = senderoReservaRepository.findById(reservaId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
 
+        if (reserva.getEstadoPago() == EstadoPago.PENDIENTE) {
+            throw new IllegalStateException("No se puede confirmar una reserva con pago pendiente. Registre al menos la seña antes de confirmar.");
+        }
+
         reserva.cambiarEstado(EstadoReserva.CONFIRMADA);
         reserva = senderoReservaRepository.save(reserva);
 
@@ -453,6 +457,10 @@ public class ReservaService {
 
         AlojamientoReserva reserva = alojamientoReservaRepository.findById(reservaId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
+
+        if (reserva.getEstadoPago() == EstadoPago.PENDIENTE) {
+            throw new IllegalStateException("No se puede confirmar una reserva con pago pendiente. Registre al menos la seña antes de confirmar.");
+        }
 
         reserva.setEstado(EstadoReserva.CONFIRMADA);
         reserva.setFechaActualizacion(LocalDateTime.now());
@@ -683,6 +691,155 @@ public class ReservaService {
         reserva = alojamientoReservaRepository.save(reserva);
 
         Alojamiento alojamiento = alojamientoRepository.findById(reserva.getAlojamientoId()).orElse(null);
+        return convertirAlojamientoReservaAResponse(reserva, alojamiento);
+    }
+
+    public ReservaResponse actualizarEstadoSendero(UUID reservaId, String nuevoEstadoStr) {
+        log.info("Updating sendero reservation state: {} -> {}", reservaId, nuevoEstadoStr);
+
+        SenderoReserva reserva = senderoReservaRepository.findById(reservaId)
+                .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
+
+        EstadoReserva nuevoEstado = EstadoReserva.valueOf(nuevoEstadoStr.toUpperCase());
+
+        if (!reserva.getEstado().puedeTransicionarA(nuevoEstado)) {
+            throw new IllegalStateException(
+                    String.format("No se puede cambiar de %s a %s", reserva.getEstado(), nuevoEstado));
+        }
+
+        reserva.cambiarEstado(nuevoEstado);
+
+        if (nuevoEstado == EstadoReserva.CANCELADA) {
+            guiaBloqueoRepository.deactivateBlocksForReservation(reservaId);
+        }
+
+        reserva = senderoReservaRepository.save(reserva);
+        return convertirSenderoReservaAResponse(reserva);
+    }
+
+    public ReservaResponse actualizarEstadoPagoSendero(UUID reservaId, String estadoPagoStr, BigDecimal montoPagado) {
+        log.info("Updating sendero payment state: {} -> {} (monto: {})", reservaId, estadoPagoStr, montoPagado);
+
+        SenderoReserva reserva = senderoReservaRepository.findById(reservaId)
+                .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
+
+        EstadoPago nuevoEstadoPago = EstadoPago.fromString(estadoPagoStr);
+
+        if (montoPagado != null) {
+            reserva.setMontoPagado(montoPagado);
+            reserva.setSaldoPendiente(reserva.getPrecioTotal().subtract(montoPagado));
+        }
+
+        reserva.setEstadoPago(nuevoEstadoPago);
+        reserva.setFechaActualizacion(LocalDateTime.now());
+        reserva = senderoReservaRepository.save(reserva);
+        return convertirSenderoReservaAResponse(reserva);
+    }
+
+    public ReservaResponse posponerSendero(UUID reservaId, LocalDate nuevaFecha, TurnoSendero nuevoTurno) {
+        log.info("Postponing sendero reservation: {} to {} {}", reservaId, nuevaFecha, nuevoTurno);
+
+        SenderoReserva reserva = senderoReservaRepository.findById(reservaId)
+                .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
+
+        if (reserva.getEstado() == EstadoReserva.CANCELADA || reserva.getEstado() == EstadoReserva.COMPLETADA) {
+            throw new IllegalStateException("No se puede posponer una reserva en estado " + reserva.getEstado());
+        }
+
+        TurnoSendero turnoFinal = nuevoTurno != null ? nuevoTurno : reserva.getTurno();
+
+        // Unblock old guide
+        guiaBloqueoRepository.deactivateBlocksForReservation(reservaId);
+
+        // Find available guide for new date/turno
+        Sendero sendero = reserva.getSendero();
+        List<SenderoDisponibilidad> ventanas = disponibilidadRepository
+                .findVentanasActivas(sendero.getId(), nuevaFecha, turnoFinal)
+                .stream()
+                .filter(v -> v.matchesDiaSemana(nuevaFecha))
+                .collect(Collectors.toList());
+
+        List<UUID> guiasHabilitados = ventanas.stream()
+                .flatMap(v -> v.obtenerGuiaIds().stream())
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (guiasHabilitados.isEmpty()) {
+            guiasHabilitados = guiaRepository.findByActivoTrue().stream()
+                    .map(Guia::getId)
+                    .collect(Collectors.toList());
+        }
+
+        List<UUID> guiasBloqueados = guiaBloqueoRepository.findBlockedGuiaIds(nuevaFecha, turnoFinal);
+        Optional<UUID> guiaIdOpt = guiasHabilitados.stream()
+                .filter(gid -> !guiasBloqueados.contains(gid))
+                .findFirst();
+
+        if (guiaIdOpt.isEmpty()) {
+            throw new IllegalStateException("No hay guías disponibles para la nueva fecha y horario seleccionados");
+        }
+
+        Guia nuevoGuia = guiaRepository.findById(guiaIdOpt.get())
+                .orElseThrow(() -> new IllegalArgumentException("Guía no encontrado"));
+
+        // Update reservation
+        reserva.setFechaInicio(nuevaFecha);
+        reserva.setFechaFin(nuevaFecha);
+        reserva.setTurno(turnoFinal);
+        reserva.setGuia(nuevoGuia);
+        reserva.setFechaActualizacion(LocalDateTime.now());
+        reserva = senderoReservaRepository.save(reserva);
+
+        // Create new guide block
+        bloquearGuiaParaReserva(nuevoGuia.getId(), reservaId, nuevaFecha, turnoFinal, sendero.getNombre());
+
+        log.info("Sendero reservation postponed to {}", nuevaFecha);
+        return convertirSenderoReservaAResponse(reserva);
+    }
+
+    public AlojamientoReservaResponse posponerAlojamiento(UUID reservaId, LocalDate nuevaFechaCheckIn, LocalDate nuevaFechaCheckOut) {
+        log.info("Postponing alojamiento reservation: {} to {}-{}", reservaId, nuevaFechaCheckIn, nuevaFechaCheckOut);
+
+        AlojamientoReserva reserva = alojamientoReservaRepository.findById(reservaId)
+                .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
+
+        if (reserva.getEstado() == EstadoReserva.CANCELADA || reserva.getEstado() == EstadoReserva.COMPLETADA) {
+            throw new IllegalStateException("No se puede posponer una reserva en estado " + reserva.getEstado());
+        }
+
+        // Unblock old accommodation dates
+        alojamientoService.desbloquearAlojamientoDeReserva(reservaId);
+
+        // Check availability for new dates
+        boolean disponible = alojamientoService.verificarDisponibilidad(
+                reserva.getAlojamientoId(), nuevaFechaCheckIn, nuevaFechaCheckOut);
+
+        if (!disponible) {
+            throw new IllegalStateException("El alojamiento no está disponible para las nuevas fechas seleccionadas");
+        }
+
+        // Recalculate price
+        Alojamiento alojamiento = alojamientoRepository.findById(reserva.getAlojamientoId()).orElse(null);
+        if (alojamiento != null) {
+            int noches = (int) (nuevaFechaCheckOut.toEpochDay() - nuevaFechaCheckIn.toEpochDay());
+            BigDecimal nuevoPrecio = alojamiento.getPrecioPorNoche()
+                    .multiply(BigDecimal.valueOf(noches))
+                    .multiply(BigDecimal.valueOf(reserva.getNumeroHuespedes()));
+            reserva.setPrecioTotal(nuevoPrecio);
+            BigDecimal pagado = reserva.getMontoPagado() != null ? reserva.getMontoPagado() : BigDecimal.ZERO;
+            reserva.setSaldoPendiente(nuevoPrecio.subtract(pagado));
+        }
+
+        reserva.setFechaCheckIn(nuevaFechaCheckIn);
+        reserva.setFechaCheckOut(nuevaFechaCheckOut);
+        reserva.setFechaActualizacion(LocalDateTime.now());
+        reserva = alojamientoReservaRepository.save(reserva);
+
+        // Block accommodation for new dates
+        alojamientoService.bloquearAlojamientoParaReserva(
+                reserva.getAlojamientoId(), reservaId, nuevaFechaCheckIn, nuevaFechaCheckOut);
+
+        log.info("Alojamiento reservation postponed to {}-{}", nuevaFechaCheckIn, nuevaFechaCheckOut);
         return convertirAlojamientoReservaAResponse(reserva, alojamiento);
     }
 

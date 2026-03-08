@@ -70,8 +70,10 @@ const mapSenderoReserva = (r: any) => ({
   observaciones: r.observaciones,
   observacionesAdmin: r.observacionesAdmin,
   informacionAdicional: r.informacionAdicional,
-  // Sendero reservations don't track PlacetoPay separately for now
-  estadoPago: r.estado === 'CONFIRMADA' ? 'COMPLETO' : (r.estado === 'CANCELADA' ? undefined : 'PENDIENTE'),
+  estadoPago: r.estadoPago || 'PENDIENTE',
+  montoPagado: r.montoPagado || 0,
+  saldoPendiente: r.saldoPendiente || 0,
+  metodoPago: r.metodoPago,
   placetoPayRequestId: r.placetoPayRequestId,
 });
 
@@ -161,29 +163,36 @@ export const useReservasAdmin = () => {
   };
 
   const completarReserva = (id: string, tipo?: string) => {
-    const suffix = tipo === 'ALOJAMIENTO' ? 'confirmar-alojamiento' : 'confirmar-sendero';
+    const suffix = tipo === 'ALOJAMIENTO' ? 'estado-alojamiento' : 'estado-sendero';
     return execute(`/reservas/admin/${id}/${suffix}`, {
-      method: 'PUT'
+      method: 'PUT',
+      body: JSON.stringify({ estado: 'COMPLETADA' })
     });
   };
 
   const actualizarEstado = (id: string, nuevoEstado: string, tipo?: string) => {
-    if (tipo === 'ALOJAMIENTO') {
-      return execute(`/reservas/admin/${id}/estado-alojamiento`, {
-        method: 'PUT',
-        body: JSON.stringify({ estado: nuevoEstado })
-      });
-    }
-    // For sendero, use confirm/cancel endpoints
+    const suffix = tipo === 'ALOJAMIENTO' ? 'estado-alojamiento' : 'estado-sendero';
     if (nuevoEstado === 'CONFIRMADA') return confirmarReserva(id, undefined, tipo);
     if (nuevoEstado === 'CANCELADA') return cancelarReserva(id, undefined, tipo);
-    return Promise.resolve(null);
+    return execute(`/reservas/admin/${id}/${suffix}`, {
+      method: 'PUT',
+      body: JSON.stringify({ estado: nuevoEstado })
+    });
   };
 
-  const actualizarEstadoPago = (id: string, estadoPago: string, montoPagado?: number) => {
-    return execute(`/reservas/admin/${id}/estado-pago-alojamiento`, {
+  const actualizarEstadoPago = (id: string, estadoPago: string, montoPagado?: number, tipo?: string) => {
+    const suffix = tipo === 'ALOJAMIENTO' ? 'estado-pago-alojamiento' : 'estado-pago-sendero';
+    return execute(`/reservas/admin/${id}/${suffix}`, {
       method: 'PUT',
       body: JSON.stringify({ estadoPago, montoPagado })
+    });
+  };
+
+  const posponerReserva = (id: string, tipo: string, fechas: { nuevaFecha?: string; turno?: string; nuevaFechaCheckIn?: string; nuevaFechaCheckOut?: string }) => {
+    const suffix = tipo === 'ALOJAMIENTO' ? 'posponer-alojamiento' : 'posponer-sendero';
+    return execute(`/reservas/admin/${id}/${suffix}`, {
+      method: 'PUT',
+      body: JSON.stringify(fechas)
     });
   };
 
@@ -196,7 +205,8 @@ export const useReservasAdmin = () => {
     cancelarReserva,
     completarReserva,
     actualizarEstado,
-    actualizarEstadoPago
+    actualizarEstadoPago,
+    posponerReserva
   };
 };
 

@@ -75,6 +75,8 @@ const mapSenderoReserva = (r: any) => ({
   saldoPendiente: r.saldoPendiente || 0,
   metodoPago: r.metodoPago,
   placetoPayRequestId: r.placetoPayRequestId,
+  turno: r.turno,
+  sendero: r.nombreSendero ? { nombre: r.nombreSendero } : undefined,
 });
 
 // Map alojamiento reservation from backend fields to frontend expected fields

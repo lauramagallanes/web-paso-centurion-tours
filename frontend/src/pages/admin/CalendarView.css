@@ -1,0 +1,244 @@
+/* ── Calendar Grid ── */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  background: #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.cal-header-cell {
+  background: #343a40;
+  color: #adb5bd;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 8px 4px;
+  border-radius: 6px;
+}
+
+.cal-cell {
+  background: #1a1d20;
+  border-radius: 8px;
+  min-height: 120px;
+  padding: 8px;
+  transition: background 0.15s;
+  position: relative;
+}
+
+.cal-empty {
+  background: transparent !important;
+  min-height: 120px;
+}
+
+.cal-clickable {
+  cursor: pointer;
+}
+
+.cal-clickable:hover {
+  background: #212529;
+  outline: 2px solid #0d6efd;
+}
+
+.cal-day-today {
+  background: #0d253f !important;
+  outline: 2px solid #0d6efd;
+}
+
+.cal-day-active {
+  background: #1e2328;
+}
+
+/* Day number */
+.cal-day-number {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #adb5bd;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cal-day-today .cal-day-number {
+  color: #4dabf7;
+}
+
+.cal-today-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4dabf7;
+}
+
+/* Events preview */
+.cal-events-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cal-event {
+  font-size: 0.68rem;
+  border-radius: 4px;
+  padding: 2px 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
+.cal-event-checkin {
+  background: rgba(25, 135, 84, 0.25);
+  color: #75d4a3;
+  border-left: 3px solid #198754;
+}
+
+.cal-event-checkout {
+  background: rgba(220, 53, 69, 0.2);
+  color: #f0848e;
+  border-left: 3px solid #dc3545;
+}
+
+.cal-event-instay {
+  background: rgba(13, 110, 253, 0.2);
+  color: #74b0ff;
+  border-left: 3px solid #0d6efd;
+}
+
+.cal-event-sendero-manana {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffd555;
+  border-left: 3px solid #ffc107;
+}
+
+.cal-event-sendero-tarde {
+  background: rgba(253, 126, 20, 0.2);
+  color: #ffa66b;
+  border-left: 3px solid #fd7e14;
+}
+
+/* Legend */
+.cal-legend {
+  font-size: 0.82rem;
+  color: #adb5bd;
+}
+
+.cal-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.bg-orange {
+  background-color: #fd7e14 !important;
+}
+
+/* ── Day Detail Modal ── */
+.day-detail-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.day-detail-sub-title {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.aloj-card {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+/* Sendero group card */
+.sendero-group-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.sendero-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sendero-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* Capacity bar */
+.capacity-bar {
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.capacity-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Reservation row in sendero group */
+.reservation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.875rem;
+  border: 1px solid #e9ecef;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cal-cell {
+    min-height: 70px;
+    padding: 4px;
+  }
+
+  .cal-event {
+    font-size: 0.6rem;
+    padding: 1px 3px;
+  }
+
+  .cal-day-number {
+    font-size: 0.75rem;
+  }
+}

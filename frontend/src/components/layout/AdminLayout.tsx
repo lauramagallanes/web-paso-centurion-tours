@@ -22,6 +22,11 @@ const AdminLayout: React.FC = () => {
       exact: true
     },
     {
+      path: '/admin/calendar',
+      icon: 'fas fa-calendar',
+      label: 'Calendario'
+    },
+    {
       path: '/admin/reservations',
       icon: 'fas fa-calendar-alt',
       label: 'Reservas'

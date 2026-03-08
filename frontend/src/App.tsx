@@ -37,6 +37,7 @@ import ReservationManagement from './pages/admin/ReservationManagement';
 import RoomManagement from './pages/admin/RoomManagement';
 import TrailManagement from './pages/admin/TrailManagement';
 import GuideManagement from './pages/admin/GuideManagement';
+import CalendarView from './pages/admin/CalendarView';
 
 const App: React.FC = () => {
   return (
@@ -84,6 +85,7 @@ const App: React.FC = () => {
           }>
             <Route index element={<Dashboard/>}/>
             <Route path="reservations" element={<ReservationManagement/>}/>
+            <Route path="calendar" element={<CalendarView/>}/>
             <Route path="rooms" element={<RoomManagement/>}/>
             <Route path="trails" element={<TrailManagement/>}/>
             <Route path="guides" element={<GuideManagement/>}/>

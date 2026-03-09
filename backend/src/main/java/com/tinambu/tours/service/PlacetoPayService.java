@@ -331,13 +331,23 @@ public class PlacetoPayService {
     }
 
     private void confirmarReservasDeOrden(OrdenCompra orden) {
+        boolean esSena = "SENA".equalsIgnoreCase(orden.getTipoPago());
+
         for (OrdenCompraItem item : orden.getItems()) {
             try {
+                // When the user paid only the seña (30%), register only that amount so the
+                // payment status is correctly set to PARCIAL instead of COMPLETO.
+                final BigDecimal montoPagadoItem = esSena
+                        ? item.getSubtotal()
+                              .multiply(BigDecimal.valueOf(30))
+                              .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP)
+                        : item.getSubtotal();
+
                 if ("SENDERO".equals(item.getTipoReserva())) {
                     senderoReservaRepository.findById(item.getReservaId()).ifPresent(reserva -> {
                         if (reserva.getEstado() == EstadoReserva.PENDIENTE) {
                             reserva.cambiarEstado(EstadoReserva.CONFIRMADA);
-                            reserva.registrarPago(item.getSubtotal(), "PLACETOPAY");
+                            reserva.registrarPago(montoPagadoItem, "PLACETOPAY");
                             senderoReservaRepository.save(reserva);
                         }
                     });
@@ -345,7 +355,7 @@ public class PlacetoPayService {
                     alojamientoReservaRepository.findById(item.getReservaId()).ifPresent(reserva -> {
                         if (reserva.getEstado() == EstadoReserva.PENDIENTE) {
                             reserva.setEstado(EstadoReserva.CONFIRMADA);
-                            reserva.registrarPago(item.getSubtotal(), "PLACETOPAY");
+                            reserva.registrarPago(montoPagadoItem, "PLACETOPAY");
                             alojamientoReservaRepository.save(reserva);
                         }
                     });

@@ -3,6 +3,7 @@ package com.tinambu.tours.service;
 import com.tinambu.tours.dto.request.*;
 import com.tinambu.tours.dto.response.*;
 import com.tinambu.tours.entity.alojamiento.*;
+import com.tinambu.tours.entity.reserva.AlojamientoReserva;
 import com.tinambu.tours.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -289,6 +290,17 @@ public class AlojamientoService {
     public void crearBloqueoManual(UUID alojamientoId, LocalDate fechaInicio, LocalDate fechaFin) {
         if (!fechaInicio.isBefore(fechaFin)) {
             throw new IllegalArgumentException("La fecha de inicio debe ser anterior a la fecha de fin");
+        }
+        boolean hayReservasActivas = reservaRepository.existeReservaEnRango(alojamientoId, fechaInicio, fechaFin);
+        if (hayReservasActivas) {
+            List<AlojamientoReserva> reservas = reservaRepository.findReservasSuperpuestas(alojamientoId, fechaInicio, fechaFin);
+            String detalle = reservas.stream()
+                    .map(r -> r.getFechaCheckIn() + " → " + r.getFechaCheckOut())
+                    .collect(Collectors.joining(", "));
+            throw new IllegalStateException(
+                "No se puede bloquear el rango " + fechaInicio + " – " + fechaFin +
+                " porque hay reservas activas en esas fechas: " + detalle
+            );
         }
         List<AlojamientoReservaBloqueo> bloqueos = new ArrayList<>();
         LocalDate fecha = fechaInicio;

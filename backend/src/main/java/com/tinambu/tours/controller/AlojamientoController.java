@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 
 @RestController
@@ -157,7 +159,7 @@ public class AlojamientoController {
     }
 
     @PostMapping("/{id}/disponibilidad")
-    public ResponseEntity<AlojamientoDisponibilidadResponse> crearDisponibilidad(
+    public ResponseEntity<?> crearDisponibilidad(
             @PathVariable UUID id,
             @Valid @RequestBody AlojamientoDisponibilidadRequest request) {
         try {
@@ -165,12 +167,12 @@ public class AlojamientoController {
             AlojamientoDisponibilidadResponse response = alojamientoService.crearDisponibilidad(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             System.err.println("Error creando disponibilidad: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Error interno del servidor"));
         }
     }
 

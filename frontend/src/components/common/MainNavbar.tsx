@@ -9,7 +9,7 @@ import Logo from './Logo';
 import './MainNavbar.css';
 
 const MainNavbar: React.FC = () => {
-  const { state, logout } = useAuth();
+  const { state, logout, isAdmin } = useAuth();
   const { theme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -204,8 +204,7 @@ const MainNavbar: React.FC = () => {
             {/* Carrito - solo visible si está autenticado */}
             {state.isAuthenticated && <CartButton />}
             
-            {/* ADMIN PANEL BUTTON - ALWAYS VISIBLE WHEN AUTHENTICATED */}
-            {state.isAuthenticated && (
+            {state.isAuthenticated && isAdmin() && (
               <Link to={routes.admin} className="admin-panel-button-super-visible">
                 <span className="admin-icon">⚙️</span>
                 <span className="admin-text">ADMIN</span>
@@ -337,15 +336,16 @@ const MainNavbar: React.FC = () => {
               
               {state.isAuthenticated && (
                 <>
-                  {/* ADMIN BUTTON MOBILE - ALWAYS VISIBLE */}
-                  <Link 
-                    to={routes.admin} 
-                    className="mobile-nav-link admin-super-visible"
-                    onClick={closeMobileMenu}
-                  >
-                    <span className="nav-icon">⚙️</span>
-                    <span className="nav-label">🔥 PANEL ADMIN</span>
-                  </Link>
+                  {isAdmin() && (
+                    <Link 
+                      to={routes.admin} 
+                      className="mobile-nav-link admin-super-visible"
+                      onClick={closeMobileMenu}
+                    >
+                      <span className="nav-icon">⚙️</span>
+                      <span className="nav-label">🔥 PANEL ADMIN</span>
+                    </Link>
+                  )}
                   
                   <Link 
                     to={routes.myBookings} 

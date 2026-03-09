@@ -362,6 +362,12 @@ resource "aws_apigatewayv2_route" "images_set_main" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "images_alojamiento_set_main" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /images/alojamientos/{id}/principal"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "images_update_order" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "PUT /images/senderos/{id}/orden"
@@ -455,9 +461,21 @@ resource "aws_apigatewayv2_route" "alojamientos_delete" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "alojamientos_list_availability" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /alojamientos/{id}/disponibilidad"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "alojamientos_add_availability" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "POST /alojamientos/{id}/disponibilidad"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_delete_availability" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /alojamientos/{id}/disponibilidad/{disponibilidadId}"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 

@@ -206,12 +206,8 @@ const AlojamientoImageUploader: React.FC<AlojamientoImageUploaderProps> = ({
     if (!alojamientoId) return;
     
     try {
-      
-      // Update via API (if endpoint exists)
-      // Note: This might need to be implemented in the backend
-      // For now, we'll update locally
-      
-      // Update images list - mark this as principal and others as not
+      await apiService.setAlojamientoMainImage(imageId);
+
       const updatedImages = images.map(img => ({
         ...img,
         esPrincipal: img.id === imageId

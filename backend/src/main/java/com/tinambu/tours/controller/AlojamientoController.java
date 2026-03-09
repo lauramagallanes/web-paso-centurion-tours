@@ -145,14 +145,23 @@ public class AlojamientoController {
         }
     }
 
+    @GetMapping("/{id}/disponibilidad")
+    public ResponseEntity<List<AlojamientoDisponibilidadResponse>> listarDisponibilidades(@PathVariable UUID id) {
+        try {
+            List<AlojamientoDisponibilidadResponse> disponibilidades = alojamientoService.listarDisponibilidades(id);
+            return ResponseEntity.ok(disponibilidades);
+        } catch (Exception e) {
+            System.err.println("Error listando disponibilidades: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @PostMapping("/{id}/disponibilidad")
     public ResponseEntity<AlojamientoDisponibilidadResponse> crearDisponibilidad(
             @PathVariable UUID id,
             @Valid @RequestBody AlojamientoDisponibilidadRequest request) {
         try {
-            // Ensure the alojamientoId matches the path parameter
             request.setAlojamientoId(id);
-            
             AlojamientoDisponibilidadResponse response = alojamientoService.crearDisponibilidad(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
@@ -161,6 +170,21 @@ public class AlojamientoController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         } catch (Exception e) {
             System.err.println("Error creando disponibilidad: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/{id}/disponibilidad/{disponibilidadId}")
+    public ResponseEntity<Void> eliminarDisponibilidad(
+            @PathVariable UUID id,
+            @PathVariable UUID disponibilidadId) {
+        try {
+            alojamientoService.eliminarDisponibilidad(disponibilidadId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            System.err.println("Error eliminando disponibilidad: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

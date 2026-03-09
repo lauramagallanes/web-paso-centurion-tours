@@ -169,6 +169,21 @@ public class AlojamientoService {
 
     // Availability Methods
 
+    public List<AlojamientoDisponibilidadResponse> listarDisponibilidades(UUID alojamientoId) {
+        return disponibilidadRepository.findByAlojamientoIdOrdenadoPorFecha(alojamientoId)
+                .stream()
+                .map(this::convertirADisponibilidadResponse)
+                .collect(Collectors.toList());
+    }
+
+    public void eliminarDisponibilidad(UUID disponibilidadId) {
+        AlojamientoDisponibilidad disponibilidad = disponibilidadRepository.findById(disponibilidadId)
+                .orElseThrow(() -> new RuntimeException("Disponibilidad no encontrada: " + disponibilidadId));
+        disponibilidad.setActivo(false);
+        disponibilidadRepository.save(disponibilidad);
+        System.out.println("✅ Disponibilidad desactivada: " + disponibilidadId);
+    }
+
     public AlojamientoDisponibilidadResponse crearDisponibilidad(AlojamientoDisponibilidadRequest request) {
         System.out.println("📅 Creando disponibilidad para alojamiento: " + request.getAlojamientoId());
         

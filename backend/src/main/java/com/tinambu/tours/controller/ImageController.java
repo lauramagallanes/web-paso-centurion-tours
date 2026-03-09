@@ -161,6 +161,30 @@ public class ImageController {
     }
 
     /**
+     * Set an image as the main image for an alojamiento
+     * PUT /api/images/alojamientos/{imageId}/principal
+     */
+    @PutMapping("/alojamientos/{imageId}/principal")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> setAlojamientoMainImage(@PathVariable UUID imageId) {
+        try {
+            boolean updated = alojamientoService.setMainImage(imageId);
+            if (updated) {
+                Map<String, Object> successResponse = new HashMap<>();
+                successResponse.put("message", "Imagen principal actualizada exitosamente");
+                return ResponseEntity.ok(successResponse);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error actualizando imagen principal: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
      * Update display order of multiple images
      * PUT /api/images/senderos/{senderoId}/orden
      */

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge } from 'react-bootstrap';
+import { Card, Table, Button, Modal, Form, Alert, Spinner, Row, Col, Badge, ListGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useHabitacionesAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
 import AlojamientoImageUploader from '../../components/admin/AlojamientoImageUploader';
 import BackendError from '../../components/common/BackendError';
+import apiService from '../../services/apiService';
 
 interface Habitacion {
   id?: string;
@@ -58,6 +59,16 @@ const RoomManagement: React.FC = () => {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [habitacionImages, setHabitacionImages] = useState<any[]>([]);
 
+  // Availability management state
+  const [showAvailModal, setShowAvailModal] = useState(false);
+  const [availHabitacion, setAvailHabitacion] = useState<Habitacion | null>(null);
+  const [disponibilidades, setDisponibilidades] = useState<any[]>([]);
+  const [availLoading, setAvailLoading] = useState(false);
+  const [availError, setAvailError] = useState<string | null>(null);
+  const [availSuccess, setAvailSuccess] = useState<string | null>(null);
+  const [newAvailFechaInicio, setNewAvailFechaInicio] = useState('');
+  const [newAvailFechaFin, setNewAvailFechaFin] = useState('');
+
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
@@ -107,6 +118,67 @@ const RoomManagement: React.FC = () => {
     });
     setErrors({});
     setSelectedHabitacion(null);
+  };
+
+  const handleOpenAvailModal = async (habitacion: Habitacion) => {
+    setAvailHabitacion(habitacion);
+    setAvailError(null);
+    setAvailSuccess(null);
+    setNewAvailFechaInicio('');
+    setNewAvailFechaFin('');
+    setShowAvailModal(true);
+    if (habitacion.id) {
+      setAvailLoading(true);
+      try {
+        const data = await apiService.getAlojamientoDisponibilidades(habitacion.id);
+        setDisponibilidades(Array.isArray(data) ? data : []);
+      } catch {
+        setDisponibilidades([]);
+      } finally {
+        setAvailLoading(false);
+      }
+    }
+  };
+
+  const handleAddDisponibilidad = async () => {
+    if (!availHabitacion?.id || !newAvailFechaInicio || !newAvailFechaFin) {
+      setAvailError('Por favor ingresá ambas fechas.');
+      return;
+    }
+    if (newAvailFechaInicio >= newAvailFechaFin) {
+      setAvailError('La fecha de inicio debe ser anterior a la fecha de fin.');
+      return;
+    }
+    setAvailLoading(true);
+    setAvailError(null);
+    try {
+      await apiService.createAlojamientoDisponibilidad(availHabitacion.id, newAvailFechaInicio, newAvailFechaFin);
+      const data = await apiService.getAlojamientoDisponibilidades(availHabitacion.id);
+      setDisponibilidades(Array.isArray(data) ? data : []);
+      setNewAvailFechaInicio('');
+      setNewAvailFechaFin('');
+      setAvailSuccess('Período de disponibilidad agregado.');
+    } catch (err: any) {
+      setAvailError(err?.message || 'Error al agregar disponibilidad.');
+    } finally {
+      setAvailLoading(false);
+    }
+  };
+
+  const handleDeleteDisponibilidad = async (disponibilidadId: string) => {
+    if (!availHabitacion?.id) return;
+    if (!window.confirm('¿Eliminar este período de disponibilidad?')) return;
+    setAvailLoading(true);
+    setAvailError(null);
+    try {
+      await apiService.deleteAlojamientoDisponibilidad(availHabitacion.id, disponibilidadId);
+      setDisponibilidades(prev => prev.filter(d => d.id !== disponibilidadId));
+      setAvailSuccess('Período eliminado.');
+    } catch (err: any) {
+      setAvailError(err?.message || 'Error al eliminar disponibilidad.');
+    } finally {
+      setAvailLoading(false);
+    }
   };
 
   const handleOpenModal = (mode: 'create' | 'edit' | 'view', habitacion?: Habitacion) => {
@@ -374,6 +446,15 @@ const RoomManagement: React.FC = () => {
                         </Button>
                         
                         <Button
+                          variant="outline-info"
+                          size="sm"
+                          onClick={() => handleOpenAvailModal(habitacion)}
+                          title="Gestionar disponibilidad"
+                        >
+                          <Icon name="calendar" size="xs" />
+                        </Button>
+
+                        <Button
                           variant="outline-danger"
                           size="sm"
                           onClick={() => handleDelete(habitacion)}
@@ -391,6 +472,99 @@ const RoomManagement: React.FC = () => {
           )}
         </Card.Body>
       </Card>
+
+      {/* Modal de disponibilidad */}
+      <Modal show={showAvailModal} onHide={() => setShowAvailModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <Icon name="calendar" size="sm" className="me-2" />
+            Disponibilidad — {availHabitacion?.nombre}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="text-muted small mb-3">
+            Los períodos de disponibilidad definen cuándo la habitación puede ser reservada. 
+            Si no hay ningún período, la habitación no estará disponible para reservas.
+          </p>
+
+          {availError && <Alert variant="danger" onClose={() => setAvailError(null)} dismissible>{availError}</Alert>}
+          {availSuccess && <Alert variant="success" onClose={() => setAvailSuccess(null)} dismissible>{availSuccess}</Alert>}
+
+          <Card className="mb-4">
+            <Card.Header><strong>Agregar período disponible</strong></Card.Header>
+            <Card.Body>
+              <Row className="align-items-end">
+                <Col md={4}>
+                  <Form.Group>
+                    <Form.Label>Desde</Form.Label>
+                    <Form.Control
+                      type="date"
+                      value={newAvailFechaInicio}
+                      onChange={e => setNewAvailFechaInicio(e.target.value)}
+                      disabled={availLoading}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Form.Group>
+                    <Form.Label>Hasta</Form.Label>
+                    <Form.Control
+                      type="date"
+                      value={newAvailFechaFin}
+                      onChange={e => setNewAvailFechaFin(e.target.value)}
+                      disabled={availLoading}
+                      min={newAvailFechaInicio}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Button
+                    variant="success"
+                    onClick={handleAddDisponibilidad}
+                    disabled={availLoading || !newAvailFechaInicio || !newAvailFechaFin}
+                    className="w-100"
+                  >
+                    {availLoading ? <Spinner animation="border" size="sm" /> : '+ Agregar'}
+                  </Button>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+
+          <h6>Períodos configurados</h6>
+          {availLoading && disponibilidades.length === 0 ? (
+            <div className="text-center py-3"><Spinner animation="border" size="sm" /></div>
+          ) : disponibilidades.length === 0 ? (
+            <Alert variant="warning">
+              No hay períodos de disponibilidad. La habitación no puede ser reservada hasta que agregues al menos uno.
+            </Alert>
+          ) : (
+            <ListGroup>
+              {disponibilidades.map((d: any) => (
+                <ListGroup.Item key={d.id} className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>{new Date(d.fechaInicio + 'T12:00:00').toLocaleDateString('es-UY')}</strong>
+                    {' — '}
+                    <strong>{new Date(d.fechaFin + 'T12:00:00').toLocaleDateString('es-UY')}</strong>
+                    <Badge bg="success" className="ms-2">Activo</Badge>
+                  </div>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => handleDeleteDisponibilidad(d.id)}
+                    disabled={availLoading}
+                  >
+                    <Icon name="trash" size="xs" />
+                  </Button>
+                </ListGroup.Item>
+              ))}
+            </ListGroup>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowAvailModal(false)}>Cerrar</Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Modal para crear/editar/ver habitación */}
       <Modal 
@@ -549,7 +723,7 @@ const RoomManagement: React.FC = () => {
                   <Form.Control
                     type="number"
                     min="0"
-                    step="100"
+                    step="1"
                     value={formData.precioPorNoche}
                     onChange={(e) => handleInputChange('precioPorNoche', e.target.value ? parseFloat(e.target.value) : 0)}
                     isInvalid={!!errors.precioPorNoche}

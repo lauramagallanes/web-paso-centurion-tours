@@ -464,13 +464,36 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  // Set as main image (same endpoint as senderos)
   async setAlojamientoMainImage(imageId: string) {
-    const response = await fetch(`${this.baseURL}/images/${imageId}/principal`, {
+    const response = await fetch(`${this.baseURL}/images/alojamientos/${imageId}/principal`, {
       method: 'PUT',
       headers: this.getHeaders(true),
     });
 
+    return this.handleResponse(response);
+  }
+
+  async getAlojamientoDisponibilidades(alojamientoId: string) {
+    const response = await fetch(`${this.baseURL}/alojamientos/${alojamientoId}/disponibilidad`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createAlojamientoDisponibilidad(alojamientoId: string, fechaInicio: string, fechaFin: string) {
+    const response = await fetch(`${this.baseURL}/alojamientos/${alojamientoId}/disponibilidad`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ alojamientoId, fechaInicio, fechaFin }),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteAlojamientoDisponibilidad(alojamientoId: string, disponibilidadId: string) {
+    const response = await fetch(`${this.baseURL}/alojamientos/${alojamientoId}/disponibilidad/${disponibilidadId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
     return this.handleResponse(response);
   }
 

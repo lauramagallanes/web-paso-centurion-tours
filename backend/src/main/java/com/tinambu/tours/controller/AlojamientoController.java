@@ -191,6 +191,45 @@ public class AlojamientoController {
         }
     }
 
+    @GetMapping("/{id}/bloqueos-manuales")
+    public ResponseEntity<?> listarBloqueosManuals(@PathVariable UUID id) {
+        try {
+            return ResponseEntity.ok(alojamientoService.listarBloqueosManuals(id));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/bloqueos-manuales")
+    public ResponseEntity<?> crearBloqueoManual(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> body) {
+        try {
+            LocalDate fechaInicio = LocalDate.parse(body.get("fechaInicio"));
+            LocalDate fechaFin = LocalDate.parse(body.get("fechaFin"));
+            alojamientoService.crearBloqueoManual(id, fechaInicio, fechaFin);
+            return ResponseEntity.ok(Map.of("message", "Bloqueo manual creado exitosamente"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}/bloqueos-manuales")
+    public ResponseEntity<?> eliminarBloqueoManual(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> body) {
+        try {
+            LocalDate fechaInicio = LocalDate.parse(body.get("fechaInicio"));
+            LocalDate fechaFin = LocalDate.parse(body.get("fechaFin"));
+            alojamientoService.eliminarBloqueoManual(id, fechaInicio, fechaFin);
+            return ResponseEntity.ok(Map.of("message", "Bloqueo manual eliminado exitosamente"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // Exception handler for better error responses
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleValidationException(IllegalArgumentException e) {

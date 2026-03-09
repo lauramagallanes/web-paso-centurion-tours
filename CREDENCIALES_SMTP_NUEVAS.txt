@@ -1,0 +1,26 @@
+CREDENCIALES SMTP PARA GMAIL
+============================
+
+Servidor SMTP: email-smtp.us-east-1.amazonaws.com
+Puerto: 587
+Tipo de conexión: TLS (NO SSL)
+
+Usuario SMTP:
+[Ver output del comando anterior]
+
+Contraseña SMTP:
+[Ver output del comando anterior]
+
+INSTRUCCIONES:
+1. Copia EXACTAMENTE el Usuario SMTP (sin espacios)
+2. Copia EXACTAMENTE la Contraseña SMTP COMPLETA
+3. En Gmail, configura:
+   - Servidor: email-smtp.us-east-1.amazonaws.com
+   - Puerto: 587
+   - TLS: Sí
+   - Usuario: [Usuario SMTP]
+   - Contraseña: [Contraseña SMTP]
+
+NOTA: La contraseña puede terminar con '/' o '=' - copia TODO incluyendo ese carácter.
+
+

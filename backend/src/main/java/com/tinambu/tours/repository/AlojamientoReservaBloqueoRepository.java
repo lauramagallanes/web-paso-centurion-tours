@@ -3,6 +3,7 @@ package com.tinambu.tours.repository;
 import com.tinambu.tours.entity.alojamiento.AlojamientoReservaBloqueo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -59,6 +60,19 @@ public interface AlojamientoReservaBloqueoRepository extends JpaRepository<Aloja
     @Modifying
     @Query("DELETE FROM AlojamientoReservaBloqueo arb WHERE arb.reservaId = :reservaId")
     void deleteByReservaId(@Param("reservaId") UUID reservaId);
+
+    @Query("SELECT arb FROM AlojamientoReservaBloqueo arb WHERE arb.alojamientoId = :alojamientoId " +
+           "AND arb.reservaId IS NULL AND arb.activo = true ORDER BY arb.fecha")
+    List<AlojamientoReservaBloqueo> findBloqueosManuals(@Param("alojamientoId") UUID alojamientoId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE AlojamientoReservaBloqueo arb SET arb.activo = false " +
+           "WHERE arb.alojamientoId = :alojamientoId AND arb.reservaId IS NULL " +
+           "AND arb.fecha BETWEEN :fechaInicio AND :fechaFin")
+    void desactivarBloqueosManualEnRango(@Param("alojamientoId") UUID alojamientoId,
+                                         @Param("fechaInicio") LocalDate fechaInicio,
+                                         @Param("fechaFin") LocalDate fechaFin);
 
     @Query("SELECT COUNT(DISTINCT arb.fecha) FROM AlojamientoReservaBloqueo arb " +
            "WHERE arb.alojamientoId = :alojamientoId AND arb.activo = true " +

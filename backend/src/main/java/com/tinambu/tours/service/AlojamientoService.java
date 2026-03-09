@@ -259,6 +259,57 @@ public class AlojamientoService {
         System.out.println("✅ Alojamiento bloqueado exitosamente: " + bloqueos.size() + " bloqueos creados");
     }
 
+    public List<Map<String, Object>> listarBloqueosManuals(UUID alojamientoId) {
+        List<AlojamientoReservaBloqueo> bloqueos = bloqueoRepository.findBloqueosManuals(alojamientoId);
+
+        List<Map<String, Object>> ranges = new ArrayList<>();
+        if (bloqueos.isEmpty()) return ranges;
+
+        LocalDate start = bloqueos.get(0).getFecha();
+        LocalDate prev = start;
+
+        for (int i = 1; i < bloqueos.size(); i++) {
+            LocalDate current = bloqueos.get(i).getFecha();
+            if (!current.equals(prev.plusDays(1))) {
+                Map<String, Object> range = new HashMap<>();
+                range.put("fechaInicio", start.toString());
+                range.put("fechaFin", prev.toString());
+                ranges.add(range);
+                start = current;
+            }
+            prev = current;
+        }
+        Map<String, Object> last = new HashMap<>();
+        last.put("fechaInicio", start.toString());
+        last.put("fechaFin", prev.toString());
+        ranges.add(last);
+        return ranges;
+    }
+
+    public void crearBloqueoManual(UUID alojamientoId, LocalDate fechaInicio, LocalDate fechaFin) {
+        if (!fechaInicio.isBefore(fechaFin)) {
+            throw new IllegalArgumentException("La fecha de inicio debe ser anterior a la fecha de fin");
+        }
+        List<AlojamientoReservaBloqueo> bloqueos = new ArrayList<>();
+        LocalDate fecha = fechaInicio;
+        while (!fecha.isAfter(fechaFin)) {
+            bloqueos.add(AlojamientoReservaBloqueo.builder()
+                    .alojamientoId(alojamientoId)
+                    .reservaId(null)
+                    .fecha(fecha)
+                    .activo(true)
+                    .build());
+            fecha = fecha.plusDays(1);
+        }
+        bloqueoRepository.saveAll(bloqueos);
+        System.out.println("✅ Bloqueo manual creado: " + fechaInicio + " al " + fechaFin + " (" + bloqueos.size() + " días)");
+    }
+
+    public void eliminarBloqueoManual(UUID alojamientoId, LocalDate fechaInicio, LocalDate fechaFin) {
+        bloqueoRepository.desactivarBloqueosManualEnRango(alojamientoId, fechaInicio, fechaFin);
+        System.out.println("✅ Bloqueo manual eliminado: " + fechaInicio + " al " + fechaFin);
+    }
+
     public List<LocalDate> obtenerFechasBloqueadas(UUID alojamientoId, LocalDate desde, LocalDate hasta) {
         System.out.println("📅 Obteniendo fechas bloqueadas para alojamiento " + alojamientoId + " del " + desde + " al " + hasta);
         return bloqueoRepository.findFechasBloqueadasEnRango(alojamientoId, desde, hasta);

@@ -63,11 +63,14 @@ const RoomManagement: React.FC = () => {
   const [showAvailModal, setShowAvailModal] = useState(false);
   const [availHabitacion, setAvailHabitacion] = useState<Habitacion | null>(null);
   const [disponibilidades, setDisponibilidades] = useState<any[]>([]);
+  const [bloqueosManuals, setBloqueosManuals] = useState<any[]>([]);
   const [availLoading, setAvailLoading] = useState(false);
   const [availError, setAvailError] = useState<string | null>(null);
   const [availSuccess, setAvailSuccess] = useState<string | null>(null);
   const [newAvailFechaInicio, setNewAvailFechaInicio] = useState('');
   const [newAvailFechaFin, setNewAvailFechaFin] = useState('');
+  const [newBloqueoFechaInicio, setNewBloqueoFechaInicio] = useState('');
+  const [newBloqueoFechaFin, setNewBloqueoFechaFin] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -120,23 +123,33 @@ const RoomManagement: React.FC = () => {
     setSelectedHabitacion(null);
   };
 
+  const loadAvailData = async (habitacionId: string) => {
+    setAvailLoading(true);
+    try {
+      const [dispData, bloquData] = await Promise.all([
+        apiService.getAlojamientoDisponibilidades(habitacionId).catch(() => []),
+        apiService.getBloqueosManuales(habitacionId).catch(() => []),
+      ]);
+      setDisponibilidades(Array.isArray(dispData) ? dispData : []);
+      setBloqueosManuals(Array.isArray(bloquData) ? bloquData : []);
+    } finally {
+      setAvailLoading(false);
+    }
+  };
+
   const handleOpenAvailModal = async (habitacion: Habitacion) => {
     setAvailHabitacion(habitacion);
     setAvailError(null);
     setAvailSuccess(null);
     setNewAvailFechaInicio('');
     setNewAvailFechaFin('');
+    setNewBloqueoFechaInicio('');
+    setNewBloqueoFechaFin('');
+    setDisponibilidades([]);
+    setBloqueosManuals([]);
     setShowAvailModal(true);
     if (habitacion.id) {
-      setAvailLoading(true);
-      try {
-        const data = await apiService.getAlojamientoDisponibilidades(habitacion.id);
-        setDisponibilidades(Array.isArray(data) ? data : []);
-      } catch {
-        setDisponibilidades([]);
-      } finally {
-        setAvailLoading(false);
-      }
+      await loadAvailData(habitacion.id);
     }
   };
 
@@ -153,8 +166,7 @@ const RoomManagement: React.FC = () => {
     setAvailError(null);
     try {
       await apiService.createAlojamientoDisponibilidad(availHabitacion.id, newAvailFechaInicio, newAvailFechaFin);
-      const data = await apiService.getAlojamientoDisponibilidades(availHabitacion.id);
-      setDisponibilidades(Array.isArray(data) ? data : []);
+      await loadAvailData(availHabitacion.id);
       setNewAvailFechaInicio('');
       setNewAvailFechaFin('');
       setAvailSuccess('Período de disponibilidad agregado.');
@@ -172,10 +184,50 @@ const RoomManagement: React.FC = () => {
     setAvailError(null);
     try {
       await apiService.deleteAlojamientoDisponibilidad(availHabitacion.id, disponibilidadId);
-      setDisponibilidades(prev => prev.filter(d => d.id !== disponibilidadId));
+      await loadAvailData(availHabitacion.id);
       setAvailSuccess('Período eliminado.');
     } catch (err: any) {
       setAvailError(err?.message || 'Error al eliminar disponibilidad.');
+    } finally {
+      setAvailLoading(false);
+    }
+  };
+
+  const handleAddBloqueo = async () => {
+    if (!availHabitacion?.id || !newBloqueoFechaInicio || !newBloqueoFechaFin) {
+      setAvailError('Por favor ingresá ambas fechas del bloqueo.');
+      return;
+    }
+    if (newBloqueoFechaInicio > newBloqueoFechaFin) {
+      setAvailError('La fecha de inicio debe ser anterior o igual a la fecha de fin.');
+      return;
+    }
+    setAvailLoading(true);
+    setAvailError(null);
+    try {
+      await apiService.createBloqueoManual(availHabitacion.id, newBloqueoFechaInicio, newBloqueoFechaFin);
+      await loadAvailData(availHabitacion.id);
+      setNewBloqueoFechaInicio('');
+      setNewBloqueoFechaFin('');
+      setAvailSuccess('Bloqueo manual agregado.');
+    } catch (err: any) {
+      setAvailError(err?.message || 'Error al agregar bloqueo.');
+    } finally {
+      setAvailLoading(false);
+    }
+  };
+
+  const handleDeleteBloqueo = async (fechaInicio: string, fechaFin: string) => {
+    if (!availHabitacion?.id) return;
+    if (!window.confirm('¿Eliminar este bloqueo?')) return;
+    setAvailLoading(true);
+    setAvailError(null);
+    try {
+      await apiService.deleteBloqueoManual(availHabitacion.id, fechaInicio, fechaFin);
+      await loadAvailData(availHabitacion.id);
+      setAvailSuccess('Bloqueo eliminado.');
+    } catch (err: any) {
+      setAvailError(err?.message || 'Error al eliminar bloqueo.');
     } finally {
       setAvailLoading(false);
     }
@@ -482,84 +534,130 @@ const RoomManagement: React.FC = () => {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p className="text-muted small mb-3">
-            Los períodos de disponibilidad definen cuándo la habitación puede ser reservada. 
-            Si no hay ningún período, la habitación no estará disponible para reservas.
-          </p>
-
           {availError && <Alert variant="danger" onClose={() => setAvailError(null)} dismissible>{availError}</Alert>}
           {availSuccess && <Alert variant="success" onClose={() => setAvailSuccess(null)} dismissible>{availSuccess}</Alert>}
 
-          <Card className="mb-4">
-            <Card.Header><strong>Agregar período disponible</strong></Card.Header>
-            <Card.Body>
-              <Row className="align-items-end">
-                <Col md={4}>
-                  <Form.Group>
-                    <Form.Label>Desde</Form.Label>
-                    <Form.Control
-                      type="date"
-                      value={newAvailFechaInicio}
-                      onChange={e => setNewAvailFechaInicio(e.target.value)}
-                      disabled={availLoading}
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={4}>
-                  <Form.Group>
-                    <Form.Label>Hasta</Form.Label>
-                    <Form.Control
-                      type="date"
-                      value={newAvailFechaFin}
-                      onChange={e => setNewAvailFechaFin(e.target.value)}
-                      disabled={availLoading}
-                      min={newAvailFechaInicio}
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={4}>
-                  <Button
-                    variant="success"
-                    onClick={handleAddDisponibilidad}
-                    disabled={availLoading || !newAvailFechaInicio || !newAvailFechaFin}
-                    className="w-100"
-                  >
-                    {availLoading ? <Spinner animation="border" size="sm" /> : '+ Agregar'}
-                  </Button>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
+          {/* SECCIÓN 1: Períodos disponibles */}
+          <div className="mb-4">
+            <h6 className="d-flex align-items-center gap-2 mb-2">
+              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#198754', display: 'inline-block' }} />
+              Períodos disponibles
+              <small className="text-muted fw-normal">— cuándo la habitación puede ser reservada</small>
+            </h6>
 
-          <h6>Períodos configurados</h6>
-          {availLoading && disponibilidades.length === 0 ? (
-            <div className="text-center py-3"><Spinner animation="border" size="sm" /></div>
-          ) : disponibilidades.length === 0 ? (
-            <Alert variant="warning">
-              No hay períodos de disponibilidad. La habitación no puede ser reservada hasta que agregues al menos uno.
-            </Alert>
-          ) : (
-            <ListGroup>
-              {disponibilidades.map((d: any) => (
-                <ListGroup.Item key={d.id} className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <strong>{new Date(d.fechaInicio + 'T12:00:00').toLocaleDateString('es-UY')}</strong>
-                    {' — '}
-                    <strong>{new Date(d.fechaFin + 'T12:00:00').toLocaleDateString('es-UY')}</strong>
-                    <Badge bg="success" className="ms-2">Activo</Badge>
-                  </div>
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => handleDeleteDisponibilidad(d.id)}
-                    disabled={availLoading}
-                  >
-                    <Icon name="trash" size="xs" />
-                  </Button>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          )}
+            {availLoading ? (
+              <div className="text-center py-2"><Spinner animation="border" size="sm" /></div>
+            ) : disponibilidades.length === 0 ? (
+              <Alert variant="warning" className="py-2 mb-2">
+                Sin períodos configurados. La habitación no puede ser reservada.
+              </Alert>
+            ) : (
+              <ListGroup className="mb-2">
+                {disponibilidades.map((d: any) => (
+                  <ListGroup.Item key={d.id} className="d-flex justify-content-between align-items-center py-2"
+                    style={{ borderLeft: '4px solid #198754' }}>
+                    <span>
+                      <strong>{new Date(d.fechaInicio + 'T12:00:00').toLocaleDateString('es-UY')}</strong>
+                      {' → '}
+                      <strong>{new Date(d.fechaFin + 'T12:00:00').toLocaleDateString('es-UY')}</strong>
+                    </span>
+                    <Button variant="outline-danger" size="sm" onClick={() => handleDeleteDisponibilidad(d.id)} disabled={availLoading}>
+                      <Icon name="trash" size="xs" />
+                    </Button>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            )}
+
+            <Card className="border-success border-opacity-50">
+              <Card.Body className="py-2 px-3">
+                <Row className="align-items-end g-2">
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Label className="small mb-1">Desde</Form.Label>
+                      <Form.Control type="date" size="sm" value={newAvailFechaInicio}
+                        onChange={e => setNewAvailFechaInicio(e.target.value)} disabled={availLoading} />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Label className="small mb-1">Hasta</Form.Label>
+                      <Form.Control type="date" size="sm" value={newAvailFechaFin} min={newAvailFechaInicio}
+                        onChange={e => setNewAvailFechaFin(e.target.value)} disabled={availLoading} />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Button variant="success" size="sm" className="w-100" onClick={handleAddDisponibilidad}
+                      disabled={availLoading || !newAvailFechaInicio || !newAvailFechaFin}>
+                      + Agregar período
+                    </Button>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </div>
+
+          <hr />
+
+          {/* SECCIÓN 2: Bloqueos manuales */}
+          <div>
+            <h6 className="d-flex align-items-center gap-2 mb-2">
+              <span style={{ width: 14, height: 14, borderRadius: 3, background: '#dc3545', display: 'inline-block' }} />
+              Bloqueos manuales
+              <small className="text-muted fw-normal">— fechas no disponibles dentro de un período</small>
+            </h6>
+
+            {availLoading ? (
+              <div className="text-center py-2"><Spinner animation="border" size="sm" /></div>
+            ) : bloqueosManuals.length === 0 ? (
+              <p className="text-muted small mb-2">Sin bloqueos manuales configurados.</p>
+            ) : (
+              <ListGroup className="mb-2">
+                {bloqueosManuals.map((b: any, i: number) => (
+                  <ListGroup.Item key={i} className="d-flex justify-content-between align-items-center py-2"
+                    style={{ borderLeft: '4px solid #dc3545' }}>
+                    <span>
+                      <strong>{new Date(b.fechaInicio + 'T12:00:00').toLocaleDateString('es-UY')}</strong>
+                      {' → '}
+                      <strong>{new Date(b.fechaFin + 'T12:00:00').toLocaleDateString('es-UY')}</strong>
+                      <Badge bg="danger" className="ms-2">Bloqueado</Badge>
+                    </span>
+                    <Button variant="outline-danger" size="sm"
+                      onClick={() => handleDeleteBloqueo(b.fechaInicio, b.fechaFin)} disabled={availLoading}>
+                      <Icon name="trash" size="xs" />
+                    </Button>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            )}
+
+            <Card className="border-danger border-opacity-50">
+              <Card.Body className="py-2 px-3">
+                <Row className="align-items-end g-2">
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Label className="small mb-1">Bloquear desde</Form.Label>
+                      <Form.Control type="date" size="sm" value={newBloqueoFechaInicio}
+                        onChange={e => setNewBloqueoFechaInicio(e.target.value)} disabled={availLoading} />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Label className="small mb-1">Hasta</Form.Label>
+                      <Form.Control type="date" size="sm" value={newBloqueoFechaFin} min={newBloqueoFechaInicio}
+                        onChange={e => setNewBloqueoFechaFin(e.target.value)} disabled={availLoading} />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Button variant="danger" size="sm" className="w-100" onClick={handleAddBloqueo}
+                      disabled={availLoading || !newBloqueoFechaInicio || !newBloqueoFechaFin}>
+                      Bloquear fechas
+                    </Button>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </div>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowAvailModal(false)}>Cerrar</Button>

@@ -479,6 +479,24 @@ resource "aws_apigatewayv2_route" "alojamientos_delete_availability" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "alojamientos_list_bloqueos" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /alojamientos/{id}/bloqueos-manuales"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_create_bloqueo" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /alojamientos/{id}/bloqueos-manuales"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_delete_bloqueo" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /alojamientos/{id}/bloqueos-manuales"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # ========== NEW RESERVAS ROUTES (Sendero & Alojamiento) ==========
 
 resource "aws_apigatewayv2_route" "reservas_create_sendero" {

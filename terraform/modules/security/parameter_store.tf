@@ -23,6 +23,10 @@ resource "aws_ssm_parameter" "placetopay_login" {
   type  = "SecureString"
   value = "PLACEHOLDER_P2P_LOGIN_${var.environment}"
 
+  lifecycle {
+    ignore_changes = [value]
+  }
+
   tags = {
     Environment = var.environment
     Service     = "payment"
@@ -34,6 +38,10 @@ resource "aws_ssm_parameter" "placetopay_secret_key" {
   type  = "SecureString"
   value = "PLACEHOLDER_P2P_SECRET_KEY_${var.environment}"
 
+  lifecycle {
+    ignore_changes = [value]
+  }
+
   tags = {
     Environment = var.environment
     Service     = "payment"
@@ -44,6 +52,10 @@ resource "aws_ssm_parameter" "placetopay_base_url" {
   name  = "/${var.environment}/payment/placetopay/base_url"
   type  = "String"
   value = var.environment == "prod" ? "https://checkout.placetopay.com" : "https://checkout-test.placetopay.com"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 
   tags = {
     Environment = var.environment

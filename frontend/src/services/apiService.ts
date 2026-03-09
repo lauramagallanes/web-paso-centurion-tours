@@ -497,6 +497,31 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async getBloqueosManuales(alojamientoId: string) {
+    const response = await fetch(`${this.baseURL}/alojamientos/${alojamientoId}/bloqueos-manuales`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createBloqueoManual(alojamientoId: string, fechaInicio: string, fechaFin: string) {
+    const response = await fetch(`${this.baseURL}/alojamientos/${alojamientoId}/bloqueos-manuales`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ fechaInicio, fechaFin }),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteBloqueoManual(alojamientoId: string, fechaInicio: string, fechaFin: string) {
+    const response = await fetch(`${this.baseURL}/alojamientos/${alojamientoId}/bloqueos-manuales`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ fechaInicio, fechaFin }),
+    });
+    return this.handleResponse(response);
+  }
+
   // ============ ALOJAMIENTO PRESIGNED URL METHODS (for large files >10MB) ============
 
   /**

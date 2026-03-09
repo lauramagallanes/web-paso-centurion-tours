@@ -65,6 +65,7 @@ const RoomDetails: React.FC = () => {
   const [guestsCount, setGuestsCount] = useState(2);
   const [isFavorite, setIsFavorite] = useState(false);
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
+  const [availabilityPeriods, setAvailabilityPeriods] = useState<{fechaInicio: string; fechaFin: string}[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAddedModal, setShowAddedModal] = useState(false);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
@@ -221,28 +222,57 @@ const RoomDetails: React.FC = () => {
     setIsFavorite(favorites.some((fav: any) => fav.id === id));
   }, [id]);
 
-  // Load blocked dates for the next 6 months
+  // Load blocked dates and availability periods
   useEffect(() => {
-    const loadBlockedDates = async () => {
+    const loadAvailabilityData = async () => {
       if (!id) return;
       try {
         const desde = new Date().toISOString().split('T')[0];
-        const hasta = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        const result = await apiService.getFechasBloqueadas(id, desde, hasta);
-        if (Array.isArray(result)) {
-          // Convert date strings (YYYY-MM-DD) to Date objects for react-datepicker
-          const dates = result.map((dateStr: string) => {
+        const hasta = new Date(Date.now() + 540 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const [blockedResult, periodsResult] = await Promise.all([
+          apiService.getFechasBloqueadas(id, desde, hasta).catch(() => []),
+          apiService.getAlojamientoDisponibilidades(id).catch(() => []),
+        ]);
+        if (Array.isArray(blockedResult)) {
+          const dates = blockedResult.map((dateStr: string) => {
             const [year, month, day] = dateStr.split('-').map(Number);
             return new Date(year, month - 1, day);
           });
           setBlockedDates(dates);
         }
+        if (Array.isArray(periodsResult)) {
+          setAvailabilityPeriods(periodsResult.map((p: any) => ({
+            fechaInicio: p.fechaInicio,
+            fechaFin: p.fechaFin,
+          })));
+        }
       } catch (err) {
-        console.error('Error loading blocked dates:', err);
+        console.error('Error loading availability data:', err);
       }
     };
-    loadBlockedDates();
+    loadAvailabilityData();
   }, [id]);
+
+  // Returns true only for dates within a configured availability period and not blocked
+  const isDateAvailable = (date: Date): boolean => {
+    // If no periods configured, no date is available
+    if (availabilityPeriods.length === 0) return false;
+
+    const isInPeriod = availabilityPeriods.some(period => {
+      const start = new Date(period.fechaInicio + 'T00:00:00');
+      const end = new Date(period.fechaFin + 'T23:59:59');
+      return date >= start && date <= end;
+    });
+    if (!isInPeriod) return false;
+
+    // Check it's not a blocked date
+    const isBlocked = blockedDates.some(blocked =>
+      blocked.getFullYear() === date.getFullYear() &&
+      blocked.getMonth() === date.getMonth() &&
+      blocked.getDate() === date.getDate()
+    );
+    return !isBlocked;
+  };
 
   // Handlers
   const handleFavoriteToggle = () => {
@@ -628,7 +658,7 @@ const RoomDetails: React.FC = () => {
                       setCheckOutDate(null);
                     }
                   }}
-                  excludeDates={blockedDates}
+                  filterDate={isDateAvailable}
                   minDate={new Date()}
                   dateFormat="EEE dd/MM/yyyy"
                   locale="es"
@@ -644,7 +674,15 @@ const RoomDetails: React.FC = () => {
                 <DatePicker
                   selected={checkOutDate}
                   onChange={(date: Date | null) => setCheckOutDate(date)}
-                  excludeDates={blockedDates}
+                  filterDate={(date: Date) => {
+                    // For checkout, also allow the day after a blocked date (leaving day)
+                    if (availabilityPeriods.length === 0) return false;
+                    return availabilityPeriods.some(period => {
+                      const start = new Date(period.fechaInicio + 'T00:00:00');
+                      const end = new Date(period.fechaFin + 'T23:59:59');
+                      return date >= start && date <= end;
+                    });
+                  }}
                   minDate={checkInDate ? new Date(checkInDate.getTime() + 86400000) : new Date()}
                   dateFormat="EEE dd/MM/yyyy"
                   locale="es"

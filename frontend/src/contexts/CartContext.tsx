@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, ReactNode } from 'react';
 
 const generateId = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -128,24 +128,67 @@ interface CartProviderProps {
   children: ReactNode;
 }
 
+const getCurrentUserId = (): string | null => {
+  try {
+    const user = localStorage.getItem('user');
+    if (user) return JSON.parse(user)?.id ?? null;
+  } catch { /* ignore */ }
+  return null;
+};
+
+const cartKey = (userId: string | null) =>
+  userId ? `tinambu-cart-${userId}` : null;
+
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const lastUserIdRef = useRef<string | null>(getCurrentUserId());
 
+  // Load cart for the current user on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem('tinambu-cart');
-    if (savedCart) {
-      try {
-        const parsed: CartItem[] = JSON.parse(savedCart);
+    const key = cartKey(getCurrentUserId());
+    if (!key) return;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed: CartItem[] = JSON.parse(saved);
         dispatch({ type: 'LOAD_CART', payload: parsed });
-      } catch (error) {
-        console.error('Error loading cart from localStorage:', error);
       }
+    } catch (error) {
+      console.error('Error loading cart from localStorage:', error);
     }
   }, []);
 
+  // Persist cart under the current user's key whenever items change
   useEffect(() => {
-    localStorage.setItem('tinambu-cart', JSON.stringify(state.items));
+    const key = cartKey(getCurrentUserId());
+    if (key) {
+      localStorage.setItem(key, JSON.stringify(state.items));
+    }
   }, [state.items]);
+
+  // Detect user change (login / logout / switch) and reload the correct cart
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentUserId = getCurrentUserId();
+      if (currentUserId !== lastUserIdRef.current) {
+        lastUserIdRef.current = currentUserId;
+        const key = cartKey(currentUserId);
+        if (key) {
+          try {
+            const saved = localStorage.getItem(key);
+            const parsed: CartItem[] = saved ? JSON.parse(saved) : [];
+            dispatch({ type: 'LOAD_CART', payload: parsed });
+          } catch {
+            dispatch({ type: 'CLEAR_CART' });
+          }
+        } else {
+          // User logged out — clear cart from memory
+          dispatch({ type: 'CLEAR_CART' });
+        }
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
 
   const addItem = (item: Omit<CartItem, 'cartItemId'>) => {
     dispatch({ type: 'ADD_ITEM', payload: item });

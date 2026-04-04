@@ -80,3 +80,15 @@ variable "ses_email_identities" {
   description = "List of verified SES email identities"
   default     = ["tinambu.paso.centurion@gmail.com"]
 }
+
+variable "ses_initial_blocklist" {
+  type        = string
+  description = "Initial comma-separated list of blocked email addresses/domains for SES filter. Manage via SSM after first apply."
+  default     = "EMPTY"
+}
+
+variable "ses_blocked_ip_ranges" {
+  type        = map(string)
+  description = "Map of label => CIDR for SES IP-level blocking. Example: { \"spammer\" = \"203.0.113.5/32\" }"
+  default     = {}
+}

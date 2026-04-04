@@ -106,3 +106,39 @@ module "ses_email_forwarding" {
   destination_email = "pasocenturiontours@gmail.com"
   from_email        = "noreply@pasocenturion.com.uy"
 }
+
+# SES Email Filter Module - Phishing/spam blocking (Option 1 + 3)
+# Option 1: IP-level filters via var.ses_blocked_ip_ranges (account-wide, before receipt rules)
+# Option 3: Lambda filter rule (RequestResponse) as first receipt rule, checked before S3 storage
+module "ses_email_filter" {
+  source = "../../modules/ses-email-filter"
+
+  environment            = var.environment
+  inbound_email_bucket   = "pasocenturion-emails-inbound"
+  s3_action_iam_role_arn = "arn:aws:iam::307946665851:role/ses-inbound-write-to-s3"
+  initial_blocklist      = var.ses_initial_blocklist
+  blocked_ip_ranges      = var.ses_blocked_ip_ranges
+
+  s3_rules = [
+    {
+      name       = "info"
+      recipients = ["info@pasocenturion.com.uy"]
+      prefix     = "inbound/info/"
+    },
+    {
+      name       = "consulta"
+      recipients = ["consulta@pasocenturion.com.uy"]
+      prefix     = "inbound/consultas/"
+    },
+    {
+      name       = "consultas"
+      recipients = ["consultas@pasocenturion.com.uy"]
+      prefix     = "inbound/consultas/"
+    },
+    {
+      name       = "reservas"
+      recipients = ["reservas@pasocenturion.com.uy"]
+      prefix     = "inbound/reservas/"
+    }
+  ]
+}

@@ -110,13 +110,13 @@ def lambda_handler(event, context):
                 
                 # Agregar el cuerpo al mensaje
                 if body_html:
-                    # Si hay HTML, usar HTML como principal
-                    forward_msg.attach(MIMEText(body_html, 'html'))
+                    # Usar multipart/alternative para que el cliente elija UNA versión
+                    # (plain text o HTML), evitando que ambas se muestren simultáneamente
+                    alt_part = MIMEMultipart('alternative')
                     if body_text:
-                        # Agregar texto plano como alternativa
-                        text_part = MIMEText(body_text, 'plain')
-                        text_part.add_header('Content-Disposition', 'inline')
-                        forward_msg.attach(text_part)
+                        alt_part.attach(MIMEText(body_text, 'plain'))
+                    alt_part.attach(MIMEText(body_html, 'html'))
+                    forward_msg.attach(alt_part)
                 else:
                     # Solo texto plano
                     forward_msg.attach(MIMEText(body_text, 'plain'))

@@ -20,8 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Detect changes
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-      backend: ${{ steps.filter.outputs.backend }}
+      frontend:  ${{ steps.filter.outputs.frontend }}
+      backend:   ${{ steps.filter.outputs.backend }}
+      terraform: ${{ steps.filter.outputs.terraform }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -33,6 +34,10 @@ jobs:
             backend:
               - 'backend/src/**'
               - 'backend/pom.xml'
+            terraform:
+              - 'terraform/environments/dev/**'
+              - 'terraform/modules/**'
+              - 'terraform/shared/**'
 
   # ──────────────────────────────────────────────
   # Build and deploy Frontend (React/Vite → S3)
@@ -145,4 +150,55 @@ jobs:
         run: |
           echo "### Backend deployed" >> $GITHUB_STEP_SUMMARY
           echo "- Lambda: \`${{ env.LAMBDA_FUNCTION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # ──────────────────────────────────────────────
+  # Terraform — apply infrastructure changes (dev)
+  # ──────────────────────────────────────────────
+  deploy-infra:
+    runs-on: ubuntu-latest
+    name: Deploy Infrastructure
+    needs: changes
+    if: needs.changes.outputs.terraform == 'true' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.5"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: terraform/environments/dev
+        run: terraform init
+
+      - name: Terraform Format Check
+        working-directory: terraform/environments/dev
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        working-directory: terraform/environments/dev
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: terraform/environments/dev
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: terraform/environments/dev
+        run: terraform apply -auto-approve tfplan
+
+      - name: Summary
+        run: |
+          echo "### Infrastructure deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- Environment: \`dev\`" >> $GITHUB_STEP_SUMMARY
           echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY

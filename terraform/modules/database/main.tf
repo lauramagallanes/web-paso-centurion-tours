@@ -125,6 +125,93 @@ resource "aws_db_instance" "main" {
   }
 }
 
+# =============================================================================
+# RDS Auto Stop/Start — dev y staging únicamente
+# Horario L-V 08:00-20:00 hs Montevideo. Fines de semana: apagado.
+# Ahorro estimado: ~$7.52/mes al reducir horas de cómputo 730 → ~260 hs/mes.
+# =============================================================================
+
+resource "aws_iam_role" "rds_scheduler" {
+  count = var.environment != "prod" ? 1 : 0
+
+  name = "tinambu-rds-scheduler-role-${var.environment}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "scheduler.amazonaws.com" }
+    }]
+  })
+
+  tags = {
+    Name = "tinambu-rds-scheduler-role-${var.environment}"
+  }
+}
+
+resource "aws_iam_role_policy" "rds_scheduler" {
+  count = var.environment != "prod" ? 1 : 0
+
+  name = "tinambu-rds-scheduler-policy-${var.environment}"
+  role = aws_iam_role.rds_scheduler[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["rds:StopDBInstance", "rds:StartDBInstance"]
+      Resource = aws_db_instance.main.arn
+    }]
+  })
+}
+
+resource "aws_scheduler_schedule" "rds_stop" {
+  count = var.environment != "prod" ? 1 : 0
+
+  name       = "tinambu-rds-stop-${var.environment}"
+  group_name = "default"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression          = "cron(0 20 ? * MON-FRI *)"
+  schedule_expression_timezone = "America/Montevideo"
+
+  target {
+    arn      = "arn:aws:scheduler:::aws-sdk:rds:stopDBInstance"
+    role_arn = aws_iam_role.rds_scheduler[0].arn
+
+    input = jsonencode({
+      DbInstanceIdentifier = aws_db_instance.main.id
+    })
+  }
+}
+
+resource "aws_scheduler_schedule" "rds_start" {
+  count = var.environment != "prod" ? 1 : 0
+
+  name       = "tinambu-rds-start-${var.environment}"
+  group_name = "default"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression          = "cron(0 8 ? * MON-FRI *)"
+  schedule_expression_timezone = "America/Montevideo"
+
+  target {
+    arn      = "arn:aws:scheduler:::aws-sdk:rds:startDBInstance"
+    role_arn = aws_iam_role.rds_scheduler[0].arn
+
+    input = jsonencode({
+      DbInstanceIdentifier = aws_db_instance.main.id
+    })
+  }
+}
+
 # DB Parameter Group for performance optimization and security
 resource "aws_db_parameter_group" "main" {
   family = "postgres15"

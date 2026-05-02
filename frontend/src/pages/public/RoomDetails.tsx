@@ -577,18 +577,6 @@ const RoomDetails: React.FC = () => {
               </div>
             </div>
 
-            {/* Minimum rate note */}
-            <div className="details-section">
-              <div className="minimum-rate-note">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0, marginTop: '2px' }}>
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-                </svg>
-                <p>
-                  La tarifa mínima corresponde a 2 personas. Si se hospeda una sola persona, se cobra igualmente el equivalente a 2 personas, ya que ese es el costo mínimo de la habitación por noche.
-                </p>
-              </div>
-            </div>
-
             {/* Description */}
             <div className="details-section">
               <h2 className="section-title">Descripción</h2>
@@ -748,6 +736,11 @@ const RoomDetails: React.FC = () => {
                 <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>Total</span>
                 <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>${(totalPrice ?? 0).toLocaleString()} UYU</span>
               </div>
+            </div>
+
+            {/* Minimum rate note */}
+            <div className="minimum-rate-note">
+              * Tarifa mínima equivalente a 2 personas por noche.
             </div>
 
             {/* Buttons */}

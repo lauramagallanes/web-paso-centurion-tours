@@ -672,7 +672,7 @@ class ApiService {
     message?: string;
   }> {
     const response = await fetch(`${this.baseURL}/senderos/${senderoId}/disponibilidad`, {
-      headers: this.getHeaders(),
+      headers: this.getHeaders(true),
     });
     return this.handleResponse(response);
   }
@@ -893,7 +893,7 @@ class ApiService {
   }> {
     const response = await fetch(
       `${this.baseURL}/reservas/sendero/disponibilidad?senderoId=${senderoId}&fecha=${fecha}&turno=${turno}`,
-      { headers: this.getHeaders() }
+      { headers: this.getHeaders(true) }
     );
     return this.handleResponse(response);
   }

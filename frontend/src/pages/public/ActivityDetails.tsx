@@ -95,6 +95,10 @@ const ActivityDetails: React.FC = () => {
     alternativas?: Array<{ id: string; nombre: string }>;
   } | null>(null);
   const [checkingDisponibilidad, setCheckingDisponibilidad] = useState(false);
+  const [disponibilidadError, setDisponibilidadError] = useState<string | null>(null);
+  // Monotonic counter to discard stale availability responses when the user
+  // switches fecha/turno faster than the network returns.
+  const disponibilidadGenRef = useRef(0);
   
 
   // Scroll to top when component mounts
@@ -249,6 +253,14 @@ const ActivityDetails: React.FC = () => {
     loadWindows();
   }, [sendero]);
 
+  // Convert Date -> "YYYY-MM-DD" using local timezone (avoid UTC drift).
+  const dateToIsoLocal = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   // Returns true if the given date falls inside at least one active availability window (any turno).
   const isSenderoDateAvailable = (date: Date): boolean => {
     if (availabilityWindows.length === 0) return false;
@@ -266,42 +278,60 @@ const ActivityDetails: React.FC = () => {
     });
   };
 
-  // Check availability whenever date or turno changes
+  // Check availability whenever date or turno changes.
+  // Uses a generation counter to ignore stale responses if the user changes
+  // the inputs faster than the network responds.
   useEffect(() => {
     if (!sendero || !selectedDate) {
       setDisponibilidad(null);
+      setDisponibilidadError(null);
+      setCheckingDisponibilidad(false);
       return;
     }
+    const gen = ++disponibilidadGenRef.current;
+    setCheckingDisponibilidad(true);
+    setDisponibilidad(null);
+    setDisponibilidadError(null);
+
     const checkAvailability = async () => {
-      setCheckingDisponibilidad(true);
       try {
-        const fechaStr = selectedDate.toISOString().split('T')[0];
+        const fechaStr = dateToIsoLocal(selectedDate);
         const res = await apiService.checkSenderoDisponibilidad(
           sendero.id,
           fechaStr,
           selectedTurno
         );
-        if (res.success) {
+        if (gen !== disponibilidadGenRef.current) return; // stale
+        if (res && res.success && res.data) {
           setDisponibilidad(res.data);
+        } else {
+          setDisponibilidadError('No se pudo verificar disponibilidad.');
         }
-      } catch {
-        setDisponibilidad(null);
+      } catch (err) {
+        if (gen !== disponibilidadGenRef.current) return; // stale
+        console.error('Error verificando disponibilidad de sendero', err);
+        setDisponibilidadError('No se pudo verificar disponibilidad. Intentá de nuevo.');
       } finally {
-        setCheckingDisponibilidad(false);
+        if (gen === disponibilidadGenRef.current) {
+          setCheckingDisponibilidad(false);
+        }
       }
     };
     checkAvailability();
   }, [sendero, selectedDate, selectedTurno]);
 
-  // Re-clamp participants when cuposRestantes shrinks (e.g. user changes date/turno)
+  // Re-clamp participants when cuposRestantes shrinks (e.g. user changes date/turno).
+  // When cuposRestantes is 0 we still keep the counter at 1 (the UI just blocks booking).
   useEffect(() => {
     if (!sendero || !disponibilidad) return;
-    const cupoMax = Math.min(
-      sendero.maxParticipantes,
-      Math.max(0, disponibilidad.cuposRestantes ?? sendero.maxParticipantes)
-    );
-    if (cupoMax > 0 && participantsCount > cupoMax) {
-      setParticipantsCount(cupoMax);
+    const restantes = Math.max(0, disponibilidad.cuposRestantes ?? 0);
+    const effectiveMax = Math.min(sendero.maxParticipantes, restantes);
+    if (effectiveMax <= 0) {
+      if (participantsCount !== 1) setParticipantsCount(1);
+      return;
+    }
+    if (participantsCount > effectiveMax) {
+      setParticipantsCount(effectiveMax);
     }
   }, [disponibilidad, sendero, participantsCount]);
 
@@ -332,27 +362,33 @@ const ActivityDetails: React.FC = () => {
     setIsFavorite(!isFavorite);
   };
 
-  // Effective cap = min(capacidad del sendero, cuposRestantes si hay disponibilidad cargada).
+  // Effective participant cap.
+  // Rules:
+  //  - If the sendero isn't loaded yet, cap is 0 (block everything).
+  //  - If there's no selected date, fall back to the sendero's capacidad.
+  //  - If we're waiting for availability or the fetch failed, freeze the cap at
+  //    the current count so the user cannot pass a potentially unsafe value.
+  //  - Otherwise, cap = min(capacidadMaximaGrupo, cuposRestantes).
   const cupoMaximo = (() => {
-    const capSendero = sendero?.maxParticipantes || 10;
-    if (!disponibilidad) return capSendero;
+    if (!sendero) return 0;
+    if (!selectedDate) return sendero.maxParticipantes;
+    if (checkingDisponibilidad || disponibilidadError || !disponibilidad) {
+      return participantsCount;
+    }
     const restantes = Math.max(0, disponibilidad.cuposRestantes ?? 0);
-    return Math.min(capSendero, restantes);
+    return Math.min(sendero.maxParticipantes, restantes);
   })();
+  const sinCuposParaFechaTurno =
+    !!selectedDate && !!disponibilidad && !disponibilidadError && (
+      !disponibilidad.disponible ||
+      (disponibilidad.cuposRestantes ?? 0) <= 0
+    );
 
   const handleParticipantsChange = (change: number) => {
     if (cupoMaximo <= 0 && change > 0) return;
     const upper = Math.max(1, cupoMaximo);
     const newCount = Math.max(1, Math.min(upper, participantsCount + change));
     setParticipantsCount(newCount);
-  };
-
-  // Convert Date -> "YYYY-MM-DD" for API / cart.
-  const dateToIsoLocal = (d: Date): string => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
   };
 
   const handleAddToCart = () => {
@@ -595,6 +631,8 @@ const ActivityDetails: React.FC = () => {
                 <div className="form-group">
                   {checkingDisponibilidad ? (
                     <p className="avail-checking">Verificando disponibilidad…</p>
+                  ) : disponibilidadError ? (
+                    <p className="avail-error">{disponibilidadError}</p>
                   ) : disponibilidad ? (
                     disponibilidad.disponible && (disponibilidad.cuposRestantes ?? 0) > 0 ? (
                       <p className="avail-ok">
@@ -641,11 +679,11 @@ const ActivityDetails: React.FC = () => {
                     <button
                       className="participant-btn"
                       onClick={() => handleParticipantsChange(1)}
-                      disabled={participantsCount >= cupoMaximo || cupoMaximo <= 0}
+                      disabled={participantsCount >= cupoMaximo || cupoMaximo <= 0 || sinCuposParaFechaTurno}
                     >+</button>
                   </div>
                 </div>
-                {selectedDate && disponibilidad && cupoMaximo > 0 && participantsCount >= cupoMaximo && (
+                {selectedDate && disponibilidad && !disponibilidadError && cupoMaximo > 0 && participantsCount >= cupoMaximo && !sinCuposParaFechaTurno && (
                   <p className="avail-message">Alcanzaste el máximo de cupos disponibles.</p>
                 )}
               </div>
@@ -665,24 +703,29 @@ const ActivityDetails: React.FC = () => {
 
             {/* Buttons */}
             {(() => {
-              const sinCupos = selectedDate && disponibilidad && (
-                !disponibilidad.disponible ||
-                (disponibilidad.cuposRestantes ?? 0) <= 0 ||
-                participantsCount > (disponibilidad.cuposRestantes ?? 0)
-              );
+              // Block booking when:
+              //  - fetch is in flight (we don't know yet)
+              //  - fetch failed (we can't confirm cupos)
+              //  - turno está lleno o la cantidad de participantes supera los cupos restantes
+              const bookingDisabled =
+                checkingDisponibilidad ||
+                !!disponibilidadError ||
+                (!!selectedDate && !disponibilidad) ||
+                sinCuposParaFechaTurno ||
+                (!!disponibilidad && participantsCount > (disponibilidad.cuposRestantes ?? 0));
               return (
                 <div className="booking-buttons">
                   <button
                     className="btn-primary"
                     onClick={handleBookNow}
-                    disabled={!!sinCupos || checkingDisponibilidad}
+                    disabled={bookingDisabled}
                   >
                     Reservar Ahora
                   </button>
                   <button
                     className="btn-secondary"
                     onClick={handleAddToCart}
-                    disabled={!!sinCupos || checkingDisponibilidad}
+                    disabled={bookingDisabled}
                   >
                     Agregar al carrito
                   </button>

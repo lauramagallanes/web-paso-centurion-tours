@@ -143,6 +143,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/reservas/calcular-precio").permitAll()
                 .requestMatchers(HttpMethod.GET, "/reservas/codigo/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/reservas/email/**").permitAll()
+                // Consulta de cupos por fecha/turno para el detalle de sendero (solo lectura, sin datos sensibles)
+                .requestMatchers(HttpMethod.GET, "/reservas/sendero/disponibilidad").permitAll()
                 
                 // Cualquier otro endpoint requiere autenticación
                 .anyRequest().authenticated())

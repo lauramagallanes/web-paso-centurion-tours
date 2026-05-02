@@ -69,6 +69,16 @@
   color: #f8fafc !important;
 }
 
+[data-theme="dark"] .minimum-rate-note {
+  background: #1a2d4a !important;
+  border-left-color: #3b82f6 !important;
+  color: #bfdbfe !important;
+}
+
+[data-theme="dark"] .minimum-rate-note svg {
+  color: #3b82f6 !important;
+}
+
 [data-theme="dark"] .price-amount,
 [data-theme="dark"] .form-label,
 [data-theme="dark"] .participant-count,
@@ -345,6 +355,30 @@
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
   color: #495057;
+}
+
+/* Minimum rate note */
+.minimum-rate-note {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: #1e3a5f;
+  border-left: 4px solid #4a9eff;
+  border-radius: 6px;
+  padding: 0.875rem 1rem;
+  color: #cce0ff;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.minimum-rate-note svg {
+  color: #4a9eff;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.minimum-rate-note p {
+  margin: 0;
 }
 
 /* Right Sidebar - Booking */

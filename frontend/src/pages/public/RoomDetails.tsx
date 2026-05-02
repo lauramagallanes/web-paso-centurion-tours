@@ -142,8 +142,8 @@ const RoomDetails: React.FC = () => {
             cantidadCamasDobles: room.cantidadCamasDobles || 0,
             cantidadLiteras: room.cantidadLiteras || 0,
             precioPorNoche: room.precioPorNoche || room.precioPorPersonaNoche || 0,
-            horaLlegada: room.horaLlegada || '14:00',
-            horaSalida: room.horaSalida || '10:00',
+            horaLlegada: room.horaLlegada || '15:00',
+            horaSalida: room.horaSalida || '12:00',
             activa: room.activa ?? room.activo ?? true,
             imagenes: roomImages.length > 0 ? roomImages.map(img => ({
               id: img.id,
@@ -577,6 +577,18 @@ const RoomDetails: React.FC = () => {
               </div>
             </div>
 
+            {/* Minimum rate note */}
+            <div className="details-section">
+              <div className="minimum-rate-note">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0, marginTop: '2px' }}>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                </svg>
+                <p>
+                  La tarifa mínima corresponde a 2 personas. Si se hospeda una sola persona, se cobra igualmente el equivalente a 2 personas, ya que ese es el costo mínimo de la habitación por noche.
+                </p>
+              </div>
+            </div>
+
             {/* Description */}
             <div className="details-section">
               <h2 className="section-title">Descripción</h2>
@@ -598,13 +610,13 @@ const RoomDetails: React.FC = () => {
                   </li>
                   <li>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+                      <path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/>
                     </svg>
                     Ropa de cama y toallas
                   </li>
                   <li>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H7V4h10v16z"/>
+                      <path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM4 4h7v16H4V4zm9 16V4h7v16h-7zm-4 0h2v-2h-2v2zm6 0h2v-2h-2v2z"/>
                     </svg>
                     Armario/closet
                   </li>
@@ -616,7 +628,7 @@ const RoomDetails: React.FC = () => {
                   </li>
                   <li>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+                      <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
                     </svg>
                     Acceso a áreas comunes
                   </li>
@@ -629,9 +641,9 @@ const RoomDetails: React.FC = () => {
               <h2 className="section-title">Métodos de pago</h2>
               <div className="section-content">
                 <div className="payment-methods">
+                  <div className="payment-method">Tarjeta de crédito o débito</div>
                   <div className="payment-method">Efectivo</div>
                   <div className="payment-method">Transferencia</div>
-                  <div className="payment-method">MercadoPago</div>
                 </div>
               </div>
             </div>
@@ -659,7 +671,7 @@ const RoomDetails: React.FC = () => {
                     }
                   }}
                   filterDate={isDateAvailable}
-                  minDate={new Date()}
+                  minDate={new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)}
                   dateFormat="EEE dd/MM/yyyy"
                   locale="es"
                   placeholderText="Seleccionar fecha"
@@ -683,7 +695,7 @@ const RoomDetails: React.FC = () => {
                       return date >= start && date <= end;
                     });
                   }}
-                  minDate={checkInDate ? new Date(checkInDate.getTime() + 86400000) : new Date()}
+                  minDate={checkInDate ? new Date(checkInDate.getTime() + 86400000) : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)}
                   dateFormat="EEE dd/MM/yyyy"
                   locale="es"
                   placeholderText="Seleccionar fecha"

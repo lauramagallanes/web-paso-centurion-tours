@@ -505,6 +505,12 @@ resource "aws_apigatewayv2_route" "reservas_create_sendero" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "reservas_sendero_disponibilidad" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /reservas/sendero/disponibilidad"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "reservas_create_alojamiento" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "POST /reservas/alojamiento"

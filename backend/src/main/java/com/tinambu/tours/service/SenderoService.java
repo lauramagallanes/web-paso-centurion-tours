@@ -1,13 +1,16 @@
 package com.tinambu.tours.service;
 
 import com.tinambu.tours.dto.request.SenderoRequest;
+import com.tinambu.tours.dto.response.SenderoDisponibilidadResponse;
 import com.tinambu.tours.dto.response.SenderoResponse;
 import com.tinambu.tours.dto.response.SenderoImagenResponse;
 import com.tinambu.tours.entity.sendero.NivelDificultad;
 import com.tinambu.tours.entity.sendero.Sendero;
+import com.tinambu.tours.entity.sendero.SenderoDisponibilidad;
 import com.tinambu.tours.entity.sendero.SenderoImagen;
 import com.tinambu.tours.repository.SenderoRepository;
 import com.tinambu.tours.repository.SenderoImagenRepository;
+import com.tinambu.tours.repository.SenderoDisponibilidadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -36,7 +39,10 @@ public class SenderoService {
     
     @Autowired
     private SenderoImagenRepository senderoImagenRepository;
-    
+
+    @Autowired
+    private SenderoDisponibilidadRepository senderoDisponibilidadRepository;
+
     @Autowired(required = false)
     private S3Client s3Client;
     
@@ -353,6 +359,35 @@ public class SenderoService {
     public SenderoResponse obtenerSenderoPorIdResponse(UUID id) {
         Sendero sendero = obtenerSenderoPorId(id);
         return convertirEntidadAResponse(sendero);
+    }
+
+    /**
+     * Lists active availability windows for a sendero.
+     * Exposed publicly so the frontend calendar can filter bookable dates/turnos.
+     */
+    @Transactional(readOnly = true)
+    public List<SenderoDisponibilidadResponse> listarDisponibilidadesActivas(UUID senderoId) {
+        if (!senderoRepository.existsById(senderoId)) {
+            throw new IllegalArgumentException("Sendero no encontrado: " + senderoId);
+        }
+        return senderoDisponibilidadRepository
+                .findBySenderoIdAndActivoTrueOrderByFechaInicioAsc(senderoId)
+                .stream()
+                .map(this::convertirDisponibilidadAResponse)
+                .collect(Collectors.toList());
+    }
+
+    private SenderoDisponibilidadResponse convertirDisponibilidadAResponse(SenderoDisponibilidad sd) {
+        return new SenderoDisponibilidadResponse(
+                sd.getId(),
+                sd.getSenderoId(),
+                sd.getFechaInicio(),
+                sd.getFechaFin(),
+                sd.getTurno(),
+                sd.getDiasSemana(),
+                sd.getCuposTotal(),
+                sd.getActivo()
+        );
     }
 
     /**

@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { es } from 'date-fns/locale';
+import 'react-datepicker/dist/react-datepicker.css';
 import { apiService } from '../../services/apiService';
 import { fixArrayEncoding } from '../../utils/encodingFixer';
 import { useCart } from '../../contexts/CartContext';
@@ -11,6 +14,24 @@ import Breadcrumbs from '../../components/common/Breadcrumbs';
 import LoginRequiredModal from '../../components/common/LoginRequiredModal';
 import AddedToCartModal from '../../components/common/AddedToCartModal';
 import './ActivityDetails.css';
+
+registerLocale('es', es);
+
+const DIA_MAP: Record<string, number> = {
+  DOMINGO: 0, LUNES: 1, MARTES: 2, MIERCOLES: 3,
+  JUEVES: 4, VIERNES: 5, SABADO: 6,
+};
+
+interface SenderoDisponibilidadWindow {
+  id: string;
+  senderoId: string;
+  fechaInicio: string;
+  fechaFin: string;
+  turno: 'MANANA' | 'TARDE';
+  diasSemana: string | null;
+  cuposTotal: number;
+  activo: boolean;
+}
 
 interface SenderoDetails {
   id: string;
@@ -57,14 +78,15 @@ const ActivityDetails: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Booking state
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [participantsCount, setParticipantsCount] = useState(1);
-  const [selectedTurno, setSelectedTurno] = useState<string>('MANANA');
+  const [selectedTurno, setSelectedTurno] = useState<'MANANA' | 'TARDE'>('MANANA');
   const [isFavorite, setIsFavorite] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAddedModal, setShowAddedModal] = useState(false);
 
   // Availability state
+  const [availabilityWindows, setAvailabilityWindows] = useState<SenderoDisponibilidadWindow[]>([]);
   const [disponibilidad, setDisponibilidad] = useState<{
     disponible: boolean;
     cuposRestantes: number;
@@ -87,9 +109,12 @@ const ActivityDetails: React.FC = () => {
       if (saved) {
         const data = JSON.parse(saved);
         sessionStorage.removeItem(`booking_sendero_${id}`);
-        if (data.date) setSelectedDate(data.date);
+        if (data.date) {
+          const parsed = new Date(data.date);
+          if (!isNaN(parsed.getTime())) setSelectedDate(parsed);
+        }
         if (data.participants) setParticipantsCount(data.participants);
-        if (data.turno) setSelectedTurno(data.turno);
+        if (data.turno === 'MANANA' || data.turno === 'TARDE') setSelectedTurno(data.turno);
         restoredBookingRef.current = true;
       }
     } catch { /* ignore */ }
@@ -208,6 +233,39 @@ const ActivityDetails: React.FC = () => {
     setIsFavorite(favorites.some((fav: any) => fav.id === id));
   }, [id]);
 
+  // Load active availability windows for this sendero (used by calendar filterDate)
+  useEffect(() => {
+    if (!sendero) return;
+    const loadWindows = async () => {
+      try {
+        const res = await apiService.getSenderoDisponibilidades(sendero.id);
+        if (res.success && Array.isArray(res.data)) {
+          setAvailabilityWindows(res.data.filter(w => w.activo));
+        }
+      } catch {
+        setAvailabilityWindows([]);
+      }
+    };
+    loadWindows();
+  }, [sendero]);
+
+  // Returns true if the given date falls inside at least one active availability window (any turno).
+  const isSenderoDateAvailable = (date: Date): boolean => {
+    if (availabilityWindows.length === 0) return false;
+    return availabilityWindows.some(w => {
+      const start = new Date(w.fechaInicio + 'T00:00:00');
+      const end = new Date(w.fechaFin + 'T23:59:59');
+      if (date < start || date > end) return false;
+      if (!w.diasSemana || w.diasSemana.trim() === '') return true;
+      const allowedDows = w.diasSemana
+        .split(',')
+        .map(s => s.trim().toUpperCase())
+        .map(s => DIA_MAP[s])
+        .filter(d => d !== undefined);
+      return allowedDows.length === 0 || allowedDows.includes(date.getDay());
+    });
+  };
+
   // Check availability whenever date or turno changes
   useEffect(() => {
     if (!sendero || !selectedDate) {
@@ -217,10 +275,11 @@ const ActivityDetails: React.FC = () => {
     const checkAvailability = async () => {
       setCheckingDisponibilidad(true);
       try {
+        const fechaStr = selectedDate.toISOString().split('T')[0];
         const res = await apiService.checkSenderoDisponibilidad(
           sendero.id,
-          selectedDate,
-          selectedTurno as 'MANANA' | 'TARDE'
+          fechaStr,
+          selectedTurno
         );
         if (res.success) {
           setDisponibilidad(res.data);
@@ -233,6 +292,18 @@ const ActivityDetails: React.FC = () => {
     };
     checkAvailability();
   }, [sendero, selectedDate, selectedTurno]);
+
+  // Re-clamp participants when cuposRestantes shrinks (e.g. user changes date/turno)
+  useEffect(() => {
+    if (!sendero || !disponibilidad) return;
+    const cupoMax = Math.min(
+      sendero.maxParticipantes,
+      Math.max(0, disponibilidad.cuposRestantes ?? sendero.maxParticipantes)
+    );
+    if (cupoMax > 0 && participantsCount > cupoMax) {
+      setParticipantsCount(cupoMax);
+    }
+  }, [disponibilidad, sendero, participantsCount]);
 
   // Handlers
   const handleFavoriteToggle = () => {
@@ -261,9 +332,27 @@ const ActivityDetails: React.FC = () => {
     setIsFavorite(!isFavorite);
   };
 
+  // Effective cap = min(capacidad del sendero, cuposRestantes si hay disponibilidad cargada).
+  const cupoMaximo = (() => {
+    const capSendero = sendero?.maxParticipantes || 10;
+    if (!disponibilidad) return capSendero;
+    const restantes = Math.max(0, disponibilidad.cuposRestantes ?? 0);
+    return Math.min(capSendero, restantes);
+  })();
+
   const handleParticipantsChange = (change: number) => {
-    const newCount = Math.max(1, Math.min(sendero?.maxParticipantes || 10, participantsCount + change));
+    if (cupoMaximo <= 0 && change > 0) return;
+    const upper = Math.max(1, cupoMaximo);
+    const newCount = Math.max(1, Math.min(upper, participantsCount + change));
     setParticipantsCount(newCount);
+  };
+
+  // Convert Date -> "YYYY-MM-DD" for API / cart.
+  const dateToIsoLocal = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   };
 
   const handleAddToCart = () => {
@@ -271,7 +360,7 @@ const ActivityDetails: React.FC = () => {
 
     if (!authState.isAuthenticated) {
       sessionStorage.setItem(`booking_sendero_${id}`, JSON.stringify({
-        date: selectedDate,
+        date: selectedDate ? dateToIsoLocal(selectedDate) : null,
         participants: participantsCount,
         turno: selectedTurno,
       }));
@@ -279,8 +368,8 @@ const ActivityDetails: React.FC = () => {
       return;
     }
 
-    const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const fechaReserva = selectedDate || defaultDate;
+    const defaultDate = dateToIsoLocal(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    const fechaReserva = selectedDate ? dateToIsoLocal(selectedDate) : defaultDate;
 
     addItem({
       id: sendero.id,
@@ -304,7 +393,7 @@ const ActivityDetails: React.FC = () => {
 
     if (!authState.isAuthenticated) {
       sessionStorage.setItem(`booking_sendero_${id}`, JSON.stringify({
-        date: selectedDate,
+        date: selectedDate ? dateToIsoLocal(selectedDate) : null,
         participants: participantsCount,
         turno: selectedTurno,
       }));
@@ -312,8 +401,8 @@ const ActivityDetails: React.FC = () => {
       return;
     }
 
-    const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const fechaReserva = selectedDate || defaultDate;
+    const defaultDate = dateToIsoLocal(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    const fechaReserva = selectedDate ? dateToIsoLocal(selectedDate) : defaultDate;
 
     addItem({
       id: sendero.id,
@@ -430,13 +519,13 @@ const ActivityDetails: React.FC = () => {
 
             {/* Special Benefits */}
             <div className="details-section">
-              <h2 className="section-title">Beneficios Especiales</h2>
+              <h2 className="section-title">Información complementaria</h2>
               <div className="section-content">
                 <ul className="benefits-list">
-                  <li>*Grupos de más de 10 personas: 10% de descuento en cada sendero</li>
-                  <li>*Niños menores de 12 años: 30% de descuento en senderos</li>
-                  <li>*Cada sendero incluye: entrada a los predios, guía de naturaleza especializada, botiquín de primeros auxilios</li>
-                  <li>*Traslados no incluidos desde el punto de encuentro hasta el inicio del sendero</li>
+                  <li>Grupos de más de 10 personas: 10% de descuento en cada sendero</li>
+                  <li>Niños menores de 12 años: 30% de descuento en senderos</li>
+                  <li>Cada sendero incluye: entrada a los predios, guía de naturaleza especializada, botiquín de primeros auxilios</li>
+                  <li>Traslados no incluidos desde el punto de encuentro hasta el inicio del sendero</li>
                 </ul>
               </div>
             </div>
@@ -445,7 +534,7 @@ const ActivityDetails: React.FC = () => {
             <div className="details-section">
               <h2 className="section-title">Duración:</h2>
               <div className="section-content">
-                <p>5 min hasta inicio del sendero (2.5 km) 4 horas de caminata aproximadamente (4 km)</p>
+                <p>{sendero.duracion} aproximadamente</p>
               </div>
             </div>
 
@@ -454,9 +543,9 @@ const ActivityDetails: React.FC = () => {
               <h2 className="section-title">Métodos de pago</h2>
               <div className="section-content">
                 <div className="payment-methods">
+                  <div className="payment-method">Tarjeta de crédito o débito</div>
                   <div className="payment-method">Efectivo</div>
                   <div className="payment-method">Transferencia</div>
-                  <div className="payment-method">MercadoPago</div>
                 </div>
               </div>
             </div>
@@ -475,34 +564,17 @@ const ActivityDetails: React.FC = () => {
               {/* Date */}
               <div className="form-group">
                 <label className="form-label">Fecha</label>
-                <input
-                  type="date"
+                <DatePicker
+                  selected={selectedDate}
+                  onChange={(date: Date | null) => setSelectedDate(date)}
+                  filterDate={isSenderoDateAvailable}
+                  minDate={new Date()}
+                  dateFormat="EEE dd/MM/yyyy"
+                  locale="es"
+                  placeholderText="Seleccionar fecha"
                   className="form-input"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
+                  calendarClassName="room-datepicker"
                 />
-              </div>
-
-              {/* Participants */}
-              <div className="form-group">
-                <label className="form-label">Participantes</label>
-                <div className="participants-control">
-                  <span>Agregar participantes</span>
-                  <div className="participants-buttons">
-                    <button
-                      className="participant-btn"
-                      onClick={() => handleParticipantsChange(-1)}
-                      disabled={participantsCount <= 1}
-                    >−</button>
-                    <span className="participant-count">{participantsCount}</span>
-                    <button
-                      className="participant-btn"
-                      onClick={() => handleParticipantsChange(1)}
-                      disabled={participantsCount >= sendero.maxParticipantes}
-                    >+</button>
-                  </div>
-                </div>
               </div>
 
               {/* Horario */}
@@ -511,26 +583,27 @@ const ActivityDetails: React.FC = () => {
                 <select
                   className="form-input"
                   value={selectedTurno}
-                  onChange={(e) => setSelectedTurno(e.target.value)}
+                  onChange={(e) => setSelectedTurno(e.target.value as 'MANANA' | 'TARDE')}
                 >
                   <option value="MANANA">Mañana</option>
                   <option value="TARDE">Tarde</option>
                 </select>
               </div>
 
-              {/* Cupos / Availability feedback */}
+              {/* Cupos / Availability feedback (visible antes de tocar el +) */}
               {selectedDate && (
                 <div className="form-group">
                   {checkingDisponibilidad ? (
                     <p className="avail-checking">Verificando disponibilidad…</p>
                   ) : disponibilidad ? (
-                    disponibilidad.disponible ? (
+                    disponibilidad.disponible && (disponibilidad.cuposRestantes ?? 0) > 0 ? (
                       <p className="avail-ok">
-                        ✓ Disponible · {disponibilidad.cuposRestantes} cupo{disponibilidad.cuposRestantes !== 1 ? 's' : ''} restante{disponibilidad.cuposRestantes !== 1 ? 's' : ''}
+                        Cupos disponibles: <strong>{disponibilidad.cuposRestantes}</strong>
+                        {' de '}{disponibilidad.cuposTotal}
                       </p>
                     ) : (
                       <div>
-                        <p className="avail-error">✗ No disponible</p>
+                        <p className="avail-error">Sin cupos para esta fecha y horario</p>
                         {disponibilidad.mensajeUsuario && (
                           <p className="avail-message">{disponibilidad.mensajeUsuario}</p>
                         )}
@@ -552,6 +625,30 @@ const ActivityDetails: React.FC = () => {
                   ) : null}
                 </div>
               )}
+
+              {/* Participants */}
+              <div className="form-group">
+                <label className="form-label">Participantes</label>
+                <div className="participants-control">
+                  <span>Agregar participantes</span>
+                  <div className="participants-buttons">
+                    <button
+                      className="participant-btn"
+                      onClick={() => handleParticipantsChange(-1)}
+                      disabled={participantsCount <= 1}
+                    >−</button>
+                    <span className="participant-count">{participantsCount}</span>
+                    <button
+                      className="participant-btn"
+                      onClick={() => handleParticipantsChange(1)}
+                      disabled={participantsCount >= cupoMaximo || cupoMaximo <= 0}
+                    >+</button>
+                  </div>
+                </div>
+                {selectedDate && disponibilidad && cupoMaximo > 0 && participantsCount >= cupoMaximo && (
+                  <p className="avail-message">Alcanzaste el máximo de cupos disponibles.</p>
+                )}
+              </div>
             </div>
 
             {/* Total */}
@@ -568,20 +665,24 @@ const ActivityDetails: React.FC = () => {
 
             {/* Buttons */}
             {(() => {
-              const noDisponible = selectedDate && disponibilidad && !disponibilidad.disponible;
+              const sinCupos = selectedDate && disponibilidad && (
+                !disponibilidad.disponible ||
+                (disponibilidad.cuposRestantes ?? 0) <= 0 ||
+                participantsCount > (disponibilidad.cuposRestantes ?? 0)
+              );
               return (
                 <div className="booking-buttons">
                   <button
                     className="btn-primary"
                     onClick={handleBookNow}
-                    disabled={!!noDisponible || checkingDisponibilidad}
+                    disabled={!!sinCupos || checkingDisponibilidad}
                   >
                     Reservar Ahora
                   </button>
                   <button
                     className="btn-secondary"
                     onClick={handleAddToCart}
-                    disabled={!!noDisponible || checkingDisponibilidad}
+                    disabled={!!sinCupos || checkingDisponibilidad}
                   >
                     Agregar al carrito
                   </button>

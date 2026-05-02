@@ -655,6 +655,28 @@ class ApiService {
     return this.calculateSenderoPrice(senderoId, adults, children, undefined, undefined, true);
   }
 
+  // Get active availability windows for a sendero (public).
+  // Used by the ActivityDetails calendar to filter bookable dates.
+  async getSenderoDisponibilidades(senderoId: string): Promise<{
+    success: boolean;
+    data: Array<{
+      id: string;
+      senderoId: string;
+      fechaInicio: string;
+      fechaFin: string;
+      turno: 'MANANA' | 'TARDE';
+      diasSemana: string | null;
+      cuposTotal: number;
+      activo: boolean;
+    }>;
+    message?: string;
+  }> {
+    const response = await fetch(`${this.baseURL}/senderos/${senderoId}/disponibilidad`, {
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
   // Check sendero availability for specific dates
   async checkSenderoAvailability(senderoId: string, startDate: string, endDate: string, shift?: string) {
     const params = new URLSearchParams({

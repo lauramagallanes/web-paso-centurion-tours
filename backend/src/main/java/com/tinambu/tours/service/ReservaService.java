@@ -86,35 +86,11 @@ public class ReservaService {
             return crearReservaConGuiaExplicito(request, sendero);
         }
 
-        // 3. Find active availability windows for this sendero / date / turno
-        List<SenderoDisponibilidad> ventanas = disponibilidadRepository
-                .findVentanasActivas(sendero.getId(), request.getFechaInicio(), request.getTurno())
-                .stream()
-                .filter(v -> v.matchesDiaSemana(request.getFechaInicio()))
-                .collect(Collectors.toList());
+        // 3. Validate availability windows + cupos (shared logic used by both booking paths)
+        List<SenderoDisponibilidad> ventanas = validarCuposDisponibles(
+                sendero, request.getFechaInicio(), request.getTurno(), request.getNumeroPersonas());
 
-        if (ventanas.isEmpty()) {
-            List<SinDisponibilidadException.AlternativaSendero> alts =
-                    buscarAlternativas(sendero.getId(), request.getFechaInicio(), request.getTurno());
-            throw new SinDisponibilidadException(
-                    "Este sendero no tiene disponibilidad configurada para la fecha y horario seleccionados.", alts);
-        }
-
-        // 4. Check cupos (total capacity across windows vs. already-booked persons)
-        int cuposTotal = ventanas.stream().mapToInt(SenderoDisponibilidad::getCuposTotal).max().orElse(8);
-        int cuposOcupados = senderoReservaRepository.sumPersonasReservadas(
-                sendero.getId(), request.getFechaInicio(), request.getTurno());
-        int cuposRestantes = cuposTotal - cuposOcupados;
-
-        if (cuposRestantes < request.getNumeroPersonas()) {
-            List<SinDisponibilidadException.AlternativaSendero> alts =
-                    buscarAlternativas(sendero.getId(), request.getFechaInicio(), request.getTurno());
-            throw new SinDisponibilidadException(
-                    String.format("Este sendero ya no tiene cupos suficientes para %d personas (disponibles: %d).",
-                            request.getNumeroPersonas(), Math.max(0, cuposRestantes)), alts);
-        }
-
-        // 5. Collect guides assigned to the matching windows (intersection with active guides)
+        // 4. Collect guides assigned to the matching windows (intersection with active guides)
         List<UUID> guiasHabilitados = ventanas.stream()
                 .flatMap(v -> v.obtenerGuiaIds().stream())
                 .distinct()
@@ -128,7 +104,7 @@ public class ReservaService {
                     .collect(Collectors.toList());
         }
 
-        // 6. Exclude guides already blocked on this date/shift (cross-sendero constraint)
+        // 5. Exclude guides already blocked on this date/shift (cross-sendero constraint)
         List<UUID> guiasBloqueados = guiaBloqueoRepository.findBlockedGuiaIds(
                 request.getFechaInicio(), request.getTurno());
 
@@ -168,7 +144,55 @@ public class ReservaService {
                     "El guía seleccionado no está disponible para esa fecha y horario");
         }
 
+        // Same cupos/disponibilidad validation as the normal path. Prevents overbooking
+        // when a guiaId is provided explicitly (admin backoffice or any external client).
+        validarCuposDisponibles(sendero, request.getFechaInicio(), request.getTurno(), request.getNumeroPersonas());
+
         return persistirReserva(request, sendero, guia);
+    }
+
+    /**
+     * Centralized cupos validation reused by both reservation paths.
+     * <p>
+     * Formula: cuposRestantes = cuposTotal - cuposOcupados
+     * <ul>
+     *   <li>cuposTotal = MAX of cupos across active windows matching sendero + fecha + turno + día de semana.</li>
+     *   <li>cuposOcupados = SUM of numeroPersonas of existing reservations in states CONFIRMADA / PENDIENTE
+     *       for the same sendero + fecha + turno.</li>
+     * </ul>
+     * Throws {@link SinDisponibilidadException} if no window matches or cuposRestantes is insufficient.
+     *
+     * @return the list of matching availability windows (useful for downstream guide resolution)
+     */
+    private List<SenderoDisponibilidad> validarCuposDisponibles(
+            Sendero sendero, LocalDate fecha, TurnoSendero turno, int numeroPersonas) {
+
+        List<SenderoDisponibilidad> ventanas = disponibilidadRepository
+                .findVentanasActivas(sendero.getId(), fecha, turno)
+                .stream()
+                .filter(v -> v.matchesDiaSemana(fecha))
+                .collect(Collectors.toList());
+
+        if (ventanas.isEmpty()) {
+            List<SinDisponibilidadException.AlternativaSendero> alts =
+                    buscarAlternativas(sendero.getId(), fecha, turno);
+            throw new SinDisponibilidadException(
+                    "Este sendero no tiene disponibilidad configurada para la fecha y horario seleccionados.", alts);
+        }
+
+        int cuposTotal = ventanas.stream().mapToInt(SenderoDisponibilidad::getCuposTotal).max().orElse(8);
+        int cuposOcupados = senderoReservaRepository.sumPersonasReservadas(sendero.getId(), fecha, turno);
+        int cuposRestantes = cuposTotal - cuposOcupados;
+
+        if (cuposRestantes < numeroPersonas) {
+            List<SinDisponibilidadException.AlternativaSendero> alts =
+                    buscarAlternativas(sendero.getId(), fecha, turno);
+            throw new SinDisponibilidadException(
+                    String.format("Este sendero ya no tiene cupos suficientes para %d personas (disponibles: %d).",
+                            numeroPersonas, Math.max(0, cuposRestantes)), alts);
+        }
+
+        return ventanas;
     }
 
     /** Builds, validates, saves the reservation and creates the guide block. */

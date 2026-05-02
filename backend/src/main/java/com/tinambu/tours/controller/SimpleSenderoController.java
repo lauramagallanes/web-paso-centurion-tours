@@ -4,6 +4,7 @@ import com.tinambu.tours.dto.request.SenderoRequest;
 import com.tinambu.tours.dto.request.PrecioCalculoRequest;
 import com.tinambu.tours.dto.response.ApiResponse;
 import com.tinambu.tours.dto.response.PrecioCalculoResponse;
+import com.tinambu.tours.dto.response.SenderoDisponibilidadResponse;
 import com.tinambu.tours.dto.response.SenderoResponse;
 import com.tinambu.tours.entity.sendero.Sendero;
 import com.tinambu.tours.entity.sendero.SenderoImagen;
@@ -93,6 +94,27 @@ public class SimpleSenderoController {
             logger.error("Error al obtener sendero {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al obtener sendero"));
+        }
+    }
+
+    /**
+     * Obtener ventanas de disponibilidad activas de un sendero (público).
+     * El frontend las usa para filtrar el calendario y mostrar solo fechas reservables.
+     */
+    @GetMapping("/{id}/disponibilidad")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<List<SenderoDisponibilidadResponse>>> listarDisponibilidadesActivas(
+            @PathVariable UUID id) {
+        try {
+            List<SenderoDisponibilidadResponse> disponibilidades = senderoService.listarDisponibilidadesActivas(id);
+            return ResponseEntity.ok(ApiResponse.success(disponibilidades));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("Sendero no encontrado"));
+        } catch (Exception e) {
+            logger.error("Error al obtener disponibilidades del sendero {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al obtener disponibilidades"));
         }
     }
 

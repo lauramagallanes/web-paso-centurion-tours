@@ -62,6 +62,9 @@ public class ReservaService {
     @Autowired
     private SenderoDisponibilidadGuiaRepository disponibilidadGuiaRepository;
 
+    @Autowired
+    private SenderoBloqueoRepository senderoBloqueoRepository;
+
     // ==================== SENDERO RESERVATIONS ====================
 
     public ReservaResponse crearReservaSendero(ReservaRequest request) {
@@ -180,6 +183,14 @@ public class ReservaService {
                     "Este sendero no tiene disponibilidad configurada para la fecha y horario seleccionados.", alts);
         }
 
+        // Reject the booking if the date+turno is explicitly blocked by an admin override.
+        if (!senderoBloqueoRepository.findBloqueosQueCubren(sendero.getId(), fecha, turno).isEmpty()) {
+            List<SinDisponibilidadException.AlternativaSendero> alts =
+                    buscarAlternativas(sendero.getId(), fecha, turno);
+            throw new SinDisponibilidadException(
+                    "Esta fecha y turno están bloqueados para este sendero.", alts);
+        }
+
         int cuposTotal = sendero.getCapacidadMaximaGrupo() != null ? sendero.getCapacidadMaximaGrupo() : 0;
         int cuposOcupados = senderoReservaRepository.sumPersonasReservadas(sendero.getId(), fecha, turno);
         int cuposRestantes = cuposTotal - cuposOcupados;
@@ -263,6 +274,19 @@ public class ReservaService {
             resp.setCuposOcupados(0);
             resp.setCuposRestantes(0);
             resp.setMensajeUsuario("Este sendero no opera en la fecha y horario seleccionados.");
+            resp.setAlternativas(toAlternativaResponse(
+                    buscarAlternativas(senderoId, fecha, turno)));
+            return resp;
+        }
+
+        // Date/turno may be explicitly blocked by an admin override.
+        if (!senderoBloqueoRepository.findBloqueosQueCubren(senderoId, fecha, turno).isEmpty()) {
+            resp.setDisponible(false);
+            resp.setHayGuiaDisponible(false);
+            resp.setCuposTotal(sendero.getCapacidadMaximaGrupo() != null ? sendero.getCapacidadMaximaGrupo() : 0);
+            resp.setCuposOcupados(0);
+            resp.setCuposRestantes(0);
+            resp.setMensajeUsuario("Esta fecha y turno están bloqueados para este sendero.");
             resp.setAlternativas(toAlternativaResponse(
                     buscarAlternativas(senderoId, fecha, turno)));
             return resp;

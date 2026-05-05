@@ -1,13 +1,19 @@
 package com.tinambu.tours.service;
 
+import com.tinambu.tours.dto.request.SenderoBloqueoRequest;
+import com.tinambu.tours.dto.request.SenderoDisponibilidadRequest;
 import com.tinambu.tours.dto.request.SenderoRequest;
+import com.tinambu.tours.dto.response.SenderoBloqueoResponse;
 import com.tinambu.tours.dto.response.SenderoDisponibilidadResponse;
 import com.tinambu.tours.dto.response.SenderoResponse;
 import com.tinambu.tours.dto.response.SenderoImagenResponse;
 import com.tinambu.tours.entity.sendero.NivelDificultad;
 import com.tinambu.tours.entity.sendero.Sendero;
+import com.tinambu.tours.entity.sendero.SenderoBloqueo;
 import com.tinambu.tours.entity.sendero.SenderoDisponibilidad;
 import com.tinambu.tours.entity.sendero.SenderoImagen;
+import com.tinambu.tours.entity.sendero.TurnoSendero;
+import com.tinambu.tours.repository.SenderoBloqueoRepository;
 import com.tinambu.tours.repository.SenderoRepository;
 import com.tinambu.tours.repository.SenderoImagenRepository;
 import com.tinambu.tours.repository.SenderoDisponibilidadRepository;
@@ -24,6 +30,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +49,9 @@ public class SenderoService {
 
     @Autowired
     private SenderoDisponibilidadRepository senderoDisponibilidadRepository;
+
+    @Autowired
+    private SenderoBloqueoRepository senderoBloqueoRepository;
 
     @Autowired(required = false)
     private S3Client s3Client;
@@ -388,6 +398,140 @@ public class SenderoService {
                 cuposTotalSendero,
                 sd.getActivo()
         );
+    }
+
+    // ========== ADMIN: GESTIÓN DE VENTANAS DE DISPONIBILIDAD ==========
+
+    /**
+     * Lista todas las ventanas (incluso inactivas) — vista admin.
+     */
+    @Transactional(readOnly = true)
+    public List<SenderoDisponibilidadResponse> listarDisponibilidadesAdmin(UUID senderoId) {
+        Sendero sendero = senderoRepository.findById(senderoId)
+                .orElseThrow(() -> new IllegalArgumentException("Sendero no encontrado: " + senderoId));
+        int cuposTotalSendero = sendero.getCapacidadMaximaGrupo() != null ? sendero.getCapacidadMaximaGrupo() : 0;
+        return senderoDisponibilidadRepository.findAll().stream()
+                .filter(sd -> sd.getSenderoId().equals(senderoId))
+                .sorted((a, b) -> a.getFechaInicio().compareTo(b.getFechaInicio()))
+                .map(sd -> convertirDisponibilidadAResponse(sd, cuposTotalSendero))
+                .collect(Collectors.toList());
+    }
+
+    public SenderoDisponibilidadResponse crearDisponibilidad(UUID senderoId, SenderoDisponibilidadRequest req) {
+        Sendero sendero = senderoRepository.findById(senderoId)
+                .orElseThrow(() -> new IllegalArgumentException("Sendero no encontrado: " + senderoId));
+        validarRangoFechas(req.getFechaInicio(), req.getFechaFin());
+
+        SenderoDisponibilidad sd = new SenderoDisponibilidad(
+                senderoId,
+                req.getFechaInicio(),
+                req.getFechaFin(),
+                req.getTurno(),
+                normalizarDiasSemana(req.getDiasSemana()),
+                sendero.getCapacidadMaximaGrupo() != null ? sendero.getCapacidadMaximaGrupo() : 8
+        );
+        if (req.getActivo() != null) sd.setActivo(req.getActivo());
+
+        SenderoDisponibilidad guardada = senderoDisponibilidadRepository.save(sd);
+        return convertirDisponibilidadAResponse(
+                guardada,
+                sendero.getCapacidadMaximaGrupo() != null ? sendero.getCapacidadMaximaGrupo() : 0);
+    }
+
+    public SenderoDisponibilidadResponse actualizarDisponibilidad(UUID disponibilidadId, SenderoDisponibilidadRequest req) {
+        SenderoDisponibilidad sd = senderoDisponibilidadRepository.findById(disponibilidadId)
+                .orElseThrow(() -> new IllegalArgumentException("Disponibilidad no encontrada: " + disponibilidadId));
+        validarRangoFechas(req.getFechaInicio(), req.getFechaFin());
+
+        sd.setFechaInicio(req.getFechaInicio());
+        sd.setFechaFin(req.getFechaFin());
+        sd.setTurno(req.getTurno());
+        sd.setDiasSemana(normalizarDiasSemana(req.getDiasSemana()));
+        if (req.getActivo() != null) sd.setActivo(req.getActivo());
+
+        SenderoDisponibilidad guardada = senderoDisponibilidadRepository.save(sd);
+        Sendero sendero = senderoRepository.findById(sd.getSenderoId()).orElseThrow();
+        return convertirDisponibilidadAResponse(
+                guardada,
+                sendero.getCapacidadMaximaGrupo() != null ? sendero.getCapacidadMaximaGrupo() : 0);
+    }
+
+    public void eliminarDisponibilidad(UUID disponibilidadId) {
+        if (!senderoDisponibilidadRepository.existsById(disponibilidadId)) {
+            throw new IllegalArgumentException("Disponibilidad no encontrada: " + disponibilidadId);
+        }
+        senderoDisponibilidadRepository.deleteById(disponibilidadId);
+    }
+
+    // ========== ADMIN/PÚBLICO: BLOQUEOS DE FECHAS ==========
+
+    @Transactional(readOnly = true)
+    public List<SenderoBloqueoResponse> listarBloqueos(UUID senderoId) {
+        if (!senderoRepository.existsById(senderoId)) {
+            throw new IllegalArgumentException("Sendero no encontrado: " + senderoId);
+        }
+        return senderoBloqueoRepository.findBySenderoIdOrderByFechaInicioAsc(senderoId).stream()
+                .map(this::convertirBloqueoAResponse)
+                .collect(Collectors.toList());
+    }
+
+    public SenderoBloqueoResponse crearBloqueo(UUID senderoId, SenderoBloqueoRequest req) {
+        if (!senderoRepository.existsById(senderoId)) {
+            throw new IllegalArgumentException("Sendero no encontrado: " + senderoId);
+        }
+        validarRangoFechas(req.getFechaInicio(), req.getFechaFin());
+
+        SenderoBloqueo bloqueo = new SenderoBloqueo(
+                senderoId,
+                req.getFechaInicio(),
+                req.getFechaFin(),
+                req.getTurno(),
+                req.getMotivo()
+        );
+        return convertirBloqueoAResponse(senderoBloqueoRepository.save(bloqueo));
+    }
+
+    public void eliminarBloqueo(UUID bloqueoId) {
+        if (!senderoBloqueoRepository.existsById(bloqueoId)) {
+            throw new IllegalArgumentException("Bloqueo no encontrado: " + bloqueoId);
+        }
+        senderoBloqueoRepository.deleteById(bloqueoId);
+    }
+
+    /**
+     * Helper consultable por otros services (ej. ReservaService) para saber si una
+     * combinación sendero+fecha+turno está bloqueada.
+     */
+    @Transactional(readOnly = true)
+    public boolean estaBloqueado(UUID senderoId, LocalDate fecha, TurnoSendero turno) {
+        return !senderoBloqueoRepository.findBloqueosQueCubren(senderoId, fecha, turno).isEmpty();
+    }
+
+    private SenderoBloqueoResponse convertirBloqueoAResponse(SenderoBloqueo b) {
+        return new SenderoBloqueoResponse(
+                b.getId(), b.getSenderoId(), b.getFechaInicio(), b.getFechaFin(),
+                b.getTurno(), b.getMotivo());
+    }
+
+    private void validarRangoFechas(LocalDate inicio, LocalDate fin) {
+        if (inicio == null || fin == null) {
+            throw new IllegalArgumentException("Fecha de inicio y fin son obligatorias");
+        }
+        if (fin.isBefore(inicio)) {
+            throw new IllegalArgumentException("La fecha de fin no puede ser anterior a la fecha de inicio");
+        }
+    }
+
+    /** Limpia diasSemana: trim, mayúsculas, sin duplicados, null si vacío. */
+    private String normalizarDiasSemana(String diasSemana) {
+        if (diasSemana == null || diasSemana.isBlank()) return null;
+        String normalized = Arrays.stream(diasSemana.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(String::toUpperCase)
+                .distinct()
+                .collect(Collectors.joining(","));
+        return normalized.isEmpty() ? null : normalized;
     }
 
     /**

@@ -703,6 +703,58 @@ resource "aws_cloudwatch_log_group" "apigw" {
   }
 }
 
+# =============================================================================
+# Senderos: gestión de disponibilidad y bloqueos (admin) + bloqueos (público)
+# =============================================================================
+
+resource "aws_apigatewayv2_route" "senderos_public_bloqueos" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /senderos/{id}/bloqueos"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_list_disponibilidad" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /senderos/admin/{id}/disponibilidad"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_create_disponibilidad" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /senderos/admin/{id}/disponibilidad"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_update_disponibilidad" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /senderos/admin/disponibilidad/{disponibilidadId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_delete_disponibilidad" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /senderos/admin/disponibilidad/{disponibilidadId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_list_bloqueos" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /senderos/admin/{id}/bloqueos"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_create_bloqueo" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /senderos/admin/{id}/bloqueos"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_delete_bloqueo" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /senderos/admin/bloqueos/{bloqueoId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Lambda permission for API Gateway
 resource "aws_lambda_permission" "api_gateway" {
   statement_id  = "AllowExecutionFromAPIGateway"

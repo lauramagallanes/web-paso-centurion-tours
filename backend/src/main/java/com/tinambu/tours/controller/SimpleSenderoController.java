@@ -1,9 +1,12 @@
 package com.tinambu.tours.controller;
 
-import com.tinambu.tours.dto.request.SenderoRequest;
 import com.tinambu.tours.dto.request.PrecioCalculoRequest;
+import com.tinambu.tours.dto.request.SenderoBloqueoRequest;
+import com.tinambu.tours.dto.request.SenderoDisponibilidadRequest;
+import com.tinambu.tours.dto.request.SenderoRequest;
 import com.tinambu.tours.dto.response.ApiResponse;
 import com.tinambu.tours.dto.response.PrecioCalculoResponse;
+import com.tinambu.tours.dto.response.SenderoBloqueoResponse;
 import com.tinambu.tours.dto.response.SenderoDisponibilidadResponse;
 import com.tinambu.tours.dto.response.SenderoResponse;
 import com.tinambu.tours.entity.sendero.Sendero;
@@ -115,6 +118,26 @@ public class SimpleSenderoController {
             logger.error("Error al obtener disponibilidades del sendero {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al obtener disponibilidades"));
+        }
+    }
+
+    /**
+     * Listar bloqueos de un sendero (público).
+     * El frontend lo usa para deshabilitar fechas en el calendario.
+     */
+    @GetMapping("/{id}/bloqueos")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<List<SenderoBloqueoResponse>>> listarBloqueosPublico(
+            @PathVariable UUID id) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(senderoService.listarBloqueos(id)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("Sendero no encontrado"));
+        } catch (Exception e) {
+            logger.error("Error al obtener bloqueos del sendero {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al obtener bloqueos"));
         }
     }
 
@@ -294,6 +317,128 @@ public class SimpleSenderoController {
             logger.error("Error al eliminar sendero {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al eliminar sendero: " + e.getMessage()));
+        }
+    }
+
+    // ========== ADMIN: VENTANAS DE DISPONIBILIDAD ==========
+
+    @GetMapping("/admin/{id}/disponibilidad")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<List<SenderoDisponibilidadResponse>>> listarDisponibilidadesAdmin(
+            @PathVariable UUID id) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(senderoService.listarDisponibilidadesAdmin(id)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error listando disponibilidades admin del sendero {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al obtener disponibilidades"));
+        }
+    }
+
+    @PostMapping("/admin/{id}/disponibilidad")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<ApiResponse<SenderoDisponibilidadResponse>> crearDisponibilidad(
+            @PathVariable UUID id,
+            @Valid @RequestBody SenderoDisponibilidadRequest request) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(senderoService.crearDisponibilidad(id, request)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error creando disponibilidad para sendero {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al crear disponibilidad"));
+        }
+    }
+
+    @PutMapping("/admin/disponibilidad/{disponibilidadId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<ApiResponse<SenderoDisponibilidadResponse>> actualizarDisponibilidad(
+            @PathVariable UUID disponibilidadId,
+            @Valid @RequestBody SenderoDisponibilidadRequest request) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(
+                senderoService.actualizarDisponibilidad(disponibilidadId, request)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error actualizando disponibilidad {}: {}", disponibilidadId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al actualizar disponibilidad"));
+        }
+    }
+
+    @DeleteMapping("/admin/disponibilidad/{disponibilidadId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<ApiResponse<Void>> eliminarDisponibilidad(@PathVariable UUID disponibilidadId) {
+        try {
+            senderoService.eliminarDisponibilidad(disponibilidadId);
+            return ResponseEntity.ok(ApiResponse.success("Disponibilidad eliminada"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error eliminando disponibilidad {}: {}", disponibilidadId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al eliminar disponibilidad"));
+        }
+    }
+
+    // ========== ADMIN: BLOQUEOS DE FECHAS ==========
+
+    @GetMapping("/admin/{id}/bloqueos")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<List<SenderoBloqueoResponse>>> listarBloqueosAdmin(
+            @PathVariable UUID id) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(senderoService.listarBloqueos(id)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error listando bloqueos admin del sendero {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al obtener bloqueos"));
+        }
+    }
+
+    @PostMapping("/admin/{id}/bloqueos")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<ApiResponse<SenderoBloqueoResponse>> crearBloqueo(
+            @PathVariable UUID id,
+            @Valid @RequestBody SenderoBloqueoRequest request) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(senderoService.crearBloqueo(id, request)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error creando bloqueo para sendero {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al crear bloqueo"));
+        }
+    }
+
+    @DeleteMapping("/admin/bloqueos/{bloqueoId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<ApiResponse<Void>> eliminarBloqueo(@PathVariable UUID bloqueoId) {
+        try {
+            senderoService.eliminarBloqueo(bloqueoId);
+            return ResponseEntity.ok(ApiResponse.success("Bloqueo eliminado"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error eliminando bloqueo {}: {}", bloqueoId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al eliminar bloqueo"));
         }
     }
 

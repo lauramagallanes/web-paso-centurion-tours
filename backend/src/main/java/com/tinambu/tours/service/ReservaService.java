@@ -156,7 +156,7 @@ public class ReservaService {
      * <p>
      * Formula: cuposRestantes = cuposTotal - cuposOcupados
      * <ul>
-     *   <li>cuposTotal = MAX of cupos across active windows matching sendero + fecha + turno + día de semana.</li>
+     *   <li>cuposTotal = sendero.capacidadMaximaGrupo (single source of truth defined when the sendero is created).</li>
      *   <li>cuposOcupados = SUM of numeroPersonas of existing reservations in states CONFIRMADA / PENDIENTE
      *       for the same sendero + fecha + turno.</li>
      * </ul>
@@ -180,7 +180,7 @@ public class ReservaService {
                     "Este sendero no tiene disponibilidad configurada para la fecha y horario seleccionados.", alts);
         }
 
-        int cuposTotal = ventanas.stream().mapToInt(SenderoDisponibilidad::getCuposTotal).max().orElse(8);
+        int cuposTotal = sendero.getCapacidadMaximaGrupo() != null ? sendero.getCapacidadMaximaGrupo() : 0;
         int cuposOcupados = senderoReservaRepository.sumPersonasReservadas(sendero.getId(), fecha, turno);
         int cuposRestantes = cuposTotal - cuposOcupados;
 
@@ -268,8 +268,8 @@ public class ReservaService {
             return resp;
         }
 
-        // Cupos
-        int cuposTotal    = ventanas.stream().mapToInt(SenderoDisponibilidad::getCuposTotal).max().orElse(8);
+        // Cupos: single source of truth = sendero.capacidadMaximaGrupo
+        int cuposTotal    = sendero.getCapacidadMaximaGrupo() != null ? sendero.getCapacidadMaximaGrupo() : 0;
         int cuposOcupados = senderoReservaRepository.sumPersonasReservadas(senderoId, fecha, turno);
         int cuposRestantes = Math.max(0, cuposTotal - cuposOcupados);
 
@@ -347,8 +347,10 @@ public class ReservaService {
                     boolean hayGuia = guiasHFinal.stream().anyMatch(gid -> !guiasBloqueados.contains(gid));
                     if (!hayGuia) return false;
 
-                    // Check cupos
-                    int cuposTotal = ventanas.stream().mapToInt(SenderoDisponibilidad::getCuposTotal).max().orElse(8);
+                    // Check cupos: single source of truth = sendero.capacidadMaximaGrupo
+                    Sendero senderoAlt = senderoRepository.findById(sid).orElse(null);
+                    if (senderoAlt == null || senderoAlt.getCapacidadMaximaGrupo() == null) return false;
+                    int cuposTotal = senderoAlt.getCapacidadMaximaGrupo();
                     int ocupados   = senderoReservaRepository.sumPersonasReservadas(sid, fecha, turno);
                     return (cuposTotal - ocupados) > 0;
                 })

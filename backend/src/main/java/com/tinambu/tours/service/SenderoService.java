@@ -367,17 +367,17 @@ public class SenderoService {
      */
     @Transactional(readOnly = true)
     public List<SenderoDisponibilidadResponse> listarDisponibilidadesActivas(UUID senderoId) {
-        if (!senderoRepository.existsById(senderoId)) {
-            throw new IllegalArgumentException("Sendero no encontrado: " + senderoId);
-        }
+        Sendero sendero = senderoRepository.findById(senderoId)
+                .orElseThrow(() -> new IllegalArgumentException("Sendero no encontrado: " + senderoId));
+        int cuposTotalSendero = sendero.getCapacidadMaximaGrupo() != null ? sendero.getCapacidadMaximaGrupo() : 0;
         return senderoDisponibilidadRepository
                 .findBySenderoIdAndActivoTrueOrderByFechaInicioAsc(senderoId)
                 .stream()
-                .map(this::convertirDisponibilidadAResponse)
+                .map(sd -> convertirDisponibilidadAResponse(sd, cuposTotalSendero))
                 .collect(Collectors.toList());
     }
 
-    private SenderoDisponibilidadResponse convertirDisponibilidadAResponse(SenderoDisponibilidad sd) {
+    private SenderoDisponibilidadResponse convertirDisponibilidadAResponse(SenderoDisponibilidad sd, int cuposTotalSendero) {
         return new SenderoDisponibilidadResponse(
                 sd.getId(),
                 sd.getSenderoId(),
@@ -385,7 +385,7 @@ public class SenderoService {
                 sd.getFechaFin(),
                 sd.getTurno(),
                 sd.getDiasSemana(),
-                sd.getCuposTotal(),
+                cuposTotalSendero,
                 sd.getActivo()
         );
     }

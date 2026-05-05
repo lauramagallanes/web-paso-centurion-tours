@@ -33,6 +33,15 @@ interface SenderoDisponibilidadWindow {
   activo: boolean;
 }
 
+interface SenderoBloqueoPublic {
+  id: string;
+  senderoId: string;
+  fechaInicio: string;
+  fechaFin: string;
+  turno: 'MANANA' | 'TARDE' | null;
+  motivo: string | null;
+}
+
 interface SenderoDetails {
   id: string;
   nombre: string;
@@ -87,6 +96,7 @@ const ActivityDetails: React.FC = () => {
 
   // Availability state
   const [availabilityWindows, setAvailabilityWindows] = useState<SenderoDisponibilidadWindow[]>([]);
+  const [bloqueos, setBloqueos] = useState<SenderoBloqueoPublic[]>([]);
   const [disponibilidad, setDisponibilidad] = useState<{
     disponible: boolean;
     cuposRestantes: number;
@@ -253,6 +263,16 @@ const ActivityDetails: React.FC = () => {
     loadWindows();
   }, [sendero]);
 
+  // Load admin-defined date blocks so the calendar can hide them.
+  useEffect(() => {
+    if (!sendero) return;
+    let alive = true;
+    apiService.listSenderoBloqueos(sendero.id, false)
+      .then(data => { if (alive) setBloqueos(data); })
+      .catch(() => { if (alive) setBloqueos([]); });
+    return () => { alive = false; };
+  }, [sendero]);
+
   // Convert Date -> "YYYY-MM-DD" using local timezone (avoid UTC drift).
   const dateToIsoLocal = (d: Date): string => {
     const y = d.getFullYear();
@@ -261,20 +281,37 @@ const ActivityDetails: React.FC = () => {
     return `${y}-${m}-${day}`;
   };
 
-  // Returns true if the given date falls inside at least one active availability window (any turno).
+  // Returns true if there's an active availability window for date+turno that
+  // isn't shadowed by a block for that turno.
+  const isWindowMatch = (w: SenderoDisponibilidadWindow, date: Date): boolean => {
+    const start = new Date(w.fechaInicio + 'T00:00:00');
+    const end = new Date(w.fechaFin + 'T23:59:59');
+    if (date < start || date > end) return false;
+    if (!w.diasSemana || w.diasSemana.trim() === '') return true;
+    const allowedDows = w.diasSemana
+      .split(',')
+      .map(s => s.trim().toUpperCase())
+      .map(s => DIA_MAP[s])
+      .filter(d => d !== undefined);
+    return allowedDows.length === 0 || allowedDows.includes(date.getDay());
+  };
+
+  const isTurnoBlocked = (date: Date, turno: 'MANANA' | 'TARDE'): boolean => {
+    return bloqueos.some(b => {
+      const start = new Date(b.fechaInicio + 'T00:00:00');
+      const end = new Date(b.fechaFin + 'T23:59:59');
+      if (date < start || date > end) return false;
+      return b.turno === null || b.turno === turno;
+    });
+  };
+
+  // Disabled in the calendar = no remaining (window AND not blocked) for any turno.
   const isSenderoDateAvailable = (date: Date): boolean => {
     if (availabilityWindows.length === 0) return false;
-    return availabilityWindows.some(w => {
-      const start = new Date(w.fechaInicio + 'T00:00:00');
-      const end = new Date(w.fechaFin + 'T23:59:59');
-      if (date < start || date > end) return false;
-      if (!w.diasSemana || w.diasSemana.trim() === '') return true;
-      const allowedDows = w.diasSemana
-        .split(',')
-        .map(s => s.trim().toUpperCase())
-        .map(s => DIA_MAP[s])
-        .filter(d => d !== undefined);
-      return allowedDows.length === 0 || allowedDows.includes(date.getDay());
+    const turnos: Array<'MANANA' | 'TARDE'> = ['MANANA', 'TARDE'];
+    return turnos.some(t => {
+      if (isTurnoBlocked(date, t)) return false;
+      return availabilityWindows.some(w => w.turno === t && isWindowMatch(w, date));
     });
   };
 

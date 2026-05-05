@@ -5,6 +5,7 @@ import { useSenderosAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
 import BackendError from '../../components/common/BackendError';
 import SenderoImageUploader from '../../components/admin/SenderoImageUploader';
+import SenderoAvailabilityModal from '../../components/admin/SenderoAvailabilityModal';
 import { apiService } from '../../services/apiService';
 
 interface Sendero {
@@ -67,6 +68,8 @@ const TrailManagement: React.FC = () => {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [activeTab, setActiveTab] = useState<string>('basic');
   const [senderoImages, setSenderoImages] = useState<SenderoImage[]>([]);
+  const [showAvailModal, setShowAvailModal] = useState(false);
+  const [availSendero, setAvailSendero] = useState<{ id: string; nombre: string } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -390,7 +393,21 @@ const TrailManagement: React.FC = () => {
                         >
                           <Icon name={sendero.activo ? 'pause' : 'play'} size="xs" />
                         </Button>
-                        
+
+                        <Button
+                          variant="outline-info"
+                          size="sm"
+                          onClick={() => {
+                            if (!sendero.id) return;
+                            setAvailSendero({ id: sendero.id, nombre: sendero.nombre });
+                            setShowAvailModal(true);
+                          }}
+                          title="Gestionar disponibilidad"
+                          disabled={actionLoading || !sendero.id}
+                        >
+                          <Icon name="calendar" size="xs" />
+                        </Button>
+
                         <Button
                           variant="outline-danger"
                           size="sm"
@@ -640,6 +657,15 @@ const TrailManagement: React.FC = () => {
           </Modal.Footer>
         </Form>
       </Modal>
+
+      <SenderoAvailabilityModal
+        show={showAvailModal}
+        sendero={availSendero}
+        onClose={() => {
+          setShowAvailModal(false);
+          setAvailSendero(null);
+        }}
+      />
     </div>
   );
 };

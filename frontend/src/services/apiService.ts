@@ -1,3 +1,41 @@
+// ====== Sendero availability & block types (shared with admin UI) ======
+export type TurnoSendero = 'MANANA' | 'TARDE';
+
+export interface SenderoDisponibilidad {
+  id: string;
+  senderoId: string;
+  fechaInicio: string; // ISO YYYY-MM-DD
+  fechaFin: string;
+  turno: TurnoSendero;
+  diasSemana: string | null; // CSV "LUNES,MARTES,..." or null = all days
+  cuposTotal: number;
+  activo: boolean;
+}
+
+export interface SenderoDisponibilidadRequest {
+  fechaInicio: string;
+  fechaFin: string;
+  turno: TurnoSendero;
+  diasSemana?: string | null;
+  activo?: boolean;
+}
+
+export interface SenderoBloqueo {
+  id: string;
+  senderoId: string;
+  fechaInicio: string;
+  fechaFin: string;
+  turno: TurnoSendero | null; // null = both shifts
+  motivo: string | null;
+}
+
+export interface SenderoBloqueoRequest {
+  fechaInicio: string;
+  fechaFin: string;
+  turno?: TurnoSendero | null;
+  motivo?: string | null;
+}
+
 // Servicio para manejar todas las llamadas a la API
 class ApiService {
   private baseURL: string;
@@ -675,6 +713,84 @@ class ApiService {
       headers: this.getHeaders(true),
     });
     return this.handleResponse(response);
+  }
+
+  // ========== ADMIN: SENDERO AVAILABILITY WINDOWS ==========
+
+  async listSenderoDisponibilidadesAdmin(senderoId: string): Promise<SenderoDisponibilidad[]> {
+    const response = await fetch(`${this.baseURL}/senderos/admin/${senderoId}/disponibilidad`, {
+      headers: this.getHeaders(true),
+    });
+    const json = await this.handleResponse<{ data: SenderoDisponibilidad[] }>(response);
+    return Array.isArray(json?.data) ? json.data : [];
+  }
+
+  async createSenderoDisponibilidad(
+    senderoId: string,
+    payload: SenderoDisponibilidadRequest,
+  ): Promise<SenderoDisponibilidad> {
+    const response = await fetch(`${this.baseURL}/senderos/admin/${senderoId}/disponibilidad`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(payload),
+    });
+    const json = await this.handleResponse<{ data: SenderoDisponibilidad }>(response);
+    return json.data;
+  }
+
+  async updateSenderoDisponibilidad(
+    disponibilidadId: string,
+    payload: SenderoDisponibilidadRequest,
+  ): Promise<SenderoDisponibilidad> {
+    const response = await fetch(`${this.baseURL}/senderos/admin/disponibilidad/${disponibilidadId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(payload),
+    });
+    const json = await this.handleResponse<{ data: SenderoDisponibilidad }>(response);
+    return json.data;
+  }
+
+  async deleteSenderoDisponibilidad(disponibilidadId: string): Promise<void> {
+    const response = await fetch(`${this.baseURL}/senderos/admin/disponibilidad/${disponibilidadId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+    await this.handleResponse(response);
+  }
+
+  // ========== ADMIN/PUBLIC: SENDERO DATE BLOCKS ==========
+
+  async listSenderoBloqueos(senderoId: string, asAdmin: boolean = false): Promise<SenderoBloqueo[]> {
+    const url = asAdmin
+      ? `${this.baseURL}/senderos/admin/${senderoId}/bloqueos`
+      : `${this.baseURL}/senderos/${senderoId}/bloqueos`;
+    const response = await fetch(url, {
+      headers: this.getHeaders(asAdmin),
+    });
+    const json = await this.handleResponse<{ data: SenderoBloqueo[] }>(response);
+    return Array.isArray(json?.data) ? json.data : [];
+  }
+
+  async createSenderoBloqueo(
+    senderoId: string,
+    payload: SenderoBloqueoRequest,
+  ): Promise<SenderoBloqueo> {
+    const response = await fetch(`${this.baseURL}/senderos/admin/${senderoId}/bloqueos`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(payload),
+    });
+    const json = await this.handleResponse<{ data: SenderoBloqueo }>(response);
+    return json.data;
+  }
+
+  async deleteSenderoBloqueo(bloqueoId: string): Promise<void> {
+    const response = await fetch(`${this.baseURL}/senderos/admin/bloqueos/${bloqueoId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+    await this.handleResponse(response);
   }
 
   // Check sendero availability for specific dates

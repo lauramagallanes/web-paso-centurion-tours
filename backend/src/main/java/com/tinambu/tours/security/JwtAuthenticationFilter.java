@@ -33,6 +33,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                   FilterChain chain) throws ServletException, IOException {
 
         final String requestTokenHeader = request.getHeader("Authorization");
+        // #region agent log
+        logger.warn("[DBG-JWT] doFilterInternal URI=" + request.getRequestURI() + " hasAuthHeader=" + (requestTokenHeader != null));
+        // #endregion
         logger.debug("=== INICIO FILTRO JWT === URI: " + request.getRequestURI() + " | Thread: " + Thread.currentThread().getName());
 
         String username = null;
@@ -89,6 +92,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // Después de establecer la autenticación en el contexto, especificamos
                     // que el usuario actual está autenticado. Pasa las verificaciones de Spring Security
                     SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                    // #region agent log
+                    logger.warn("[DBG-JWT] AUTH SET context user=" + username + " authorities=" + userDetails.getAuthorities() + " URI=" + request.getRequestURI());
+                    // #endregion
                     logger.debug("Autenticación establecida exitosamente para: " + username);
                 } else {
                     logger.debug("Token inválido para usuario: " + username);

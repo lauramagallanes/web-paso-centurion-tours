@@ -21,6 +21,7 @@ public class SenderoResponse {
     private Integer capacidadMaximaGrupo;
     private BigDecimal precioPorPersona;
     private String urlImagen; // Legacy field for backward compatibility
+    private Boolean activo = true;
     
     // New fields for multiple image support
     private String imagenPrincipal; // Main image URL
@@ -55,6 +56,9 @@ public class SenderoResponse {
 
     public String getUrlImagen() { return urlImagen; }
     public void setUrlImagen(String urlImagen) { this.urlImagen = urlImagen; }
+
+    public Boolean getActivo() { return activo; }
+    public void setActivo(Boolean activo) { this.activo = activo; }
 
     // New getters and setters for image support
     public String getImagenPrincipal() { return imagenPrincipal; }

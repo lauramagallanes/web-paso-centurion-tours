@@ -414,6 +414,9 @@ public class SenderoService {
         sendero.setCapacidadMaximaGrupo(senderoRequest.getCapacidadMaximaGrupo());
         sendero.setPrecioPorPersona(senderoRequest.getPrecioPorPersona());
         sendero.setUrlImagen(senderoRequest.getUrlImagen());
+        if (senderoRequest.getActivo() != null) {
+            sendero.setActivo(senderoRequest.getActivo());
+        }
 
         Sendero senderoActualizado = senderoRepository.save(sendero);
         return convertirEntidadAResponse(senderoActualizado);
@@ -544,6 +547,7 @@ public class SenderoService {
         response.setCapacidadMaximaGrupo(sendero.getCapacidadMaximaGrupo());
         response.setPrecioPorPersona(sendero.getPrecioPorPersona());
         response.setUrlImagen(sendero.getUrlImagen());
+        response.setActivo(sendero.getActivo() != null ? sendero.getActivo() : Boolean.TRUE);
         
         // Usar imagen principal del mapa (sin query adicional)
         String imagenPrincipal = imagenPrincipalMap.get(sendero.getId());
@@ -585,6 +589,9 @@ public class SenderoService {
         sendero.setCapacidadMaximaGrupo(request.getCapacidadMaximaGrupo());
         sendero.setPrecioPorPersona(request.getPrecioPorPersona());
         sendero.setUrlImagen(request.getUrlImagen());
+        if (request.getActivo() != null) {
+            sendero.setActivo(request.getActivo());
+        }
         return sendero;
     }
 
@@ -605,6 +612,7 @@ public class SenderoService {
         response.setCapacidadMaximaGrupo(sendero.getCapacidadMaximaGrupo());
         response.setPrecioPorPersona(sendero.getPrecioPorPersona());
         response.setUrlImagen(sendero.getUrlImagen());
+        response.setActivo(sendero.getActivo() != null ? sendero.getActivo() : Boolean.TRUE);
         
         System.out.println("   - sendero.imagenPrincipal: " + sendero.getImagenPrincipal());
         System.out.println("   - sendero.urlImagen: " + sendero.getUrlImagen());

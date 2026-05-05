@@ -32,6 +32,8 @@ public class SenderoRequest {
 
     private String urlImagen;
 
+    private Boolean activo;
+
     // Constructors
     public SenderoRequest() {}
 
@@ -56,4 +58,7 @@ public class SenderoRequest {
 
     public String getUrlImagen() { return urlImagen; }
     public void setUrlImagen(String urlImagen) { this.urlImagen = urlImagen; }
+
+    public Boolean getActivo() { return activo; }
+    public void setActivo(Boolean activo) { this.activo = activo; }
 }

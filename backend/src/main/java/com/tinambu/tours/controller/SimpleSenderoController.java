@@ -195,10 +195,6 @@ public class SimpleSenderoController {
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<SenderoResponse>>> obtenerTodosLosSenderos() {
-        // #region agent log
-        logger.warn("[DBG-CTRL] obtenerTodosLosSenderos ENTERED auth={}",
-            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication());
-        // #endregion
         try {
             List<SenderoResponse> senderos = senderoService.obtenerTodosLosSenderos();
             return ResponseEntity.ok(ApiResponse.success(senderos));

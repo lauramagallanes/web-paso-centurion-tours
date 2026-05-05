@@ -4,16 +4,18 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
+import com.tinambu.tours.TinambuToursApplication;
+import com.tinambu.tours.security.JwtAuthenticationFilter;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.HandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
-import com.tinambu.tours.TinambuToursApplication;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +28,7 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
     private static ConfigurableApplicationContext applicationContext;
     private static RequestMappingHandlerMapping handlerMapping;
     private static RequestMappingHandlerAdapter handlerAdapter;
+    private static JwtAuthenticationFilter jwtAuthenticationFilter;
     private static boolean initialized = false;
     private static final Object initLock = new Object();
 
@@ -91,7 +94,18 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
         // Get the RequestMappingHandlerMapping from the ApplicationContext by name
         handlerMapping = (RequestMappingHandlerMapping) applicationContext.getBean("requestMappingHandlerMapping");
         handlerAdapter = (RequestMappingHandlerAdapter) applicationContext.getBean("requestMappingHandlerAdapter");
-        
+
+        // The Lambda handler bypasses Spring Security's filter chain (it calls handlerAdapter
+        // directly), so the JWT filter must be invoked manually before each request to populate
+        // SecurityContextHolder. Otherwise @PreAuthorize sees an empty context and throws
+        // AuthenticationCredentialsNotFoundException.
+        try {
+            jwtAuthenticationFilter = applicationContext.getBean(JwtAuthenticationFilter.class);
+            System.out.println("- JwtAuthenticationFilter loaded for manual invocation");
+        } catch (Exception e) {
+            System.err.println("WARN: JwtAuthenticationFilter bean not available, secured endpoints will fail: " + e.getMessage());
+        }
+
         System.out.println("Spring MVC components configured:");
         System.out.println("- HandlerMapping: " + handlerMapping.getClass().getSimpleName());
         System.out.println("- HandlerAdapter: " + handlerAdapter.getClass().getSimpleName());
@@ -349,10 +363,26 @@ public class SpringBootLambdaHandler implements RequestHandler<APIGatewayV2HTTPE
             
             Object handler = handlerChain.getHandler();
             System.out.println("Found handler: " + handler.getClass().getSimpleName());
-            
-            // Execute the handler
-            Object result = handlerAdapter.handle(servletRequest, servletResponse, handler);
-            System.out.println("Handler executed successfully, result: " + result);
+
+            // The handler bypasses Spring Security's filter chain, so we must invoke the JWT
+            // filter manually here to populate SecurityContextHolder before @PreAuthorize runs.
+            if (jwtAuthenticationFilter != null) {
+                try {
+                    jwtAuthenticationFilter.doFilter(servletRequest, servletResponse, (req, res) -> { /* no-op */ });
+                } catch (Exception e) {
+                    System.err.println("Error invoking JWT filter manually: " + e.getMessage());
+                }
+            }
+
+            Object result;
+            try {
+                // Execute the handler
+                result = handlerAdapter.handle(servletRequest, servletResponse, handler);
+                System.out.println("Handler executed successfully, result: " + result);
+            } finally {
+                // Clear SecurityContext to avoid leaking auth between Lambda invocations on the same warm container
+                SecurityContextHolder.clearContext();
+            }
 
             // Build API Gateway response
             Map<String, String> headers = new HashMap<>();

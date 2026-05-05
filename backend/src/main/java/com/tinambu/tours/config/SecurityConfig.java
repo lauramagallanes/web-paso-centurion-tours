@@ -128,6 +128,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/habitaciones/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/habitaciones/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/habitaciones/admin").hasRole("ADMIN")
+                // Senderos admin: explicit rules required because GET /senderos/** below would
+                // otherwise match these as permitAll and skip the JWT filter, breaking @PreAuthorize.
+                .requestMatchers("/senderos/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/senderos/admin").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/senderos/admin").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/senderos/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/senderos/admin/**").hasRole("ADMIN")
                 .requestMatchers("/*/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/reservas/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/**").hasRole("ADMIN")

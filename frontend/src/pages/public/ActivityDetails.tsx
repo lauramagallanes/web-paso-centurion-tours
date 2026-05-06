@@ -301,7 +301,8 @@ const ActivityDetails: React.FC = () => {
       const start = new Date(b.fechaInicio + 'T00:00:00');
       const end = new Date(b.fechaFin + 'T23:59:59');
       if (date < start || date > end) return false;
-      return b.turno === null || b.turno === turno;
+      // turno ausente / null / undefined => bloquea ambos turnos
+      return b.turno == null || b.turno === turno;
     });
   };
 

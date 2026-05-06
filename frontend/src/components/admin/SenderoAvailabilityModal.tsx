@@ -284,6 +284,12 @@ const SenderoAvailabilityModal: React.FC<Props> = ({ show, sendero, onClose }) =
               Períodos en los que el sendero opera para cada turno. Al menos un período activo
               es necesario para que el sendero pueda reservarse.
             </p>
+            <Alert variant="info" className="py-2 small mb-3">
+              <strong>¿Querés cerrar el sendero solo unos días?</strong> Usá el tab
+              <strong> "Fechas bloqueadas"</strong>. Pausar un período <em>solo</em> desactiva
+              ese período específico; si hay otro período activo que cubre las mismas fechas,
+              esos días seguirán siendo reservables.
+            </Alert>
 
             {loading && disponibilidades.length === 0 ? (
               <div className="text-center py-3"><Spinner animation="border" size="sm" /></div>
@@ -316,7 +322,7 @@ const SenderoAvailabilityModal: React.FC<Props> = ({ show, sendero, onClose }) =
                           size="sm"
                           onClick={() => handleToggleDispActivo(d)}
                           disabled={loading}
-                          title={d.activo ? 'Pausar' : 'Reactivar'}
+                          title={d.activo ? 'Pausar este período (no bloquea fechas)' : 'Reactivar este período'}
                         >
                           <Icon name={d.activo ? 'pause' : 'play'} size="xs" />
                         </Button>

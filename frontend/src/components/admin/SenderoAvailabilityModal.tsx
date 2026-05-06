@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Card, Col, Form, ListGroup, Modal, Row, Spinner, Tab, Tabs } from 'react-bootstrap';
+import { Alert, Badge, Button, Card, Col, Form, ListGroup, Modal, Row, Spinner } from 'react-bootstrap';
 import Icon from '../common/Icon';
 import {
   apiService,
@@ -278,8 +278,36 @@ const SenderoAvailabilityModal: React.FC<Props> = ({ show, sendero, onClose }) =
         {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
         {success && <Alert variant="success" onClose={() => setSuccess(null)} dismissible>{success}</Alert>}
 
-        <Tabs activeKey={activeTab} onSelect={k => setActiveTab((k as 'periodos' | 'bloqueos') || 'periodos')} className="mb-3">
-          <Tab eventKey="periodos" title="Disponibilidad regular">
+        <div className="d-flex gap-2 mb-3 flex-wrap" role="tablist">
+          <Button
+            type="button"
+            variant={activeTab === 'periodos' ? 'primary' : 'outline-primary'}
+            size="sm"
+            onClick={() => setActiveTab('periodos')}
+            className="flex-grow-1"
+            style={{ minWidth: 180 }}
+          >
+            <Icon name="calendar" size="xs" className="me-1" />
+            Disponibilidad regular
+          </Button>
+          <Button
+            type="button"
+            variant={activeTab === 'bloqueos' ? 'danger' : 'outline-danger'}
+            size="sm"
+            onClick={() => setActiveTab('bloqueos')}
+            className="flex-grow-1"
+            style={{ minWidth: 180 }}
+          >
+            <Icon name="close" size="xs" className="me-1" />
+            Fechas bloqueadas
+            {bloqueos.length > 0 && (
+              <Badge bg="light" text="dark" className="ms-2">{bloqueos.length}</Badge>
+            )}
+          </Button>
+        </div>
+
+        {activeTab === 'periodos' && (
+          <div>
             <p className="text-muted small mb-2">
               Períodos en los que el sendero opera para cada turno. Al menos un período activo
               es necesario para que el sendero pueda reservarse.
@@ -434,9 +462,11 @@ const SenderoAvailabilityModal: React.FC<Props> = ({ show, sendero, onClose }) =
                 </div>
               </Card.Body>
             </Card>
-          </Tab>
+          </div>
+        )}
 
-          <Tab eventKey="bloqueos" title="Fechas bloqueadas">
+        {activeTab === 'bloqueos' && (
+          <div>
             <p className="text-muted small mb-2">
               Fechas puntuales o rangos en los que el sendero está cerrado, aunque el período
               regular lo cubra. Dejá "Ambos turnos" para cerrar el día completo.
@@ -534,8 +564,8 @@ const SenderoAvailabilityModal: React.FC<Props> = ({ show, sendero, onClose }) =
                 </Button>
               </Card.Body>
             </Card>
-          </Tab>
-        </Tabs>
+          </div>
+        )}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>Cerrar</Button>

@@ -32,6 +32,9 @@ public class ReservaService {
 
     private static final Logger log = LoggerFactory.getLogger(ReservaService.class);
 
+    /** Minimum lead time (in days) required between today and the reservation date. */
+    private static final int MIN_LEAD_DAYS_SENDERO = 2;
+
     @Autowired
     private SenderoReservaRepository senderoReservaRepository;
 
@@ -170,6 +173,16 @@ public class ReservaService {
     private List<SenderoDisponibilidad> validarCuposDisponibles(
             Sendero sendero, LocalDate fecha, TurnoSendero turno, int numeroPersonas) {
 
+        // Reject the booking if the date is within the minimum lead time window.
+        LocalDate fechaMinima = LocalDate.now().plusDays(MIN_LEAD_DAYS_SENDERO);
+        if (fecha.isBefore(fechaMinima)) {
+            throw new SinDisponibilidadException(
+                    String.format(
+                            "Las reservas deben hacerse con al menos %d días de antelación. La fecha más temprana disponible es %s.",
+                            MIN_LEAD_DAYS_SENDERO, fechaMinima),
+                    List.of());
+        }
+
         List<SenderoDisponibilidad> ventanas = disponibilidadRepository
                 .findVentanasActivas(sendero.getId(), fecha, turno)
                 .stream()
@@ -259,6 +272,21 @@ public class ReservaService {
         }
 
         resp.setSenderoNombre(sendero.getNombre());
+
+        // Reject the date if it's inside the minimum lead time window.
+        LocalDate fechaMinima = LocalDate.now().plusDays(MIN_LEAD_DAYS_SENDERO);
+        if (fecha.isBefore(fechaMinima)) {
+            resp.setDisponible(false);
+            resp.setHayGuiaDisponible(false);
+            resp.setCuposTotal(sendero.getCapacidadMaximaGrupo() != null ? sendero.getCapacidadMaximaGrupo() : 0);
+            resp.setCuposOcupados(0);
+            resp.setCuposRestantes(0);
+            resp.setMensajeUsuario(String.format(
+                    "Las reservas deben hacerse con al menos %d días de antelación.",
+                    MIN_LEAD_DAYS_SENDERO));
+            resp.setAlternativas(List.of());
+            return resp;
+        }
 
         // Find matching windows
         List<SenderoDisponibilidad> ventanas = disponibilidadRepository

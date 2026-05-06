@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { es } from 'date-fns/locale';
@@ -306,9 +306,19 @@ const ActivityDetails: React.FC = () => {
     });
   };
 
+  // Earliest reservable date: today + lead time (must match backend MIN_LEAD_DAYS_SENDERO).
+  const MIN_LEAD_DAYS = 2;
+  const minBookableDate = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + MIN_LEAD_DAYS);
+    return d;
+  }, []);
+
   // Disabled in the calendar = no remaining (window AND not blocked) for any turno.
   const isSenderoDateAvailable = (date: Date): boolean => {
     if (availabilityWindows.length === 0) return false;
+    if (date < minBookableDate) return false;
     const turnos: Array<'MANANA' | 'TARDE'> = ['MANANA', 'TARDE'];
     return turnos.some(t => {
       if (isTurnoBlocked(date, t)) return false;
@@ -642,13 +652,16 @@ const ActivityDetails: React.FC = () => {
                   selected={selectedDate}
                   onChange={(date: Date | null) => setSelectedDate(date)}
                   filterDate={isSenderoDateAvailable}
-                  minDate={new Date()}
+                  minDate={minBookableDate}
                   dateFormat="EEE dd/MM/yyyy"
                   locale="es"
                   placeholderText="Seleccionar fecha"
                   className="form-input"
                   calendarClassName="room-datepicker"
                 />
+                <small className="form-hint">
+                  Reservas con al menos {MIN_LEAD_DAYS} días de antelación.
+                </small>
               </div>
 
               {/* Horario */}

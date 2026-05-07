@@ -25,14 +25,17 @@
     "test:all:real": "npm run test:run && npm run test:integration && npm run test:integration:real"
   },
   "dependencies": {
+    "@types/leaflet": "^1.9.21",
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.13.1",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.544.0",
     "react": "^18.3.1",
     "react-bootstrap": "^2.10.6",
     "react-datepicker": "^9.1.0",
     "react-dom": "^18.3.1",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^6.28.0"
   },
   "devDependencies": {

@@ -1,169 +1,142 @@
-/* Illustrated map of Paso del Centurión / Tinambú */
+/* Real interactive map (Leaflet) of the Paso Centurión / Tinambú area */
 
 .illustrated-map {
-  /* Local theme tokens — light mode */
-  --imap-land-top: #e9e2cf;
-  --imap-land-bottom: #d4cab2;
-  --imap-land-br-top: #d8d0bd;
-  --imap-land-br-bottom: #c4baa2;
-  --imap-hill: #b8b89a;
-  --imap-tree: #6b792e;
-  --imap-river: #6b8fb5;
-  --imap-river-light: #8ba9c7;
-  --imap-road: #5a4a32;
-  --imap-poi: #ffffff;
-  --imap-poi-border: #3a3a38;
-  --imap-poi-text: #1a1a18;
-  --imap-poi-text-muted: #5b5b5b;
-  --imap-pin: #c14a3a;
-  --imap-pin-border: #ffffff;
-  --imap-pin-dot: #ffffff;
-  --imap-pin-halo: #c14a3a;
-  --imap-country: #5b5b5b;
-  --imap-compass-bg: #ffffff;
-  --imap-compass-border: #5b5b5b;
-  --imap-compass-needle: #c14a3a;
-
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
-  border-radius: var(--space-3, 12px);
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 8px 24px var(--color-shadow, rgba(0, 0, 0, 0.12));
-  background: var(--color-surface);
   border: 1px solid var(--color-border);
+  background: var(--color-surface);
   position: relative;
 }
 
-/* Dark mode adapts the entire palette */
-[data-theme="dark"] .illustrated-map {
-  --imap-land-top: #2a2e22;
-  --imap-land-bottom: #1c1f17;
-  --imap-land-br-top: #242823;
-  --imap-land-br-bottom: #181b15;
-  --imap-hill: #3a3f30;
-  --imap-tree: #9aad5a;
-  --imap-river: #5b7a99;
-  --imap-river-light: #7d9bb8;
-  --imap-road: #b8b5b2;
-  --imap-poi: #1a1a18;
-  --imap-poi-border: #e7e5e5;
-  --imap-poi-text: #fefcfb;
-  --imap-poi-text-muted: #b8b5b2;
-  --imap-pin: #e58a8a;
-  --imap-pin-border: #1a1a18;
-  --imap-pin-dot: #1a1a18;
-  --imap-pin-halo: #e58a8a;
-  --imap-country: #b8b5b2;
-  --imap-compass-bg: #1a1a18;
-  --imap-compass-border: #b8b5b2;
-  --imap-compass-needle: #e58a8a;
-}
-
-.illustrated-map__svg {
-  display: block;
+.illustrated-map__leaflet {
   width: 100%;
-  height: auto;
+  height: 480px;
+  border-radius: 12px;
 }
 
-.illustrated-map__river {
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+@media (max-width: 600px) {
+  .illustrated-map__leaflet { height: 380px; }
 }
 
-/* Country labels */
-.illustrated-map__country {
-  font-family: var(--font-family-base, 'Inter', sans-serif);
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: 4px;
-  fill: var(--imap-country);
-  text-anchor: middle;
-  opacity: 0.55;
+/* === Pin styles === */
+
+.imap-pin {
+  position: relative;
+  color: #c14a3a;
 }
 
-.illustrated-map__country--small {
-  font-size: 18px;
-  letter-spacing: 3px;
-  opacity: 0.45;
+.imap-pin svg {
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
-/* River label */
-.illustrated-map__river-label {
-  font-family: var(--font-family-base, 'Inter', sans-serif);
-  font-style: italic;
-  font-size: 16px;
-  fill: var(--imap-river);
-  text-anchor: middle;
-  opacity: 0.85;
-}
+.imap-pin--main { color: #c14a3a; }
 
-/* Road label */
-.illustrated-map__road-label {
-  font-family: var(--font-family-base, 'Inter', sans-serif);
-  font-size: 14px;
-  font-weight: 600;
-  fill: var(--imap-road);
-  text-anchor: middle;
-  letter-spacing: 1px;
-}
-
-/* Points of interest */
-.illustrated-map__poi-label {
-  font-family: var(--font-family-base, 'Inter', sans-serif);
-  font-size: 14px;
-  font-weight: 600;
-  fill: var(--imap-poi-text);
-  text-anchor: middle;
-}
-
-.illustrated-map__poi-label--highlight {
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.illustrated-map__poi-label--sm {
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.illustrated-map__poi-sublabel {
-  font-family: var(--font-family-base, 'Inter', sans-serif);
-  font-size: 11px;
-  font-weight: 500;
-  fill: var(--imap-poi-text-muted);
-  text-anchor: middle;
-  letter-spacing: 0.3px;
-}
-
-.illustrated-map__compass-label {
-  font-family: var(--font-family-base, 'Inter', sans-serif);
-  font-size: 12px;
-  font-weight: 700;
-  fill: var(--imap-compass-needle);
-  text-anchor: middle;
-}
-
-/* Subtle pulse on the highlighted pin */
-.illustrated-map__poi--highlight circle:first-of-type {
-  transform-origin: 430px 220px;
+.imap-pin--main .imap-pin__halo {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  background: rgba(193, 74, 58, 0.35);
+  border-radius: 50%;
   animation: imap-pulse 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.illustrated-map--dark .imap-pin--main { color: #e58a8a; }
+.illustrated-map--dark .imap-pin--main .imap-pin__halo {
+  background: rgba(229, 138, 138, 0.35);
+}
+
+.imap-pin--secondary { color: #6b792e; }
+.illustrated-map--dark .imap-pin--secondary { color: #9aad5a; }
+
+.imap-pin__label {
+  display: none;
 }
 
 @keyframes imap-pulse {
   0%, 100% { transform: scale(1); opacity: 0.35; }
-  50% { transform: scale(1.25); opacity: 0.15; }
+  50% { transform: scale(1.4); opacity: 0.1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .illustrated-map__poi--highlight circle:first-of-type {
-    animation: none;
-  }
+  .imap-pin--main .imap-pin__halo { animation: none; }
 }
 
-@media (max-width: 600px) {
-  .illustrated-map__country { font-size: 22px; letter-spacing: 3px; }
-  .illustrated-map__poi-label { font-size: 13px; }
-  .illustrated-map__poi-label--highlight { font-size: 14px; }
-  .illustrated-map__poi-sublabel { font-size: 10px; }
-  .illustrated-map__river-label { font-size: 14px; }
+/* === Tooltips with the place names === */
+
+.leaflet-tooltip.imap-tooltip {
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text, #1a1a18);
+  border: 1px solid var(--color-border, #e7e5e5);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: var(--font-family-base, 'Inter', sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+}
+
+.leaflet-tooltip.imap-tooltip::before { display: none; }
+
+.leaflet-tooltip.imap-tooltip--main {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-color: #c14a3a;
+  border-width: 2px;
+}
+
+.leaflet-tooltip.imap-tooltip--main strong {
+  display: block;
+  font-size: 14px;
+  color: #c14a3a;
+}
+
+.leaflet-tooltip.imap-tooltip--main span {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.illustrated-map--dark .leaflet-tooltip.imap-tooltip--main {
+  border-color: #e58a8a;
+}
+
+.illustrated-map--dark .leaflet-tooltip.imap-tooltip--main strong {
+  color: #e58a8a;
+}
+
+/* === Leaflet attribution: smaller and discreet === */
+
+.illustrated-map .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  padding: 0 4px;
+}
+
+.illustrated-map--dark .leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.7);
+  color: #aaa;
+}
+
+.illustrated-map--dark .leaflet-control-attribution a { color: #ccc; }
+
+/* === Zoom control === */
+
+.illustrated-map .leaflet-control-zoom a {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.illustrated-map .leaflet-control-zoom a:hover {
+  background: var(--color-surface-hover);
 }

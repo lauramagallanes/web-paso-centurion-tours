@@ -81,8 +81,11 @@
   opacity: 0.55;
 }
 
-.illustrated-map__country--uy { text-anchor: middle; }
-.illustrated-map__country--br { text-anchor: middle; }
+.illustrated-map__country--small {
+  font-size: 18px;
+  letter-spacing: 3px;
+  opacity: 0.45;
+}
 
 /* River label */
 .illustrated-map__river-label {
@@ -118,6 +121,11 @@
   font-weight: 700;
 }
 
+.illustrated-map__poi-label--sm {
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .illustrated-map__poi-sublabel {
   font-family: var(--font-family-base, 'Inter', sans-serif);
   font-size: 11px;
@@ -137,7 +145,7 @@
 
 /* Subtle pulse on the highlighted pin */
 .illustrated-map__poi--highlight circle:first-of-type {
-  transform-origin: 700px 360px;
+  transform-origin: 430px 380px;
   animation: imap-pulse 2.4s ease-in-out infinite;
 }
 

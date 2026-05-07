@@ -8,6 +8,7 @@ import HeroSliderV2, { HeroSlide } from '../../components/common/HeroSliderV2';
 import SenderoCardV2 from '../../components/common/SenderoCardV2';
 import ReviewsSlider from '../../components/common/ReviewsSlider';
 import Button from '../../components/common/Button';
+import IllustratedMap from '../../components/common/IllustratedMap';
 import { routes } from '../../utils/routes';
 import backgroundImage from '../../assets/illustrations/Foto home  conocenos.svg';
 import mapaImage from '../../assets/illustrations/mapa.svg';
@@ -351,6 +352,20 @@ const Home: React.FC = () => {
               ))
             )}
           </div>
+        </div>
+      </section>
+
+      {/* Location Section */}
+      <section className="home-location">
+        <div className="container">
+          <div className="section-header">
+            <h2 className="section-title">¿Dónde estamos?</h2>
+            <p className="section-subtitle">
+              Tinambú · Paso Centurión Tours se encuentra en Paso del Centurión, sobre la
+              Ruta 7, junto al Río Yaguarón, en el límite con Brasil.
+            </p>
+          </div>
+          <IllustratedMap />
         </div>
       </section>
 

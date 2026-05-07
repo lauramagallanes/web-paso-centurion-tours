@@ -334,6 +334,16 @@
 }
 
 /* Testimonials Section - New Design */
+/* Location section (illustrated map) */
+.home-location {
+  padding: var(--space-20) 0;
+  background-color: var(--color-background-alt);
+}
+
+[data-theme="dark"] .home-location {
+  background-color: var(--color-surface-variant);
+}
+
 .home-testimonials {
   padding: var(--space-24) 0 var(--space-32) 0;
   background: linear-gradient(135deg, #faf6f1 0%, #f5e9dc 50%, #ede3d5 100%);
@@ -609,6 +619,7 @@
   .home-intro,
   .home-welcome,
   .home-activities,
+  .home-location,
   .home-testimonials,
   .home-cta {
     padding: var(--space-16) 0;
@@ -741,6 +752,7 @@
   .home-intro,
   .home-welcome,
   .home-activities,
+  .home-location,
   .home-testimonials,
   .home-cta {
     padding: var(--space-12) 0;

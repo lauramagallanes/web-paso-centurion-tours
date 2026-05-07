@@ -145,7 +145,7 @@
 
 /* Subtle pulse on the highlighted pin */
 .illustrated-map__poi--highlight circle:first-of-type {
-  transform-origin: 430px 380px;
+  transform-origin: 430px 220px;
   animation: imap-pulse 2.4s ease-in-out infinite;
 }
 

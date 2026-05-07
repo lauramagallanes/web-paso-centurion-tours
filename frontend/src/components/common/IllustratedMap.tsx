@@ -3,17 +3,18 @@ import './IllustratedMap.css';
 
 /**
  * Hand-drawn-style illustrated map of the Paso Centurión / Tinambú area.
- * Pure inline SVG so it scales nicely, supports theming via CSS variables and
- * has no external dependencies.
+ * Pure inline SVG, theme-aware via CSS variables, no external dependencies.
  *
- * Geography matches Google Maps reference:
- *  - Río Yaguarón: enters from the NE, makes a pronounced S-curve southward,
- *    forming the UY/BR border. URUGUAY is west, BRASIL is east.
- *  - Centurión: small locality at the SW.
- *  - Tinambú · Paso Centurión Tours: roughly mid-way between Centurión and the
- *    river, on Ruta 7 (the highlighted point — that's us).
- *  - Paso del Centurión: locality on the river bank to the east.
- *  - Restos de la Aduana: historic ruins right by the river crossing.
+ * Geography (matches the Google Maps reference):
+ *  - Río Yaguarón: enters from the NORTH and runs roughly N→S along the east
+ *    side of the map, with a soft bend near the customs crossing and a final
+ *    bend toward the SE. It forms the UY/BR border (UY west, BR east).
+ *  - Centurión (locality): far SW.
+ *  - Tinambú · Paso Centurión Tours: NORTH-CENTER, on Ruta 7. (That's us.)
+ *  - Restos de la Aduana / cruce: where Ruta 7 meets the river (just N of
+ *    Paso del Centurión).
+ *  - Paso del Centurión (locality): south-east, on the river bank.
+ *  - Ruta 7: dashed road, SW (Centurión) → NE (Tinambú) → river crossing.
  */
 const IllustratedMap: React.FC = () => {
   return (
@@ -46,66 +47,63 @@ const IllustratedMap: React.FC = () => {
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+
           {/*
-            River centerline used as a clip border between the two countries
-            and as the visible water stroke. Coordinates picked to match the
-            S-curve in the reference image:
-              - Enters top right (~x=920, y=0)
-              - Bends west to a pinch around (~x=720, y=180) [Paso del Centurión]
-              - Comes back east to (~x=820, y=360)
-              - Bends sharply west again at the bottom (~x=600, y=560)
-              - Exits bottom (~x=560, y=600)
+            River centerline.
+            - Enters the map from the NORTH at x≈720.
+            - Soft west-leaning curve around the crossing (y≈230).
+            - Slight west bulge where Paso del Centurión sits (y≈400).
+            - Bends SE in the southern stretch, exits south near x≈830.
           */}
           <path
             id="riverPath"
-            d="M 920 0
-               C 880 60, 800 100, 740 170
-               C 700 215, 700 240, 760 280
-               C 820 320, 850 350, 820 410
-               C 800 460, 720 500, 640 550
-               C 600 575, 580 590, 560 600"
+            d="M 720 0
+               C 715 80, 700 150, 700 220
+               C 700 280, 670 340, 670 400
+               C 670 460, 730 520, 800 560
+               C 820 580, 830 590, 830 600"
           />
-          {/* Closed polygon for Brazil's land mass east of the river */}
+
+          {/* Brazilian land east of the river (filled polygon) */}
           <path
             id="brasilLand"
-            d="M 920 0
+            d="M 720 0
                L 1000 0
                L 1000 600
-               L 560 600
-               C 580 590, 600 575, 640 550
-               C 720 500, 800 460, 820 410
-               C 850 350, 820 320, 760 280
-               C 700 240, 700 215, 740 170
-               C 800 100, 880 60, 920 0 Z"
+               L 830 600
+               C 830 590, 820 580, 800 560
+               C 730 520, 670 460, 670 400
+               C 670 340, 700 280, 700 220
+               C 700 150, 715 80, 720 0 Z"
           />
         </defs>
 
-        {/* Uruguayan land = full background */}
+        {/* Uruguayan land */}
         <rect x="0" y="0" width="1000" height="600" fill="url(#landGradient)" />
 
-        {/* Brazilian land = polygon east of the river */}
+        {/* Brazilian land east of the river */}
         <use href="#brasilLand" fill="url(#brasilGradient)" opacity="0.78" />
 
         {/* Subtle hills on the Uruguayan side */}
         <g className="illustrated-map__hills" opacity="0.5">
-          <path d="M 100 360 Q 145 325 190 360 Q 230 388 270 360 L 270 388 L 100 388 Z" fill="var(--imap-hill)" />
-          <path d="M 360 200 Q 405 165 450 200 Q 495 230 540 200 L 540 228 L 360 228 Z" fill="var(--imap-hill)" />
-          <path d="M 470 470 Q 515 435 560 470 Q 595 495 615 470 L 615 498 L 470 498 Z" fill="var(--imap-hill)" />
+          <path d="M 90 360 Q 135 325 180 360 Q 220 388 260 360 L 260 388 L 90 388 Z" fill="var(--imap-hill)" />
+          <path d="M 320 280 Q 365 245 410 280 Q 455 308 500 280 L 500 308 L 320 308 Z" fill="var(--imap-hill)" />
+          <path d="M 460 470 Q 505 435 550 470 Q 585 495 605 470 L 605 498 L 460 498 Z" fill="var(--imap-hill)" />
         </g>
 
-        {/* Decorative trees scattered around */}
+        {/* Decorative trees */}
         <g className="illustrated-map__trees" fill="var(--imap-tree)">
-          <circle cx="180" cy="180" r="8" />
-          <circle cx="195" cy="188" r="6" />
-          <circle cx="240" cy="430" r="9" />
-          <circle cx="255" cy="436" r="6" />
-          <circle cx="430" cy="120" r="7" />
-          <circle cx="445" cy="128" r="6" />
-          <circle cx="510" cy="450" r="8" />
-          <circle cx="525" cy="458" r="6" />
-          <circle cx="900" cy="450" r="7" opacity="0.65" />
-          <circle cx="915" cy="458" r="6" opacity="0.65" />
-          <circle cx="950" cy="200" r="7" opacity="0.65" />
+          <circle cx="120" cy="240" r="8" />
+          <circle cx="135" cy="248" r="6" />
+          <circle cx="220" cy="430" r="9" />
+          <circle cx="235" cy="436" r="6" />
+          <circle cx="260" cy="120" r="7" />
+          <circle cx="275" cy="128" r="6" />
+          <circle cx="540" cy="430" r="8" />
+          <circle cx="555" cy="438" r="6" />
+          <circle cx="900" cy="280" r="7" opacity="0.65" />
+          <circle cx="915" cy="288" r="6" opacity="0.65" />
+          <circle cx="950" cy="120" r="7" opacity="0.65" />
         </g>
 
         {/* Río Yaguarón */}
@@ -118,13 +116,13 @@ const IllustratedMap: React.FC = () => {
           className="illustrated-map__river"
         />
 
-        {/* Ruta 7: dashed road from Centurión (SW) → Tinambú → Paso del Centurión */}
+        {/* Ruta 7: dashed, Centurión (SW) → Tinambú (N-center) → river crossing */}
         <path
-          d="M 80 510
-             Q 180 470 270 430
-             Q 350 395 430 380
-             Q 540 365 660 240
-             Q 700 200 740 175"
+          d="M 80 520
+             Q 200 470 290 380
+             Q 360 310 410 240
+             Q 470 180 560 200
+             Q 640 220 700 230"
           stroke="var(--imap-road)"
           strokeWidth="3"
           strokeDasharray="10 8"
@@ -132,61 +130,67 @@ const IllustratedMap: React.FC = () => {
           strokeLinecap="round"
         />
 
-        {/* Country labels — positioned where the river clearly separates UY from BR */}
-        <text x="220" y="90" className="illustrated-map__country">URUGUAY</text>
-        <text x="900" y="90" className="illustrated-map__country">BRASIL</text>
-        {/* Second pair where the river bends west at the bottom: Brasil ends up south */}
+        {/* Country labels — clear separation top */}
+        <text x="320" y="80" className="illustrated-map__country">URUGUAY</text>
+        <text x="880" y="80" className="illustrated-map__country">BRASIL</text>
+        {/* Bottom pair: river bends SE, so labels track the new orientation */}
         <text x="380" y="565" className="illustrated-map__country illustrated-map__country--small">URUGUAY</text>
-        <text x="800" y="565" className="illustrated-map__country illustrated-map__country--small">BRASIL</text>
+        <text x="900" y="450" className="illustrated-map__country illustrated-map__country--small">BRASIL</text>
 
-        {/* River label, rotated to follow the river's slope */}
-        <text x="850" y="320" transform="rotate(72 850 320)" className="illustrated-map__river-label">
+        {/* River label, slight rotation to follow the river slope */}
+        <text x="745" y="320" transform="rotate(82 745 320)" className="illustrated-map__river-label">
           Río Yaguarón
         </text>
 
         {/* Ruta 7 label */}
-        <text x="380" y="400" className="illustrated-map__road-label">Ruta 7</text>
+        <text x="320" y="380" transform="rotate(-30 320 380)" className="illustrated-map__road-label">
+          Ruta 7
+        </text>
 
         {/* === Centurión (SW) === */}
         <g className="illustrated-map__poi">
-          <circle cx="80" cy="510" r="9" fill="var(--imap-poi)" stroke="var(--imap-poi-border)" strokeWidth="2.5" />
-          <text x="80" y="540" className="illustrated-map__poi-label">Centurión</text>
+          <circle cx="80" cy="520" r="9" fill="var(--imap-poi)" stroke="var(--imap-poi-border)" strokeWidth="2.5" />
+          <text x="80" y="550" className="illustrated-map__poi-label">Centurión</text>
         </g>
 
-        {/* === Paso del Centurión (locality on the river) === */}
+        {/* === Restos de la Aduana (river crossing, north of Paso del Centurión) === */}
         <g className="illustrated-map__poi">
-          <circle cx="755" cy="200" r="8" fill="var(--imap-poi)" stroke="var(--imap-poi-border)" strokeWidth="2.5" />
-          <text x="755" y="180" className="illustrated-map__poi-label">Paso del Centurión</text>
-        </g>
-
-        {/* === Restos de la Aduana (right at the river crossing) === */}
-        <g className="illustrated-map__poi">
-          <rect x="735" y="222" width="14" height="14" rx="1.5"
+          <rect x="688" y="222" width="14" height="14" rx="1.5"
             fill="var(--imap-poi)" stroke="var(--imap-poi-border)" strokeWidth="2.5" />
-          <line x1="738" y1="222" x2="738" y2="214" stroke="var(--imap-poi-border)" strokeWidth="2" strokeLinecap="round" />
-          <line x1="742" y1="222" x2="742" y2="212" stroke="var(--imap-poi-border)" strokeWidth="2" strokeLinecap="round" />
-          <line x1="746" y1="222" x2="746" y2="214" stroke="var(--imap-poi-border)" strokeWidth="2" strokeLinecap="round" />
-          <text x="742" y="258" className="illustrated-map__poi-label illustrated-map__poi-label--sm">Restos de la Aduana</text>
+          <line x1="691" y1="222" x2="691" y2="214" stroke="var(--imap-poi-border)" strokeWidth="2" strokeLinecap="round" />
+          <line x1="695" y1="222" x2="695" y2="212" stroke="var(--imap-poi-border)" strokeWidth="2" strokeLinecap="round" />
+          <line x1="699" y1="222" x2="699" y2="214" stroke="var(--imap-poi-border)" strokeWidth="2" strokeLinecap="round" />
+          <text x="695" y="200" className="illustrated-map__poi-label illustrated-map__poi-label--sm">
+            Restos de la Aduana
+          </text>
         </g>
 
-        {/* === Tinambú · Paso Centurión Tours (highlighted, on Ruta 7) === */}
+        {/* === Paso del Centurión (locality, on the river to the south) === */}
+        <g className="illustrated-map__poi">
+          <circle cx="660" cy="410" r="8" fill="var(--imap-poi)" stroke="var(--imap-poi-border)" strokeWidth="2.5" />
+          <text x="595" y="414" className="illustrated-map__poi-label illustrated-map__poi-label--sm" textAnchor="end">
+            Paso del Centurión
+          </text>
+        </g>
+
+        {/* === Tinambú · Paso Centurión Tours (highlighted, on Ruta 7, north-center) === */}
         <g className="illustrated-map__poi illustrated-map__poi--highlight" filter="url(#pinShadow)">
-          <circle cx="430" cy="380" r="22" fill="var(--imap-pin-halo)" opacity="0.35" />
+          <circle cx="430" cy="220" r="22" fill="var(--imap-pin-halo)" opacity="0.35" />
           <path
-            d="M 430 360
-               C 440 360, 448 368, 448 378
-               C 448 392, 430 406, 430 406
-               C 430 406, 412 392, 412 378
-               C 412 368, 420 360, 430 360 Z"
+            d="M 430 200
+               C 440 200, 448 208, 448 218
+               C 448 232, 430 246, 430 246
+               C 430 246, 412 232, 412 218
+               C 412 208, 420 200, 430 200 Z"
             fill="var(--imap-pin)"
             stroke="var(--imap-pin-border)"
             strokeWidth="2"
           />
-          <circle cx="430" cy="378" r="4" fill="var(--imap-pin-dot)" />
-          <text x="430" y="430" className="illustrated-map__poi-label illustrated-map__poi-label--highlight">
+          <circle cx="430" cy="218" r="4" fill="var(--imap-pin-dot)" />
+          <text x="430" y="270" className="illustrated-map__poi-label illustrated-map__poi-label--highlight">
             Tinambú
           </text>
-          <text x="430" y="447" className="illustrated-map__poi-sublabel">
+          <text x="430" y="287" className="illustrated-map__poi-sublabel">
             Paso Centurión Tours
           </text>
         </g>

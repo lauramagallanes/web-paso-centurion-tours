@@ -675,13 +675,33 @@ const RoomDetails: React.FC = () => {
                   selected={checkOutDate}
                   onChange={(date: Date | null) => setCheckOutDate(date)}
                   filterDate={(date: Date) => {
-                    // For checkout, also allow the day after a blocked date (leaving day)
+                    // Check-out date must lie inside an availability period.
                     if (availabilityPeriods.length === 0) return false;
-                    return availabilityPeriods.some(period => {
+                    const inPeriod = availabilityPeriods.some(period => {
                       const start = new Date(period.fechaInicio + 'T00:00:00');
                       const end = new Date(period.fechaFin + 'T23:59:59');
                       return date >= start && date <= end;
                     });
+                    if (!inPeriod) return false;
+
+                    // Check-out itself is the leaving day (no overnight), so it
+                    // can sit on a blocked date. But all nights between check-in
+                    // (inclusive) and check-out (exclusive) must be free.
+                    if (!checkInDate) return true;
+                    const cursor = new Date(checkInDate);
+                    cursor.setHours(0, 0, 0, 0);
+                    const checkoutMidnight = new Date(date);
+                    checkoutMidnight.setHours(0, 0, 0, 0);
+                    while (cursor < checkoutMidnight) {
+                      const isBlocked = blockedDates.some(b =>
+                        b.getFullYear() === cursor.getFullYear() &&
+                        b.getMonth() === cursor.getMonth() &&
+                        b.getDate() === cursor.getDate()
+                      );
+                      if (isBlocked) return false;
+                      cursor.setDate(cursor.getDate() + 1);
+                    }
+                    return true;
                   }}
                   minDate={checkInDate ? new Date(checkInDate.getTime() + 86400000) : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)}
                   dateFormat="EEE dd/MM/yyyy"

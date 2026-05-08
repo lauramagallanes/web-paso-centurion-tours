@@ -15,10 +15,10 @@ const POIS = {
   TINAMBU: [-32.1394636, -53.762922] as LatLngExpression,
   // Centurión locality: SW of Tinambú, only slightly to the south.
   CENTURION: [-32.150, -53.84] as LatLngExpression,
-  // Restos de la Aduana: clearly north of Tinambú, at the river crossing.
-  ADUANA: [-32.108, -53.736] as LatLngExpression,
-  // Paso del Centurión locality: sits right beside the Aduana, just south.
-  PASO_CENTURION: [-32.113, -53.733] as LatLngExpression,
+  // Restos de la Aduana: north of Tinambú on the URUGUAYAN side of the river.
+  ADUANA: [-32.115, -53.749] as LatLngExpression,
+  // Paso del Centurión locality: just south of the Aduana, also on the UY side.
+  PASO_CENTURION: [-32.121, -53.747] as LatLngExpression,
 };
 
 // Bounding box covering the four POIs with breathing room.

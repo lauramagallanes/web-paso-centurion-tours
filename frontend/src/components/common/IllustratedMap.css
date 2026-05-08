@@ -53,8 +53,28 @@
   background: rgba(229, 138, 138, 0.35);
 }
 
-.imap-pin--secondary { color: #6b792e; }
-.illustrated-map--dark .imap-pin--secondary { color: #9aad5a; }
+/* Subtle dot for secondary POIs */
+.imap-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.imap-dot__inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-text, #1a1a18);
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  display: block;
+}
+
+.illustrated-map--dark .imap-dot__inner {
+  background: #ffffff;
+  border-color: #1a1a18;
+}
 
 .imap-pin__label {
   display: none;

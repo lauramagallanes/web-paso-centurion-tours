@@ -13,18 +13,18 @@ import './IllustratedMap.css';
 // Real coordinates (lat, lng)
 const POIS = {
   TINAMBU: [-32.1394636, -53.762922] as LatLngExpression,
-  // Centurión locality: SW of Tinambú, only slightly south.
-  CENTURION: [-32.158, -53.85] as LatLngExpression,
-  // Restos de la Aduana: NE of Tinambú, on the river.
-  ADUANA: [-32.131, -53.7385] as LatLngExpression,
-  // Paso del Centurión locality: right next to the Aduana ruins, just below.
-  PASO_CENTURION: [-32.1335, -53.738] as LatLngExpression,
+  // Centurión locality: SW of Tinambú, only slightly to the south.
+  CENTURION: [-32.150, -53.84] as LatLngExpression,
+  // Restos de la Aduana: clearly north of Tinambú, at the river crossing.
+  ADUANA: [-32.108, -53.736] as LatLngExpression,
+  // Paso del Centurión locality: sits right beside the Aduana, just south.
+  PASO_CENTURION: [-32.113, -53.733] as LatLngExpression,
 };
 
 // Bounding box covering the four POIs with breathing room.
 const REGION_BOUNDS: LatLngBoundsExpression = [
-  [-32.18, -53.88],
-  [-32.115, -53.71],
+  [-32.165, -53.87],
+  [-32.090, -53.71],
 ];
 
 // Custom pin (highlighted) for Tinambú.
@@ -43,20 +43,14 @@ const tinambuIcon = L.divIcon({
   tooltipAnchor: [0, -42],
 });
 
-// Smaller secondary pin used for the rest of the POIs.
-const secondaryIcon = (label: string) => L.divIcon({
-  className: 'imap-pin imap-pin--secondary',
-  html: `
-    <svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
-      <path d="M 12 0 C 5 0 0 5 0 12 C 0 21 12 32 12 32 C 12 32 24 21 24 12 C 24 5 19 0 12 0 Z"
-            fill="currentColor" stroke="#fff" stroke-width="1.5"/>
-      <circle cx="12" cy="12" r="4" fill="#fff"/>
-    </svg>
-    <span class="imap-pin__label">${label}</span>
-  `,
-  iconSize: [24, 32],
-  iconAnchor: [12, 32],
-  tooltipAnchor: [0, -28],
+// Subtle dot for secondary POIs (Centurión, Paso del Centurión, Aduana).
+// Just a small circle so the tooltip carries the meaning, not a giant pin.
+const secondaryIcon = () => L.divIcon({
+  className: 'imap-dot',
+  html: `<span class="imap-dot__inner"></span>`,
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+  tooltipAnchor: [0, -4],
 });
 
 const FitBoundsOnMount: React.FC<{ bounds: LatLngBoundsExpression }> = ({ bounds }) => {
@@ -110,20 +104,20 @@ const IllustratedMap: React.FC<Props> = ({ dark = false }) => {
           </Tooltip>
         </Marker>
 
-        <Marker position={POIS.CENTURION} icon={secondaryIcon('Centurión')}>
-          <Tooltip permanent direction="bottom" offset={[0, 4]} className="imap-tooltip">
+        <Marker position={POIS.CENTURION} icon={secondaryIcon()}>
+          <Tooltip permanent direction="bottom" offset={[0, 6]} className="imap-tooltip">
             Centurión
           </Tooltip>
         </Marker>
 
-        <Marker position={POIS.PASO_CENTURION} icon={secondaryIcon('Paso del Centurión')}>
-          <Tooltip permanent direction="bottom" offset={[0, 4]} className="imap-tooltip">
+        <Marker position={POIS.PASO_CENTURION} icon={secondaryIcon()}>
+          <Tooltip permanent direction="bottom" offset={[0, 6]} className="imap-tooltip">
             Paso del Centurión
           </Tooltip>
         </Marker>
 
-        <Marker position={POIS.ADUANA} icon={secondaryIcon('Restos de la Aduana')}>
-          <Tooltip permanent direction="top" offset={[0, -28]} className="imap-tooltip">
+        <Marker position={POIS.ADUANA} icon={secondaryIcon()}>
+          <Tooltip permanent direction="top" offset={[0, -6]} className="imap-tooltip">
             Restos de la Aduana
           </Tooltip>
         </Marker>

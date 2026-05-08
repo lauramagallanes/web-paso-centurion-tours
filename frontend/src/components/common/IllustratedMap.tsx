@@ -10,15 +10,18 @@ import './IllustratedMap.css';
  * Highlights Tinambú as the main location and shows the surrounding POIs.
  */
 
-// Real coordinates (lat, lng)
+// Real coordinates (lat, lng).
+// Cañada Vichadero mouth (per OSM): -32.12508, -53.73740.
+// Aduana ruins ≈ 550 m south of that mouth, on the Uruguayan bank.
+// Paso del Centurión locality sits right beside the Aduana.
 const POIS = {
   TINAMBU: [-32.1394636, -53.762922] as LatLngExpression,
   // Centurión locality: SW of Tinambú, only slightly to the south.
   CENTURION: [-32.150, -53.84] as LatLngExpression,
-  // Restos de la Aduana: north of Tinambú on the URUGUAYAN side of the river.
-  ADUANA: [-32.115, -53.749] as LatLngExpression,
-  // Paso del Centurión locality: just south of the Aduana, also on the UY side.
-  PASO_CENTURION: [-32.121, -53.747] as LatLngExpression,
+  // Restos de la Aduana: ~550 m south of the Vichadero mouth, UY bank.
+  ADUANA: [-32.1300, -53.7388] as LatLngExpression,
+  // Paso del Centurión locality: ~120 m south of the Aduana, same bank.
+  PASO_CENTURION: [-32.1311, -53.7385] as LatLngExpression,
 };
 
 // Bounding box covering the four POIs with breathing room.

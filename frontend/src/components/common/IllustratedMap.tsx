@@ -13,15 +13,18 @@ import './IllustratedMap.css';
 // Real coordinates (lat, lng)
 const POIS = {
   TINAMBU: [-32.1394636, -53.762922] as LatLngExpression,
-  CENTURION: [-32.182, -53.86] as LatLngExpression,
-  PASO_CENTURION: [-32.143, -53.74] as LatLngExpression,
-  ADUANA: [-32.131, -53.738] as LatLngExpression,
+  // Centurión locality: SW of Tinambú, only slightly south.
+  CENTURION: [-32.158, -53.85] as LatLngExpression,
+  // Restos de la Aduana: NE of Tinambú, on the river.
+  ADUANA: [-32.131, -53.7385] as LatLngExpression,
+  // Paso del Centurión locality: right next to the Aduana ruins, just below.
+  PASO_CENTURION: [-32.1335, -53.738] as LatLngExpression,
 };
 
-// Wide bounding box so the whole region is visible by default.
+// Bounding box covering the four POIs with breathing room.
 const REGION_BOUNDS: LatLngBoundsExpression = [
-  [-32.21, -53.92],
-  [-32.10, -53.68],
+  [-32.18, -53.88],
+  [-32.115, -53.71],
 ];
 
 // Custom pin (highlighted) for Tinambú.

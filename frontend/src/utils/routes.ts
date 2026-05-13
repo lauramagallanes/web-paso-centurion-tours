@@ -24,7 +24,10 @@ export const routes = {
     adminTrails: "/admin/trails",
     adminGuides: "/admin/guides",
     adminAlojamientos: "/admin/alojamientos",
-    login: "/login"
+    login: "/login",
+    privacy: "/privacy",
+    terms: "/terms",
+    cookies: "/cookies",
 } as const;
 
 export type RouteKey = keyof typeof routes; 

@@ -10,6 +10,9 @@ import ShoppingCart from './components/common/ShoppingCart';
 import Home from './pages/public/Home'
 import Birding from './pages/public/Birding'
 import About from './pages/public/About'
+import PrivacyPolicy from './pages/legal/PrivacyPolicy'
+import TermsAndConditions from './pages/legal/TermsAndConditions'
+import CookiePolicy from './pages/legal/CookiePolicy'
 import Accommodations from './pages/public/Accommodations'
 import RoomDetails from './pages/public/RoomDetails'
 import Activities from './pages/public/Activities'
@@ -48,6 +51,9 @@ const App: React.FC = () => {
           <Route path="/" element={<PublicLayout/>}>
             <Route index element={<Home/>}/>
             <Route path={routes.about} element={<About/>}/>
+            <Route path={routes.privacy} element={<PrivacyPolicy/>}/>
+            <Route path={routes.terms} element={<TermsAndConditions/>}/>
+            <Route path={routes.cookies} element={<CookiePolicy/>}/>
             <Route path={routes.birdwatching} element={<Birding/>}/>
             <Route path={routes.alojamientos} element={<Accommodations/>}/>
             <Route path="/alojamientos/:id" element={<RoomDetails/>}/>

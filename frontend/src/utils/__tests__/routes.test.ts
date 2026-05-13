@@ -10,6 +10,9 @@ describe('Routes Utils', () => {
     expect(routes.book).toBe('/book');
     expect(routes.login).toBe('/login');
     expect(routes.myBookings).toBe('/my-bookings');
+    expect(routes.privacy).toBe('/privacy');
+    expect(routes.terms).toBe('/terms');
+    expect(routes.cookies).toBe('/cookies');
   });
 
   it('all routes are strings', () => {

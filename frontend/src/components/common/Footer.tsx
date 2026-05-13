@@ -34,8 +34,9 @@ const Footer: React.FC = () => {
       title: 'Información',
       links: [
         { label: 'Mis Reservas', path: routes.myBookings },
-        { label: 'Política de Privacidad', path: '/privacy' },
-        { label: 'Términos de Servicio', path: '/terms' },
+        { label: 'Política de Privacidad', path: routes.privacy },
+        { label: 'Términos y Condiciones', path: routes.terms },
+        { label: 'Política de Cookies', path: routes.cookies },
         { label: 'Preguntas Frecuentes', path: '/faq' },
       ]
     }
@@ -177,11 +178,11 @@ const Footer: React.FC = () => {
           <div className="footer-legal">
             <span>Tinambú - Paso centurion tours ®</span>
             <span className="sep">¥</span>
-            <Link to="/privacy">Políticas de privacidad</Link>
+            <Link to={routes.privacy}>Políticas de privacidad</Link>
             <span className="sep">¥</span>
-            <Link to="/terms">Términos y condiciones</Link>
+            <Link to={routes.terms}>Términos y condiciones</Link>
             <span className="sep">¥</span>
-            <Link to="/terms">Política de cookies</Link>
+            <Link to={routes.cookies}>Política de cookies</Link>
           </div>
 
           {/* Contacto horizontal con Bootstrap Icons */}

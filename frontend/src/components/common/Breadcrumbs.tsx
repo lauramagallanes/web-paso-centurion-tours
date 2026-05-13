@@ -76,7 +76,10 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
       'logo-demo': 'Demo de Logos',
       'iconos-demo': 'Demo de Iconos',
       'ilustraciones-demo': 'Demo de Ilustraciones',
-      'galeria-demo': 'Demo de Galería'
+      'galeria-demo': 'Demo de Galería',
+      'privacy': 'Política de privacidad',
+      'terms': 'Términos y condiciones',
+      'cookies': 'Política de cookies'
     };
 
     return labelMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);

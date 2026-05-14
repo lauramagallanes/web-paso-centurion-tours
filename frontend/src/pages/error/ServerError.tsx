@@ -109,7 +109,7 @@ const ServerError: React.FC<ServerErrorProps> = ({ error, resetError }) => {
                   <span>Volver a la página anterior</span>
                 </button>
                 <a 
-                  href="mailto:soporte@tinambu.com"
+                  href="mailto:info@pasocenturion.com.uy"
                   className="help-option"
                 >
                   <Icon name="email" size="sm" color="accent" />
@@ -130,8 +130,8 @@ const ServerError: React.FC<ServerErrorProps> = ({ error, resetError }) => {
         <div className="server-error-footer">
           <p className="footer-text">
             Si el problema continúa, puedes contactarnos en{' '}
-            <a href="mailto:soporte@tinambu.com" className="footer-link">
-              soporte@tinambu.com
+            <a href="mailto:info@pasocenturion.com.uy" className="footer-link">
+              info@pasocenturion.com.uy
             </a>
           </p>
         </div>

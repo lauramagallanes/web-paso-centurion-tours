@@ -107,7 +107,7 @@ const NotFound: React.FC = () => {
         
         <div className="not-found-footer">
           <p className="footer-text">
-            ¿Necesitas ayuda? <a href="mailto:info@tinambu.com" className="footer-link">Contáctanos</a>
+            ¿Necesitas ayuda? <a href="mailto:info@pasocenturion.com.uy" className="footer-link">Contáctanos</a>
           </p>
         </div>
       </div>

@@ -3,28 +3,40 @@ import { Link } from 'react-router-dom';
 import LegalDocumentLayout from './LegalDocumentLayout';
 import { routes } from '../../utils/routes';
 
+const CONTACT_EMAIL = 'info@pasocenturion.com.uy';
+
 const PrivacyPolicy: React.FC = () => (
   <LegalDocumentLayout title="Política de privacidad">
     <p>
-      Tinambú — Paso Centurión Tours (&quot;nosotros&quot;, &quot;el sitio&quot;) se compromete a proteger la privacidad de las
-      personas que utilizan este sitio web y los servicios asociados. Esta política describe qué datos podemos tratar,
-      con qué fines y qué derechos tenés conforme a la normativa aplicable en Uruguay, en particular la Ley N.º 18.331 y
-      normas concordantes.
+      MAGALLANES CAMEJO LAURA, que opera bajo el nombre de fantasía Tinambú — Paso Centurión Tours (&quot;nosotros&quot;,
+      &quot;el sitio&quot;), se compromete a proteger la privacidad de las personas que utilizan este sitio web y los servicios
+      asociados. Esta política describe qué datos podemos tratar, con qué fines y qué derechos tienes conforme a la normativa
+      aplicable en Uruguay, en particular la Ley N.º 18.331 y normas concordantes.
     </p>
 
     <h2>1. Responsable del tratamiento</h2>
     <p>
-      Titular: Tinambú — Paso Centurión Tours. Contacto para consultas de privacidad:{' '}
-      <a href="mailto:pasocenturiontours@gmail.com">pasocenturiontours@gmail.com</a>.
+      Responsable: MAGALLANES CAMEJO LAURA, nombre de fantasía Tinambú — Paso Centurión Tours, con domicilio en Paso Centurión,
+      Cerro Largo, Uruguay. Contacto para consultas de privacidad:{' '}
+      <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
     </p>
 
     <h2>2. Datos que podemos recabar</h2>
-    <p>Según cómo interactúes con el sitio, podemos tratar, entre otros:</p>
+    <p>Según cómo interactúas con el sitio, podemos tratar, entre otros:</p>
     <ul>
-      <li>Datos identificativos y de contacto (nombre, correo electrónico, teléfono) cuando completás formularios o realizás una reserva.</li>
+      <li>
+        Datos identificativos y de contacto (nombre, correo electrónico, teléfono) cuando completas formularios o realizas una
+        reserva.
+      </li>
       <li>Datos de la reserva (fechas, servicios contratados, número de personas, observaciones).</li>
-      <li>Datos de facturación y pago gestionados por el proveedor de pagos (por ejemplo PlacetoPay), según lo que corresponda en cada operación.</li>
-      <li>Datos técnicos generados automáticamente (dirección IP, tipo de navegador, páginas visitadas, marca temporal), cuando resulte necesario por seguridad o mejora del servicio.</li>
+      <li>
+        Datos de facturación y pago gestionados por el proveedor de pagos (por ejemplo Getnet), según lo que corresponda en cada
+        operación.
+      </li>
+      <li>
+        Datos técnicos generados automáticamente (dirección IP, tipo de navegador, páginas visitadas, marca temporal), cuando
+        resulte necesario por seguridad o mejora del servicio.
+      </li>
     </ul>
 
     <h2>3. Finalidades y bases</h2>
@@ -56,21 +68,21 @@ const PrivacyPolicy: React.FC = () => (
 
     <h2>6. Tus derechos</h2>
     <p>
-      Podés solicitar acceso, rectificación, actualización, inclusión, supresión, limitación del tratamiento u oposición cuando
-      corresponda, y presentar reclamos ante la autoridad de protección de datos. Para ejercer estos derechos, escribinos a{' '}
-      <a href="mailto:pasocenturiontours@gmail.com">pasocenturiontours@gmail.com</a> indicando tu solicitud de forma clara.
+      Puedes solicitar acceso, rectificación, actualización, inclusión, supresión, limitación del tratamiento u oposición cuando
+      corresponda, y presentar reclamos ante la autoridad de protección de datos. Para ejercer estos derechos, escríbenos a{' '}
+      <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> indicando tu solicitud de forma clara.
     </p>
 
     <h2>7. Seguridad</h2>
     <p>
       Aplicamos medidas técnicas y organizativas razonables para proteger los datos frente a accesos no autorizados, pérdida o
-      alteración. Ningún sistema es infalible; si detectás un problema, comunicalo de inmediato.
+      alteración. Ningún sistema es infalible; si detectas un problema, comunícalo de inmediato.
     </p>
 
     <h2>8. Menores</h2>
     <p>
-      Los servicios no están dirigidos a menores de edad sin el consentimiento o autorización de sus padres o tutores. Si creés
-      que hemos recabado datos de un menor sin la debida autorización, contactanos para subsanarlo.
+      Los servicios no están dirigidos a menores de edad sin el consentimiento o autorización de sus padres o tutores. Si crees
+      que hemos recabado datos de un menor sin la debida autorización, contáctanos para subsanarlo.
     </p>
 
     <h2>9. Cookies y almacenamiento local</h2>
@@ -88,7 +100,7 @@ const PrivacyPolicy: React.FC = () => (
     </p>
 
     <p>
-      Para las condiciones generales de uso y contratación, consultá los{' '}
+      Para las condiciones generales de uso y contratación, consulta los{' '}
       <Link to={routes.terms}>Términos y condiciones</Link>.
     </p>
   </LegalDocumentLayout>

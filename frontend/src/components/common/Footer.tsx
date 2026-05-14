@@ -63,7 +63,7 @@ const Footer: React.FC = () => {
     },
     {
       name: 'Email',
-      url: 'mailto:pasocenturiontours@gmail.com',
+      url: 'mailto:info@pasocenturion.com.uy',
       icon: '📧',
       color: '#EA4335'
     }
@@ -105,8 +105,8 @@ const Footer: React.FC = () => {
     {
       icon: '📧',
       label: 'Email',
-      value: 'pasocenturiontours@gmail.com',
-      link: 'mailto:pasocenturiontours@gmail.com'
+      value: 'info@pasocenturion.com.uy',
+      link: 'mailto:info@pasocenturion.com.uy'
     },
     {
       icon: '🕐',

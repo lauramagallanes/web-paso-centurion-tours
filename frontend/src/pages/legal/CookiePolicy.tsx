@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import LegalDocumentLayout from './LegalDocumentLayout';
 import { routes } from '../../utils/routes';
 
+const CONTACT_EMAIL = 'info@pasocenturion.com.uy';
+
 const CookiePolicy: React.FC = () => (
   <LegalDocumentLayout title="Política de cookies">
     <p>
-      Esta política explica cómo Tinambú — Paso Centurión Tours utiliza cookies y tecnologías similares en el navegador cuando
-      visitás nuestro sitio web. Para el tratamiento de datos personales en general, consultá nuestra{' '}
-      <Link to={routes.privacy}>Política de privacidad</Link>.
+      Esta política explica cómo MAGALLANES CAMEJO LAURA (nombre de fantasía Tinambú — Paso Centurión Tours) utiliza cookies y
+      tecnologías similares en el navegador cuando visitas nuestro sitio web. Para el tratamiento de datos personales en general,
+      consulta nuestra <Link to={routes.privacy}>Política de privacidad</Link>.
     </p>
 
     <h2>1. ¿Qué son las cookies?</h2>
@@ -26,15 +28,13 @@ const CookiePolicy: React.FC = () => (
     </p>
 
     <h2>3. Almacenamiento local (localStorage)</h2>
-    <p>
-      La aplicación puede guardar datos en tu navegador para mejorar la experiencia, entre otros:
-    </p>
+    <p>La aplicación puede guardar datos en tu navegador para mejorar la experiencia, entre otros:</p>
     <ul>
       <li>
         <strong>Preferencia de tema</strong> (claro/oscuro), clave típica <code>tinambu-theme</code>.
       </li>
       <li>
-        <strong>Sesión y cuenta</strong>: tokens de acceso y datos de usuario asociados al inicio de sesión cuando utilizás
+        <strong>Sesión y cuenta</strong>: tokens de acceso y datos de usuario asociados al inicio de sesión cuando utilizas
         funciones que lo requieren.
       </li>
       <li>
@@ -59,21 +59,20 @@ const CookiePolicy: React.FC = () => (
 
     <h2>5. Enlaces externos</h2>
     <p>
-      Si abrís enlaces a redes sociales o plataformas de reserva (Booking.com, Airbnb, TripAdvisor, WhatsApp, etc.), esos sitios
+      Si abres enlaces a redes sociales o plataformas de reserva (Booking.com, Airbnb, TripAdvisor, WhatsApp, etc.), esos sitios
       pueden instalar sus propias cookies. Te recomendamos leer sus políticas de privacidad y cookies.
     </p>
 
     <h2>6. Cómo gestionar o eliminar cookies</h2>
     <p>
-      Podés bloquear o eliminar cookies y datos de sitios desde la configuración de tu navegador (Chrome, Firefox, Safari, Edge,
-      etc.). Tené en cuenta que desactivar cookies técnicas o borrar el almacenamiento local puede impedir el inicio de sesión, 
-      vaciar el carrito o resetear preferencias como el tema visual.
+      Puedes bloquear o eliminar cookies y datos de sitios desde la configuración de tu navegador (Chrome, Firefox, Safari, Edge,
+      etc.). Ten en cuenta que desactivar cookies técnicas o borrar el almacenamiento local puede impedir el inicio de sesión,
+      vaciar el carrito o restablecer preferencias como el tema visual.
     </p>
 
     <h2>7. Contacto</h2>
     <p>
-      Para consultas sobre esta política:{' '}
-      <a href="mailto:pasocenturiontours@gmail.com">pasocenturiontours@gmail.com</a>.
+      Para consultas sobre esta política: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
     </p>
 
     <p>

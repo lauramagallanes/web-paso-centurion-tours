@@ -181,6 +181,7 @@ public class SecurityConfig {
             "https://localhost:*",
             "http://127.0.0.1:*",
             "https://127.0.0.1:*",
+            "http://tinambu-frontend-dev.s3-website-us-east-1.amazonaws.com",
             "https://tinambu-frontend-dev.s3.us-east-1.amazonaws.com",
             "https://tinambu-frontend-dev.s3-website-us-east-1.amazonaws.com"
         ));

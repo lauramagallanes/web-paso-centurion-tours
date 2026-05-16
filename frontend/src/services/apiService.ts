@@ -759,6 +759,40 @@ class ApiService {
     await this.handleResponse(response);
   }
 
+  // ========== ADMIN: GUÍAS ASIGNADOS A UNA DISPONIBILIDAD ==========
+
+  async listGuiasDeDisponibilidad(disponibilidadId: string): Promise<Array<{
+    id: string;
+    nombre: string;
+    apellido: string;
+    nombreCompleto?: string;
+    email?: string;
+    activo?: boolean;
+  }>> {
+    const response = await fetch(
+      `${this.baseURL}/senderos/admin/disponibilidad/${disponibilidadId}/guias`,
+      { headers: this.getHeaders(true) }
+    );
+    const json = await this.handleResponse<{ data: any[] }>(response);
+    return Array.isArray(json?.data) ? json.data : [];
+  }
+
+  async asignarGuiaADisponibilidad(disponibilidadId: string, guiaId: string): Promise<void> {
+    const response = await fetch(
+      `${this.baseURL}/senderos/admin/disponibilidad/${disponibilidadId}/guias/${guiaId}`,
+      { method: 'POST', headers: this.getHeaders(true) }
+    );
+    await this.handleResponse(response);
+  }
+
+  async removerGuiaDeDisponibilidad(disponibilidadId: string, guiaId: string): Promise<void> {
+    const response = await fetch(
+      `${this.baseURL}/senderos/admin/disponibilidad/${disponibilidadId}/guias/${guiaId}`,
+      { method: 'DELETE', headers: this.getHeaders(true) }
+    );
+    await this.handleResponse(response);
+  }
+
   // ========== ADMIN/PUBLIC: SENDERO DATE BLOCKS ==========
 
   async listSenderoBloqueos(senderoId: string, asAdmin: boolean = false): Promise<SenderoBloqueo[]> {
@@ -1078,6 +1112,8 @@ class ApiService {
     telefonoContacto?: string;
     observaciones?: string;
     tipoPago: string;
+    metodoPago?: 'CARD' | 'PREX';
+    paisComprador?: string;
     items: Array<{
       tipo: string;
       productoId: string;

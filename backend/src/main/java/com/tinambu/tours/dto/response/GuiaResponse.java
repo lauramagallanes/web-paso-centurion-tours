@@ -1,5 +1,6 @@
 package com.tinambu.tours.dto.response;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -16,6 +17,12 @@ public class GuiaResponse {
     private Integer anosExperiencia;
     private String especialidades;
     private String urlFoto;
+
+    /** Incluido en respuestas de administración */
+    private String email;
+    private Boolean activo;
+    private LocalDateTime fechaCreacion;
+    private LocalDateTime fechaActualizacion;
 
     // Constructors
     public GuiaResponse() {}
@@ -44,4 +51,18 @@ public class GuiaResponse {
 
     public String getUrlFoto() { return urlFoto; }
     public void setUrlFoto(String urlFoto) { this.urlFoto = urlFoto; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public Boolean getActivo() { return activo; }
+    public void setActivo(Boolean activo) { this.activo = activo; }
+
+    public LocalDateTime getFechaCreacion() { return fechaCreacion; }
+    public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
+
+    public LocalDateTime getFechaActualizacion() { return fechaActualizacion; }
+    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+        this.fechaActualizacion = fechaActualizacion;
+    }
 }

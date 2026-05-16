@@ -165,7 +165,7 @@ const GuideManagement: React.FC = () => {
       if (modalMode === 'create') {
         await createGuia(formData);
       } else if (modalMode === 'edit' && formData.id) {
-        await updateGuia(parseInt(formData.id), formData);
+        await updateGuia(formData.id, formData);
       }
 
       // Recargar guías
@@ -198,7 +198,7 @@ const GuideManagement: React.FC = () => {
     
     setActionLoading(true);
     try {
-      await toggleActive(parseInt(guia.id), !guia.activo);
+      await toggleActive(guia.id, !guia.activo);
       await loadGuias();
     } catch (error) {
       console.error('Error cambiando estado:', error);
@@ -214,7 +214,7 @@ const GuideManagement: React.FC = () => {
 
     setActionLoading(true);
     try {
-      await deleteGuia(parseInt(guia.id));
+      await deleteGuia(guia.id);
       await loadGuias();
     } catch (error) {
       console.error('Error eliminando guía:', error);

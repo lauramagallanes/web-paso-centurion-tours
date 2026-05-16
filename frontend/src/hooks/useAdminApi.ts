@@ -348,16 +348,16 @@ export const useGuiasAdmin = () => {
       body: JSON.stringify(guia)
     });
 
-  const updateGuia = (id: number, guia: any) => 
+  const updateGuia = (id: string, guia: any) => 
     execute(`/guias/admin/${id}`, {
       method: 'PUT',
       body: JSON.stringify(guia)
     });
 
-  const toggleActive = (id: number, activo: boolean) => 
+  const toggleActive = (id: string, activo: boolean) => 
     execute(`/guias/admin/${id}/estado?activo=${activo}`, { method: 'PUT' });
 
-  const deleteGuia = (id: number) => 
+  const deleteGuia = (id: string) => 
     execute(`/guias/admin/${id}`, { method: 'DELETE' });
 
   // Asegurar que data sea siempre un array válido

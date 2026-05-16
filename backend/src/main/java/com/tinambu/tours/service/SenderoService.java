@@ -7,13 +7,18 @@ import com.tinambu.tours.dto.response.SenderoBloqueoResponse;
 import com.tinambu.tours.dto.response.SenderoDisponibilidadResponse;
 import com.tinambu.tours.dto.response.SenderoResponse;
 import com.tinambu.tours.dto.response.SenderoImagenResponse;
+import com.tinambu.tours.dto.response.GuiaResponse;
+import com.tinambu.tours.entity.guia.Guia;
 import com.tinambu.tours.entity.sendero.NivelDificultad;
 import com.tinambu.tours.entity.sendero.Sendero;
 import com.tinambu.tours.entity.sendero.SenderoBloqueo;
 import com.tinambu.tours.entity.sendero.SenderoDisponibilidad;
+import com.tinambu.tours.entity.sendero.SenderoDisponibilidadGuia;
 import com.tinambu.tours.entity.sendero.SenderoImagen;
 import com.tinambu.tours.entity.sendero.TurnoSendero;
+import com.tinambu.tours.repository.GuiaRepository;
 import com.tinambu.tours.repository.SenderoBloqueoRepository;
+import com.tinambu.tours.repository.SenderoDisponibilidadGuiaRepository;
 import com.tinambu.tours.repository.SenderoRepository;
 import com.tinambu.tours.repository.SenderoImagenRepository;
 import com.tinambu.tours.repository.SenderoDisponibilidadRepository;
@@ -52,6 +57,12 @@ public class SenderoService {
 
     @Autowired
     private SenderoBloqueoRepository senderoBloqueoRepository;
+
+    @Autowired
+    private GuiaRepository guiaRepository;
+
+    @Autowired
+    private SenderoDisponibilidadGuiaRepository senderoDisponibilidadGuiaRepository;
 
     @Autowired(required = false)
     private S3Client s3Client;
@@ -461,6 +472,63 @@ public class SenderoService {
             throw new IllegalArgumentException("Disponibilidad no encontrada: " + disponibilidadId);
         }
         senderoDisponibilidadRepository.deleteById(disponibilidadId);
+    }
+
+    // ========== ADMIN: GUÍAS ASIGNADOS A UNA DISPONIBILIDAD ==========
+
+    @Transactional(readOnly = true)
+    public List<GuiaResponse> listarGuiasDeDisponibilidad(UUID disponibilidadId) {
+        if (!senderoDisponibilidadRepository.existsById(disponibilidadId)) {
+            throw new IllegalArgumentException("Disponibilidad no encontrada: " + disponibilidadId);
+        }
+        List<UUID> guiaIds = senderoDisponibilidadGuiaRepository
+                .findGuiaIdsBySenderoDisponibilidadId(disponibilidadId);
+        if (guiaIds.isEmpty()) return List.of();
+        return guiaRepository.findAllById(guiaIds).stream()
+                .map(this::convertirGuiaAResponseLite)
+                .collect(Collectors.toList());
+    }
+
+    public GuiaResponse asignarGuiaADisponibilidad(UUID disponibilidadId, UUID guiaId) {
+        SenderoDisponibilidad sd = senderoDisponibilidadRepository.findById(disponibilidadId)
+                .orElseThrow(() -> new IllegalArgumentException("Disponibilidad no encontrada: " + disponibilidadId));
+        Guia guia = guiaRepository.findById(guiaId)
+                .orElseThrow(() -> new IllegalArgumentException("Guía no encontrado: " + guiaId));
+        if (!Boolean.TRUE.equals(guia.getActivo())) {
+            throw new IllegalArgumentException("El guía está inactivo y no puede asignarse: " + guia.getNombreCompleto());
+        }
+        if (senderoDisponibilidadGuiaRepository.isGuiaAssignedToAvailability(disponibilidadId, guiaId)) {
+            throw new IllegalArgumentException("El guía ya está asignado a esta disponibilidad");
+        }
+        // Reactivar registro previo desactivado, si existe; si no, crear uno nuevo.
+        List<SenderoDisponibilidadGuia> previos = senderoDisponibilidadGuiaRepository
+                .findBySenderoDisponibilidadIdAndGuiaIdAndActivoTrue(disponibilidadId, guiaId);
+        if (previos.isEmpty()) {
+            sd.asignarGuia(guia);
+            senderoDisponibilidadRepository.save(sd);
+        }
+        return convertirGuiaAResponseLite(guia);
+    }
+
+    public void removerGuiaDeDisponibilidad(UUID disponibilidadId, UUID guiaId) {
+        if (!senderoDisponibilidadRepository.existsById(disponibilidadId)) {
+            throw new IllegalArgumentException("Disponibilidad no encontrada: " + disponibilidadId);
+        }
+        if (!senderoDisponibilidadGuiaRepository.isGuiaAssignedToAvailability(disponibilidadId, guiaId)) {
+            throw new IllegalArgumentException("El guía no está asignado a esta disponibilidad");
+        }
+        senderoDisponibilidadGuiaRepository.deactivateGuiaAssignment(disponibilidadId, guiaId);
+    }
+
+    private GuiaResponse convertirGuiaAResponseLite(Guia guia) {
+        GuiaResponse r = new GuiaResponse();
+        r.setId(guia.getId());
+        r.setNombre(guia.getNombre());
+        r.setApellido(guia.getApellido());
+        r.setNombreCompleto(guia.getNombreCompleto());
+        r.setEmail(guia.getEmail());
+        r.setActivo(guia.getActivo());
+        return r;
     }
 
     // ========== ADMIN/PÚBLICO: BLOQUEOS DE FECHAS ==========

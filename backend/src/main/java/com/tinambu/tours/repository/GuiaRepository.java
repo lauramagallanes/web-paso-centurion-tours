@@ -22,6 +22,14 @@ public interface GuiaRepository extends JpaRepository<Guia, UUID> {
     @Query("SELECT g FROM Guia g WHERE g.activo = true ORDER BY g.nombre")
     List<Guia> findAllActiveOrderByName();
 
-    @Query("SELECT g FROM Guia g WHERE g.activo = true AND g.especialidades LIKE %:especialidad%")
+    @Query("SELECT g FROM Guia g WHERE g.activo = true AND g.especialidades LIKE CONCAT('%', :especialidad, '%')")
     List<Guia> findByEspecialidadContaining(@Param("especialidad") String especialidad);
+
+    @Query("SELECT g FROM Guia g WHERE g.activo = true AND g.anosExperiencia >= :min")
+    List<Guia> findByAnosExperienciaMinima(@Param("min") Integer min);
+
+    @Query("SELECT g FROM Guia g WHERE LOWER(CONCAT(g.nombre, ' ', g.apellido)) LIKE LOWER(CONCAT('%', :nombre, '%'))")
+    List<Guia> findByNombreCompletoContaining(@Param("nombre") String nombre);
+
+    List<Guia> findAllByOrderByAnosExperienciaDesc();
 }

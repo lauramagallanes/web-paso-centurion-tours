@@ -49,6 +49,15 @@ const formatDias = (csv: string | null): string => {
 const turnoLabel = (t: TurnoSendero | null) =>
   t === 'MANANA' ? 'Mañana' : t === 'TARDE' ? 'Tarde' : 'Ambos turnos';
 
+interface GuiaLite {
+  id: string;
+  nombre: string;
+  apellido: string;
+  nombreCompleto?: string;
+  email?: string;
+  activo?: boolean;
+}
+
 const SenderoAvailabilityModal: React.FC<Props> = ({ show, sendero, onClose }) => {
   const [activeTab, setActiveTab] = useState<'periodos' | 'bloqueos'>('periodos');
   const [loading, setLoading] = useState(false);
@@ -57,6 +66,12 @@ const SenderoAvailabilityModal: React.FC<Props> = ({ show, sendero, onClose }) =
 
   const [disponibilidades, setDisponibilidades] = useState<SenderoDisponibilidad[]>([]);
   const [bloqueos, setBloqueos] = useState<SenderoBloqueo[]>([]);
+
+  // ---- Guías por disponibilidad ----
+  const [allGuias, setAllGuias] = useState<GuiaLite[]>([]);
+  const [guiasByDisp, setGuiasByDisp] = useState<Record<string, GuiaLite[]>>({});
+  const [expandedGuiasDisp, setExpandedGuiasDisp] = useState<Record<string, boolean>>({});
+  const [guiaToAssign, setGuiaToAssign] = useState<Record<string, string>>({});
 
   // ---- Form: nueva ventana ----
   const today = new Date().toISOString().slice(0, 10);
@@ -93,16 +108,65 @@ const SenderoAvailabilityModal: React.FC<Props> = ({ show, sendero, onClose }) =
     setLoading(true);
     setError(null);
     try {
-      const [disps, blqs] = await Promise.all([
+      const [disps, blqs, guias] = await Promise.all([
         apiService.listSenderoDisponibilidadesAdmin(senderoId),
         apiService.listSenderoBloqueos(senderoId, true),
+        apiService.getGuias().catch(() => ({ data: [] as GuiaLite[] })),
       ]);
       setDisponibilidades(disps);
       setBloqueos(blqs);
+      const guiasArr: GuiaLite[] = Array.isArray((guias as any)?.data) ? (guias as any).data : [];
+      setAllGuias(guiasArr);
+      // Limpiar caché de asignaciones cuando se recargan disponibilidades
+      setGuiasByDisp({});
+      setExpandedGuiasDisp({});
+      setGuiaToAssign({});
     } catch (e: any) {
       setError(e?.message || 'Error al cargar la disponibilidad.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadGuiasDisp = async (dispId: string) => {
+    try {
+      const guias = await apiService.listGuiasDeDisponibilidad(dispId);
+      setGuiasByDisp(prev => ({ ...prev, [dispId]: guias }));
+    } catch (e: any) {
+      setError(e?.message || 'Error al cargar guías asignados.');
+    }
+  };
+
+  const handleToggleGuiasPanel = async (dispId: string) => {
+    const willOpen = !expandedGuiasDisp[dispId];
+    setExpandedGuiasDisp(prev => ({ ...prev, [dispId]: willOpen }));
+    if (willOpen && !guiasByDisp[dispId]) {
+      await loadGuiasDisp(dispId);
+    }
+  };
+
+  const handleAsignarGuia = async (dispId: string) => {
+    const guiaId = guiaToAssign[dispId];
+    if (!guiaId) return;
+    setError(null);
+    try {
+      await apiService.asignarGuiaADisponibilidad(dispId, guiaId);
+      setSuccess('Guía asignado.');
+      setGuiaToAssign(prev => ({ ...prev, [dispId]: '' }));
+      await loadGuiasDisp(dispId);
+    } catch (e: any) {
+      setError(e?.message || 'Error al asignar guía.');
+    }
+  };
+
+  const handleQuitarGuia = async (dispId: string, guiaId: string) => {
+    setError(null);
+    try {
+      await apiService.removerGuiaDeDisponibilidad(dispId, guiaId);
+      setSuccess('Guía desasignado.');
+      await loadGuiasDisp(dispId);
+    } catch (e: any) {
+      setError(e?.message || 'Error al desasignar guía.');
     }
   };
 
@@ -325,7 +389,13 @@ const SenderoAvailabilityModal: React.FC<Props> = ({ show, sendero, onClose }) =
               <Alert variant="warning" className="py-2 mb-3">Sin períodos configurados.</Alert>
             ) : (
               <ListGroup className="mb-3">
-                {disponibilidades.map(d => (
+                {disponibilidades.map(d => {
+                  const guiasDeDisp = guiasByDisp[d.id] || [];
+                  const guiasAsignadosIds = new Set(guiasDeDisp.map(g => g.id));
+                  const guiasDisponiblesParaAsignar = allGuias.filter(
+                    g => g.activo !== false && !guiasAsignadosIds.has(g.id),
+                  );
+                  return (
                   <ListGroup.Item key={d.id} className="py-2"
                     style={{ borderLeft: `4px solid ${d.activo ? '#198754' : '#6c757d'}` }}>
                     <div className="d-flex justify-content-between align-items-start gap-2 flex-wrap">
@@ -342,6 +412,18 @@ const SenderoAvailabilityModal: React.FC<Props> = ({ show, sendero, onClose }) =
                         <small className="text-muted">{formatDias(d.diasSemana)}</small>
                       </div>
                       <div className="d-flex gap-1">
+                        <Button
+                          variant={expandedGuiasDisp[d.id] ? 'info' : 'outline-info'}
+                          size="sm"
+                          onClick={() => handleToggleGuiasPanel(d.id)}
+                          disabled={loading}
+                          title="Gestionar guías de este período"
+                        >
+                          <Icon name="user" size="xs" />
+                          {guiasDeDisp.length > 0 && (
+                            <Badge bg="light" text="dark" className="ms-1">{guiasDeDisp.length}</Badge>
+                          )}
+                        </Button>
                         <Button variant="outline-success" size="sm" onClick={() => handleEditDisp(d)} disabled={loading} title="Editar">
                           <Icon name="edit" size="xs" />
                         </Button>
@@ -359,8 +441,64 @@ const SenderoAvailabilityModal: React.FC<Props> = ({ show, sendero, onClose }) =
                         </Button>
                       </div>
                     </div>
+                    {expandedGuiasDisp[d.id] && (
+                      <div className="mt-2 pt-2 border-top">
+                        <div className="small text-muted mb-2">
+                          Guías asignados a este período. Si no asignás ninguno, el sistema toma cualquier guía activo libre.
+                        </div>
+                        {guiasDeDisp.length === 0 ? (
+                          <div className="small text-muted mb-2"><em>Sin guías asignados explícitamente.</em></div>
+                        ) : (
+                          <div className="d-flex flex-wrap gap-1 mb-2">
+                            {guiasDeDisp.map(g => (
+                              <Badge key={g.id} bg="info" className="d-flex align-items-center gap-1 py-2">
+                                {g.nombreCompleto || `${g.nombre} ${g.apellido}`}
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="p-0 text-white"
+                                  onClick={() => handleQuitarGuia(d.id, g.id)}
+                                  title="Desasignar"
+                                  style={{ lineHeight: 1, textDecoration: 'none' }}
+                                >
+                                  <Icon name="close" size="xs" />
+                                </Button>
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        {guiasDisponiblesParaAsignar.length > 0 ? (
+                          <div className="d-flex gap-2 align-items-center">
+                            <Form.Select
+                              size="sm"
+                              value={guiaToAssign[d.id] || ''}
+                              onChange={e => setGuiaToAssign(prev => ({ ...prev, [d.id]: e.target.value }))}
+                              style={{ maxWidth: 280 }}
+                            >
+                              <option value="">Seleccioná un guía…</option>
+                              {guiasDisponiblesParaAsignar.map(g => (
+                                <option key={g.id} value={g.id}>
+                                  {g.nombreCompleto || `${g.nombre} ${g.apellido}`}
+                                </option>
+                              ))}
+                            </Form.Select>
+                            <Button
+                              variant="success"
+                              size="sm"
+                              onClick={() => handleAsignarGuia(d.id)}
+                              disabled={!guiaToAssign[d.id]}
+                            >
+                              + Asignar
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="small text-muted"><em>No hay guías activos disponibles para asignar.</em></div>
+                        )}
+                      </div>
+                    )}
                   </ListGroup.Item>
-                ))}
+                  );
+                })}
               </ListGroup>
             )}
 

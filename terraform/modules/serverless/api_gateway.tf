@@ -250,6 +250,54 @@ resource "aws_apigatewayv2_route" "guias_get" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "guias_admin_list" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /guias/admin"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "guias_admin_create" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /guias/admin"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "guias_admin_update" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /guias/admin/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "guias_admin_delete" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /guias/admin/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "guias_admin_estado" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /guias/admin/{id}/estado"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_disp_guias_list" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /senderos/admin/disponibilidad/{disponibilidadId}/guias"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_disp_guia_assign" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /senderos/admin/disponibilidad/{disponibilidadId}/guias/{guiaId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "senderos_admin_disp_guia_unassign" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /senderos/admin/disponibilidad/{disponibilidadId}/guias/{guiaId}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Reservas Routes
 resource "aws_apigatewayv2_route" "reservas_create" {
   api_id    = aws_apigatewayv2_api.main.id

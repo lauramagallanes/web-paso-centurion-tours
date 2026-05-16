@@ -5,6 +5,7 @@ import com.tinambu.tours.dto.request.SenderoBloqueoRequest;
 import com.tinambu.tours.dto.request.SenderoDisponibilidadRequest;
 import com.tinambu.tours.dto.request.SenderoRequest;
 import com.tinambu.tours.dto.response.ApiResponse;
+import com.tinambu.tours.dto.response.GuiaResponse;
 import com.tinambu.tours.dto.response.PrecioCalculoResponse;
 import com.tinambu.tours.dto.response.SenderoBloqueoResponse;
 import com.tinambu.tours.dto.response.SenderoDisponibilidadResponse;
@@ -423,6 +424,62 @@ public class SimpleSenderoController {
             logger.error("Error creando bloqueo para sendero {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Error al crear bloqueo"));
+        }
+    }
+
+    // ========== ADMIN: GUÍAS ASIGNADOS A UNA DISPONIBILIDAD ==========
+
+    @GetMapping("/admin/disponibilidad/{disponibilidadId}/guias")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<List<GuiaResponse>>> listarGuiasDeDisponibilidad(
+            @PathVariable UUID disponibilidadId) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(
+                senderoService.listarGuiasDeDisponibilidad(disponibilidadId)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error listando guías de disponibilidad {}: {}", disponibilidadId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al obtener guías de la disponibilidad"));
+        }
+    }
+
+    @PostMapping("/admin/disponibilidad/{disponibilidadId}/guias/{guiaId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<ApiResponse<GuiaResponse>> asignarGuiaADisponibilidad(
+            @PathVariable UUID disponibilidadId,
+            @PathVariable UUID guiaId) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
+                senderoService.asignarGuiaADisponibilidad(disponibilidadId, guiaId),
+                "Guía asignado a la disponibilidad"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error asignando guía {} a disponibilidad {}: {}", guiaId, disponibilidadId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al asignar guía"));
+        }
+    }
+
+    @DeleteMapping("/admin/disponibilidad/{disponibilidadId}/guias/{guiaId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<ApiResponse<Void>> removerGuiaDeDisponibilidad(
+            @PathVariable UUID disponibilidadId,
+            @PathVariable UUID guiaId) {
+        try {
+            senderoService.removerGuiaDeDisponibilidad(disponibilidadId, guiaId);
+            return ResponseEntity.ok(ApiResponse.success("Guía desasignado de la disponibilidad"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error desasignando guía {} de disponibilidad {}: {}", guiaId, disponibilidadId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error al desasignar guía"));
         }
     }
 

@@ -49,8 +49,10 @@ public class CheckoutService {
      */
     public CheckoutOrdenResponse procesarCheckout(CheckoutOrdenRequest request,
                                                    String ipAddress, String userAgent) {
-        log.info("Processing checkout for {} with {} items (tipoPago: {})",
-                request.getEmailContacto(), request.getItems().size(), request.getTipoPago());
+        String metodoPago = request.getMetodoPago() != null ? request.getMetodoPago().toUpperCase() : "CARD";
+        log.info("Processing checkout for {} with {} items (tipoPago: {}, metodoPago: {})",
+                request.getEmailContacto(), request.getItems().size(),
+                request.getTipoPago(), metodoPago);
 
         String tipoPago = request.getTipoPago() != null ? request.getTipoPago().toUpperCase() : "TOTAL";
 
@@ -58,7 +60,19 @@ public class CheckoutService {
         OrdenConReservas result = crearOrdenConReservas(request, tipoPago);
         OrdenCompra orden = result.orden;
 
-        // Step 2: Call PlacetoPay (outside the transaction, failure is non-fatal for DB state)
+        // Step 2 (PREX): skip PlacetoPay; user transfers manually and admin confirms.
+        if ("PREX".equals(metodoPago)) {
+            log.info("Orden {} marked as pending Prex transfer", orden.getCodigoOrden());
+            return CheckoutOrdenResponse.of(
+                    orden.getId(), orden.getCodigoOrden(),
+                    orden.getMontoTotal(), tipoPago,
+                    null, "PENDIENTE_TRANSFERENCIA",
+                    "Orden generada. Realizá la transferencia para confirmar tu reserva.",
+                    result.reservasCreadas
+            );
+        }
+
+        // Step 2 (CARD): call PlacetoPay (outside the transaction, failure is non-fatal for DB state)
         try {
             SesionPagoResponse sesion = placetoPayService.crearSesionPagoOrden(
                     orden.getId(), tipoPago, ipAddress, userAgent);
@@ -70,7 +84,7 @@ public class CheckoutService {
                     orden.getId(), orden.getCodigoOrden(),
                     orden.getMontoTotal(), tipoPago,
                     processUrl, status,
-                    "Sesión de pago creada. Redirigiendo a PlacetoPay.",
+                    "Sesión de pago creada. Redirigiendo al procesador de pagos.",
                     result.reservasCreadas
             );
 

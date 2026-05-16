@@ -21,6 +21,12 @@ public class CheckoutOrdenRequest {
 
     private String tipoPago = "TOTAL";
 
+    /** "CARD" (PlacetoPay/Getnet) o "PREX" (transferencia). Default: CARD. */
+    private String metodoPago = "CARD";
+
+    /** ISO 3166-1 alpha-2 del país del comprador (UY, AR, CL, PE…). Opcional. */
+    private String paisComprador;
+
     @NotEmpty(message = "El carrito debe tener al menos un ítem")
     @Valid
     private List<ItemOrdenRequest> items;
@@ -40,6 +46,12 @@ public class CheckoutOrdenRequest {
 
     public String getTipoPago() { return tipoPago; }
     public void setTipoPago(String tipoPago) { this.tipoPago = tipoPago; }
+
+    public String getMetodoPago() { return metodoPago; }
+    public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
+
+    public String getPaisComprador() { return paisComprador; }
+    public void setPaisComprador(String paisComprador) { this.paisComprador = paisComprador; }
 
     public List<ItemOrdenRequest> getItems() { return items; }
     public void setItems(List<ItemOrdenRequest> items) { this.items = items; }

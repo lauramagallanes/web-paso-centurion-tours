@@ -4,6 +4,8 @@ import { apiService } from '../../services/apiService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart, CartItem } from '../../contexts/CartContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import Icon from '../../components/common/Icon';
+import { PREX_ACCOUNT, PREX_COUNTRIES } from '../../config/prex';
 import './Checkout.css';
 
 interface ContactInfo {
@@ -11,7 +13,26 @@ interface ContactInfo {
   emailContacto: string;
   telefonoContacto: string;
   observaciones: string;
+  pais: string; // ISO 3166-1 alpha-2
 }
+
+const COUNTRIES: Array<{ code: string; name: string }> = [
+  { code: 'UY', name: 'Uruguay' },
+  { code: 'AR', name: 'Argentina' },
+  { code: 'BR', name: 'Brasil' },
+  { code: 'CL', name: 'Chile' },
+  { code: 'PE', name: 'Perú' },
+  { code: 'PY', name: 'Paraguay' },
+  { code: 'BO', name: 'Bolivia' },
+  { code: 'CO', name: 'Colombia' },
+  { code: 'EC', name: 'Ecuador' },
+  { code: 'MX', name: 'México' },
+  { code: 'ES', name: 'España' },
+  { code: 'US', name: 'Estados Unidos' },
+  { code: 'OTHER', name: 'Otro' },
+];
+
+type MetodoPago = 'CARD' | 'PREX';
 
 const formatCurrency = (amount: number, currency = 'UYU') =>
   new Intl.NumberFormat('es-UY', {
@@ -46,11 +67,30 @@ const itemToOrdenItem = (item: CartItem) => {
   }
 };
 
-const CartItemSummary: React.FC<{ item: CartItem; currency: string }> = ({ item, currency }) => (
+interface CartItemSummaryProps {
+  item: CartItem;
+  currency: string;
+  onEdit: (item: CartItem) => void;
+  onRemove: (item: CartItem) => void;
+  disabled?: boolean;
+}
+
+const CartItemSummary: React.FC<CartItemSummaryProps> = ({
+  item,
+  currency,
+  onEdit,
+  onRemove,
+  disabled,
+}) => (
   <div className="summary-item">
     <div className="summary-item-header">
       <div className="summary-item-type-badge">
-        {item.type === 'alojamiento' ? '🏠 Alojamiento' : '🥾 Sendero'}
+        <Icon
+          name={item.type === 'alojamiento' ? 'bed' : 'hiking'}
+          size="sm"
+          className="summary-item-type-icon"
+        />
+        <span>{item.type === 'alojamiento' ? 'Alojamiento' : 'Sendero'}</span>
       </div>
       <span className="summary-item-subtotal">{formatCurrency(item.price, currency)}</span>
     </div>
@@ -59,29 +99,68 @@ const CartItemSummary: React.FC<{ item: CartItem; currency: string }> = ({ item,
       {item.type === 'alojamiento' ? (
         <>
           {item.checkIn && item.checkOut && (
-            <span>📅 {formatDate(item.checkIn)} → {formatDate(item.checkOut)}</span>
+            <span>
+              <Icon name="calendar" size="xs" /> {formatDate(item.checkIn)} → {formatDate(item.checkOut)}
+            </span>
           )}
-          {item.noches != null && <span>🌙 {item.noches} noche{item.noches !== 1 ? 's' : ''}</span>}
-          {item.huespedes != null && <span>👥 {item.huespedes} huésped{item.huespedes !== 1 ? 'es' : ''}</span>}
+          {item.noches != null && (
+            <span>
+              <Icon name="moon" size="xs" /> {item.noches} noche{item.noches !== 1 ? 's' : ''}
+            </span>
+          )}
+          {item.huespedes != null && (
+            <span>
+              <Icon name="user" size="xs" /> {item.huespedes} huésped{item.huespedes !== 1 ? 'es' : ''}
+            </span>
+          )}
         </>
       ) : (
         <>
-          {item.fecha && <span>📅 {formatDate(item.fecha)}</span>}
-          {item.turno && (
+          {item.fecha && (
             <span>
-              🕐 {item.turno === 'MANANA' ? 'Mañana' : item.turno === 'TARDE' ? 'Tarde' : item.turno}
+              <Icon name="calendar" size="xs" /> {formatDate(item.fecha)}
             </span>
           )}
-          {item.personas != null && <span>👥 {item.personas} persona{item.personas !== 1 ? 's' : ''}</span>}
+          {item.turno && (
+            <span>
+              <Icon name="clock" size="xs" />{' '}
+              {item.turno === 'MANANA' ? 'Mañana' : item.turno === 'TARDE' ? 'Tarde' : item.turno}
+            </span>
+          )}
+          {item.personas != null && (
+            <span>
+              <Icon name="user" size="xs" /> {item.personas} persona{item.personas !== 1 ? 's' : ''}
+            </span>
+          )}
         </>
       )}
+    </div>
+    <div className="summary-item-actions">
+      <button
+        type="button"
+        className="summary-item-action summary-item-action-edit"
+        onClick={() => onEdit(item)}
+        disabled={disabled}
+        title="Editar este ítem"
+      >
+        <Icon name="edit" size="xs" /> Editar
+      </button>
+      <button
+        type="button"
+        className="summary-item-action summary-item-action-remove"
+        onClick={() => onRemove(item)}
+        disabled={disabled}
+        title="Quitar este ítem del carrito"
+      >
+        <Icon name="trash" size="xs" /> Quitar
+      </button>
     </div>
   </div>
 );
 
 const Checkout: React.FC = () => {
   const navigate = useNavigate();
-  const { state: cartState, clearCart } = useCart();
+  const { state: cartState, clearCart, removeItem } = useCart();
   const { state: authState } = useAuth();
 
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
@@ -89,17 +168,51 @@ const Checkout: React.FC = () => {
     emailContacto: authState.user?.email || '',
     telefonoContacto: '',
     observaciones: '',
+    pais: 'UY',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<'review' | 'contact' | 'processing'>('review');
+  const [step, setStep] = useState<'review' | 'contact' | 'processing' | 'prex'>('review');
   const [tipoPago, setTipoPago] = useState<'TOTAL' | 'SENA'>('TOTAL');
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>('CARD');
   const [alternativasSendero, setAlternativasSendero] = useState<Array<{ id: string; nombre: string }>>([]);
+  const [removeConfirmItem, setRemoveConfirmItem] = useState<CartItem | null>(null);
+  const [prexResult, setPrexResult] = useState<{
+    codigoOrden: string;
+    monto: number;
+    currency: string;
+  } | null>(null);
 
   const items = cartState.items;
   const totalBruto = items.reduce((sum, i) => sum + i.price, 0);
   const montoAPagar = tipoPago === 'SENA' ? totalBruto * 0.3 : totalBruto;
   const currency = items[0]?.currency || 'UYU';
+
+  const prexAvailable = PREX_COUNTRIES.includes(contactInfo.pais as any);
+  // Si el usuario cambia a un país sin Prex y tenía Prex seleccionado, lo volvemos a CARD.
+  useEffect(() => {
+    if (!prexAvailable && metodoPago === 'PREX') {
+      setMetodoPago('CARD');
+    }
+  }, [prexAvailable, metodoPago]);
+
+  const handleEditItem = (item: CartItem) => {
+    const path = item.type === 'sendero' ? `/actividades/${item.id}` : `/alojamientos/${item.id}`;
+    navigate(path);
+  };
+
+  const handleRequestRemove = (item: CartItem) => {
+    setRemoveConfirmItem(item);
+  };
+
+  const handleConfirmRemove = () => {
+    if (removeConfirmItem) {
+      removeItem(removeConfirmItem.cartItemId);
+      setRemoveConfirmItem(null);
+    }
+  };
+
+  const handleCancelRemove = () => setRemoveConfirmItem(null);
 
   useEffect(() => {
     if (authState.user?.nombreCompleto && !contactInfo.nombreContacto) {
@@ -124,22 +237,63 @@ const Checkout: React.FC = () => {
 
     setLoading(true);
     setError(null);
+    setAlternativasSendero([]);
     setStep('processing');
 
     try {
+      // Pre-validar disponibilidad de cada sendero del carrito (cupos + guía libre)
+      const senderoItems = items.filter(it => it.type === 'sendero' && it.fecha && it.turno);
+      const preChecks = await Promise.all(
+        senderoItems.map(it =>
+          apiService
+            .checkSenderoDisponibilidad(it.id, it.fecha!, it.turno as 'MANANA' | 'TARDE')
+            .then(res => ({ item: it, res }))
+            .catch(() => null),
+        ),
+      );
+      const noDisponible = preChecks.find(c => c && c.res?.data && !c.res.data.disponible);
+      if (noDisponible) {
+        const d = noDisponible.res.data;
+        const motivo = !d.hayGuiaDisponible
+          ? 'no hay guía disponible para esa fecha y turno'
+          : d.cuposRestantes <= 0
+            ? 'no quedan cupos para esa fecha y turno'
+            : 'no está disponible';
+        setError(
+          `${noDisponible.item.name} ${motivo}. Cambiá la fecha o el turno antes de continuar.`,
+        );
+        if (Array.isArray(d.alternativas) && d.alternativas.length > 0) {
+          setAlternativasSendero(d.alternativas);
+        }
+        setStep('contact');
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         emailContacto: contactInfo.emailContacto,
         nombreContacto: contactInfo.nombreContacto,
         telefonoContacto: contactInfo.telefonoContacto || undefined,
         observaciones: contactInfo.observaciones || undefined,
         tipoPago,
+        metodoPago,
+        paisComprador: contactInfo.pais,
         items: items.map(itemToOrdenItem),
       };
 
       const response: any = await apiService.createOrdenCheckout(payload);
       const data = response?.data || response;
 
-      if (data?.processUrl) {
+      if (metodoPago === 'PREX' && data?.status === 'PENDIENTE_TRANSFERENCIA') {
+        // Mostramos pantalla con instrucciones de transferencia y limpiamos carrito.
+        setPrexResult({
+          codigoOrden: data.codigoOrden || '',
+          monto: Number(data.montoTotal) || montoAPagar,
+          currency,
+        });
+        clearCart();
+        setStep('prex');
+      } else if (data?.processUrl) {
         clearCart();
         window.location.href = data.processUrl;
       } else if (data?.status === 'MOCK') {
@@ -164,7 +318,7 @@ const Checkout: React.FC = () => {
     }
   };
 
-  if (items.length === 0) {
+  if (items.length === 0 && step !== 'prex') {
     return (
       <div className="checkout-page">
         <div className="checkout-container">
@@ -177,6 +331,61 @@ const Checkout: React.FC = () => {
             <button className="btn btn-outline-secondary" onClick={() => navigate('/alojamientos')}>
               Ver Alojamientos
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pantalla post-pago Prex: instrucciones de transferencia.
+  if (step === 'prex' && prexResult) {
+    return (
+      <div className="checkout-page">
+        <div className="checkout-container">
+          <div className="prex-result">
+            <div className="prex-result-icon"><Icon name="check-circle" size="xl" color="success" /></div>
+            <h1 className="prex-result-title">¡Generamos tu orden!</h1>
+            <p className="prex-result-subtitle">
+              Para confirmar tu reserva, transferí el monto exacto a la cuenta Prex que figura abajo.
+              Te confirmaremos por email apenas recibamos el pago.
+            </p>
+
+            <div className="prex-summary-card">
+              <div className="prex-summary-row">
+                <span>Código de orden:</span>
+                <strong>{prexResult.codigoOrden || '—'}</strong>
+              </div>
+              <div className="prex-summary-row prex-summary-total">
+                <span>Monto a transferir:</span>
+                <strong>{formatCurrency(prexResult.monto, prexResult.currency)}</strong>
+              </div>
+            </div>
+
+            <div className="prex-account-card">
+              <h3>Datos de la cuenta Prex</h3>
+              <ul>
+                <li><span>Titular:</span><strong>{PREX_ACCOUNT.titular}</strong></li>
+                <li><span>Alias:</span><strong>{PREX_ACCOUNT.alias}</strong></li>
+                <li><span>Número de cuenta:</span><strong>{PREX_ACCOUNT.cuenta}</strong></li>
+                <li><span>Documento:</span><strong>{PREX_ACCOUNT.documento}</strong></li>
+                <li><span>Teléfono:</span><strong>{PREX_ACCOUNT.telefono}</strong></li>
+                <li><span>Email para notificar transferencia:</span><strong>{PREX_ACCOUNT.email}</strong></li>
+              </ul>
+              <p className="prex-account-note">
+                Importante: en el concepto/referencia indicá el <strong>código de orden</strong> para
+                que podamos identificar tu pago rápido. Si necesitás soporte, escribinos al email de
+                contacto y mostrá el comprobante.
+              </p>
+            </div>
+
+            <div className="prex-actions">
+              <button className="btn-primary" onClick={() => navigate('/mis-reservas')}>
+                Ver mis reservas
+              </button>
+              <button className="btn-secondary" onClick={() => navigate('/')}>
+                Volver al inicio
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -213,7 +422,14 @@ const Checkout: React.FC = () => {
 
             <div className="summary-card">
               {items.map(item => (
-                <CartItemSummary key={item.cartItemId} item={item} currency={currency} />
+                <CartItemSummary
+                  key={item.cartItemId}
+                  item={item}
+                  currency={currency}
+                  onEdit={handleEditItem}
+                  onRemove={handleRequestRemove}
+                  disabled={loading || step === 'processing'}
+                />
               ))}
 
               <div className="summary-divider" />
@@ -340,6 +556,20 @@ const Checkout: React.FC = () => {
                 </div>
 
                 <div className="form-group">
+                  <label htmlFor="pais">País *</label>
+                  <select
+                    id="pais"
+                    value={contactInfo.pais}
+                    onChange={e => handleContactChange('pais', e.target.value)}
+                    required
+                  >
+                    {COUNTRIES.map(c => (
+                      <option key={c.code} value={c.code}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
                   <label htmlFor="observaciones">Observaciones</label>
                   <textarea
                     id="observaciones"
@@ -350,16 +580,63 @@ const Checkout: React.FC = () => {
                   />
                 </div>
 
+                <div className="payment-method-section">
+                  <p className="payment-method-title">Método de pago</p>
+
+                  <label
+                    className={`payment-method-option ${metodoPago === 'CARD' ? 'payment-method-selected' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="metodoPago"
+                      value="CARD"
+                      checked={metodoPago === 'CARD'}
+                      onChange={() => setMetodoPago('CARD')}
+                    />
+                    <div className="payment-method-text">
+                      <strong>Tarjeta de crédito o débito</strong>
+                      <small>Pago seguro procesado por Getnet. Aceptamos Visa, Mastercard y más.</small>
+                    </div>
+                  </label>
+
+                  {prexAvailable && (
+                    <label
+                      className={`payment-method-option ${metodoPago === 'PREX' ? 'payment-method-selected' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="metodoPago"
+                        value="PREX"
+                        checked={metodoPago === 'PREX'}
+                        onChange={() => setMetodoPago('PREX')}
+                      />
+                      <div className="payment-method-text">
+                        <strong>Transferencia a cuenta Prex</strong>
+                        <small>
+                          Disponible para Uruguay, Argentina, Chile y Perú. Te mostraremos los datos de
+                          cuenta al confirmar.
+                        </small>
+                      </div>
+                    </label>
+                  )}
+                </div>
+
                 <button
                   className="btn-primary btn-full btn-pay"
                   onClick={handleProceedToPayment}
                   disabled={!isContactValid() || loading}
                 >
-                  {loading ? 'Procesando...' : 'Pagar con PlacetoPay'}
+                  {loading
+                    ? 'Procesando...'
+                    : metodoPago === 'PREX'
+                      ? 'Generar orden y ver datos de transferencia'
+                      : 'Pago seguro con tarjeta de crédito o débito'}
                 </button>
 
                 <p className="checkout-secure">
-                  Serás redirigido a PlacetoPay para completar el pago de forma segura.
+                  {metodoPago === 'PREX'
+                    ? 'Te mostraremos los datos de la cuenta Prex para completar la transferencia. Tu reserva se confirma cuando recibimos el pago.'
+                    : 'Tu pago se procesa de forma segura a través de Getnet (PlacetoPay). No guardamos los datos de tu tarjeta.'}
                 </p>
               </div>
             )}
@@ -374,6 +651,29 @@ const Checkout: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {removeConfirmItem && (
+        <div className="checkout-confirm-overlay" onClick={handleCancelRemove}>
+          <div className="checkout-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="checkout-confirm-icon">
+              <Icon name="alert-triangle" size="xl" color="warning" />
+            </div>
+            <h3 className="checkout-confirm-title">¿Quitar este ítem del carrito?</h3>
+            <p className="checkout-confirm-text">
+              Vas a quitar <strong>{removeConfirmItem.name}</strong> del checkout.
+              Podés volver a agregarlo desde su página si te arrepentís.
+            </p>
+            <div className="checkout-confirm-actions">
+              <button className="btn-secondary" onClick={handleCancelRemove}>
+                Cancelar
+              </button>
+              <button className="btn-danger" onClick={handleConfirmRemove}>
+                Sí, quitar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

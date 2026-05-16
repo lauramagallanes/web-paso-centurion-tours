@@ -27,6 +27,21 @@ interface BookingItem {
 const PREX_HOURS_TO_EXPIRE = 12;
 
 /**
+ * The backend serializes `LocalDateTime` (UTC, since Lambda runs in UTC) without a
+ * timezone suffix. `new Date(string)` would then interpret it as local time and the
+ * countdown would drift by the timezone offset. We force UTC parsing by appending 'Z'
+ * when the string has no zone information.
+ */
+const parseBackendDateTime = (raw: string): number => {
+  if (!raw) return NaN;
+  const hasTimezone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(raw);
+  if (hasTimezone) return new Date(raw).getTime();
+  // Pure date or LocalDateTime → treat as UTC
+  const normalized = raw.includes('T') ? `${raw}Z` : `${raw}T00:00:00Z`;
+  return new Date(normalized).getTime();
+};
+
+/**
  * Small countdown banner shown on Prex pending reservations. Re-renders every minute
  * so the user sees the time remaining shrink in real time. When the deadline passes
  * the banner switches to an "expired" message; the actual cancellation happens
@@ -53,7 +68,7 @@ const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) 
     );
   }
 
-  const created = new Date(fechaCreacion + (fechaCreacion.includes('T') ? '' : 'T00:00:00')).getTime();
+  const created = parseBackendDateTime(fechaCreacion);
   const deadline = created + PREX_HOURS_TO_EXPIRE * 60 * 60 * 1000;
   const remainingMs = deadline - now;
 

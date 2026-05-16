@@ -128,6 +128,10 @@ const ReservationManagement: React.FC = () => {
    * Returns a badge indicating how much time is left for a Prex pending reservation
    * before it auto-cancels (12h after creation). Only shown for PREX + PENDIENTE +
    * unpaid reservations; otherwise returns null.
+   *
+   * Note: the backend serializes `LocalDateTime` without timezone (Lambda runs in UTC),
+   * so we must explicitly parse it as UTC — otherwise the countdown drifts by the local
+   * timezone offset (e.g. UTC-3 in Uruguay would show "15h left" instead of "12h").
    */
   const getPrexExpirationBadge = (reserva: Reserva) => {
     if (reserva.metodoPago !== 'PREX') return null;
@@ -135,7 +139,10 @@ const ReservationManagement: React.FC = () => {
     if (reserva.estadoPago === 'COMPLETO' || reserva.estadoPago === 'PARCIAL') return null;
     if (!reserva.fechaCreacion) return null;
 
-    const created = new Date(reserva.fechaCreacion).getTime();
+    const raw = reserva.fechaCreacion;
+    const hasTz = /[zZ]|[+-]\d{2}:?\d{2}$/.test(raw);
+    const normalized = hasTz ? raw : (raw.includes('T') ? `${raw}Z` : `${raw}T00:00:00Z`);
+    const created = new Date(normalized).getTime();
     const deadline = created + 12 * 60 * 60 * 1000;
     const remainingMs = deadline - Date.now();
     if (remainingMs <= 0) {

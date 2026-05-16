@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/apiService';
+import { PREX_ACCOUNT } from '../../config/prex';
 import { routes } from '../../utils/routes';
 import './MyBookings.css';
 
@@ -98,6 +99,30 @@ const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) 
         Te quedan <b>{remainingLabel}</b> para enviarnos el comprobante. Si no llega en ese plazo,
         liberamos la reserva para que otras personas puedan reservar.
       </span>
+    </div>
+  );
+};
+
+/** Datos de cuenta + instrucciones (misma info que en el checkout post-Prex). */
+const PrexTransferDetails: React.FC<{ codigoReserva: string }> = ({ codigoReserva }) => {
+  const mailto = `mailto:${PREX_ACCOUNT.email}?subject=${encodeURIComponent(PREX_ACCOUNT.asuntoEmail)}&body=${encodeURIComponent(
+    `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nCódigo de reserva: ${codigoReserva}\n\nSaludos.`
+  )}`;
+  return (
+    <div className="mb-prex-transfer-details">
+      <h4 className="mb-prex-transfer-title">Datos para tu transferencia</h4>
+      <ul className="mb-prex-transfer-list">
+        <li><span>Titular</span><strong>{PREX_ACCOUNT.titular}</strong></li>
+        <li><span>Número de cuenta</span><strong>{PREX_ACCOUNT.cuenta}</strong></li>
+      </ul>
+      <p className="mb-prex-transfer-note">
+        Enviá el comprobante a <strong>{PREX_ACCOUNT.email}</strong> con el asunto{' '}
+        <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong> e incluí el código de reserva{' '}
+        <strong className="mb-code-inline">{codigoReserva}</strong> en el cuerpo del mensaje.
+      </p>
+      <a className="mb-prex-mailto" href={mailto}>
+        Abrir email para enviar comprobante
+      </a>
     </div>
   );
 };
@@ -242,6 +267,7 @@ const MyBookings: React.FC = () => {
   });
 
   const canPay = (b: BookingItem) =>
+    b.metodoPago !== 'PREX' &&
     (b.status === 'PENDIENTE' || b.status === 'CONFIRMADA') &&
     b.paymentStatus !== 'COMPLETO' && b.paymentStatus !== 'PAGADO' &&
     (b.paymentStatus === 'PENDIENTE' || b.paymentStatus === 'RESERVA_PAGA' || b.paymentStatus === 'PARCIAL');
@@ -414,7 +440,13 @@ const MyBookings: React.FC = () => {
                   </div>
                   <div className="mb-detail">
                     <span className="mb-detail-label">Pago</span>
-                    <span className="mb-detail-value">{getPaymentLabel(booking.paymentStatus)}</span>
+                    <span className="mb-detail-value">
+                      {booking.metodoPago === 'PREX' &&
+                      booking.status === 'PENDIENTE' &&
+                      (booking.paymentStatus === 'PENDIENTE' || !booking.paymentStatus)
+                        ? 'Transferencia Prex (pendiente)'
+                        : getPaymentLabel(booking.paymentStatus)}
+                    </span>
                   </div>
                   {hasPendingSaldo(booking) && (
                     <div className="mb-detail">
@@ -425,7 +457,10 @@ const MyBookings: React.FC = () => {
                 </div>
 
                 {isPrexPending(booking) && (
-                  <PrexCountdown fechaCreacion={booking.fechaCreacion} />
+                  <>
+                    <PrexCountdown fechaCreacion={booking.fechaCreacion} />
+                    <PrexTransferDetails codigoReserva={booking.code} />
+                  </>
                 )}
 
                 {/* Pay button for unpaid reservations */}

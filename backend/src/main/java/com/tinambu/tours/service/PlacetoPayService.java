@@ -204,6 +204,7 @@ public class PlacetoPayService {
             String processUrl = (String) response.get("processUrl");
 
             reserva.setPlacetoPayRequestId(requestId);
+            reserva.setMetodoPago("PLACETOPAY");
             alojamientoReservaRepository.save(reserva);
 
             log.info("PlacetoPay session created: requestId={}, processUrl={}", requestId, processUrl);

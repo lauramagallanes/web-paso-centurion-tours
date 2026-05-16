@@ -440,6 +440,95 @@
   color: #adb5bd;
 }
 
+/* Prex transfer instructions (same info as post-checkout) */
+.mb-prex-transfer-details {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  background: #f8f6f3;
+  border: 1px solid #e5e0db;
+}
+
+[data-theme="dark"] .mb-prex-transfer-details {
+  background: #222220;
+  border-color: #2a2a27;
+}
+
+.mb-prex-transfer-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #3d3a36;
+}
+
+[data-theme="dark"] .mb-prex-transfer-title {
+  color: #e8e6e3;
+}
+
+.mb-prex-transfer-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  font-size: 0.88rem;
+}
+
+.mb-prex-transfer-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #ede9e4;
+}
+
+[data-theme="dark"] .mb-prex-transfer-list li {
+  border-bottom-color: #2a2a27;
+}
+
+.mb-prex-transfer-list li span {
+  color: #807a75;
+}
+
+.mb-prex-transfer-list li strong {
+  color: #3d3a36;
+  text-align: right;
+}
+
+[data-theme="dark"] .mb-prex-transfer-list li strong {
+  color: #e8e6e3;
+}
+
+.mb-prex-transfer-note {
+  margin: 0 0 0.65rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #5c5854;
+}
+
+[data-theme="dark"] .mb-prex-transfer-note {
+  color: #b8b5b2;
+}
+
+.mb-code-inline {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+}
+
+.mb-prex-mailto {
+  display: inline-block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #6b792e;
+  text-decoration: underline;
+}
+
+.mb-prex-mailto:hover {
+  color: #5a6b2e;
+}
+
+[data-theme="dark"] .mb-prex-mailto {
+  color: #a4b85a;
+}
+
 /* Card Actions */
 .mb-card-actions {
   margin-top: 1rem;

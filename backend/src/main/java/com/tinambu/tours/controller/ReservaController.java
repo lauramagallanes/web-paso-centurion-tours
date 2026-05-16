@@ -1,5 +1,7 @@
 package com.tinambu.tours.controller;
 
+import com.tinambu.tours.dto.request.AdminReservaAlojamientoRequest;
+import com.tinambu.tours.dto.request.AdminReservaSenderoRequest;
 import com.tinambu.tours.dto.request.AlojamientoReservaRequest;
 import com.tinambu.tours.dto.request.ReservaRequest;
 import com.tinambu.tours.dto.response.AlojamientoReservaResponse;
@@ -131,6 +133,51 @@ public class ReservaController {
     }
 
     // ==================== ADMIN ENDPOINTS ====================
+
+    /**
+     * Admin-side manual sendero booking (e.g. walk-in, phone, customer who can't use the website).
+     * Skips the public lead-time restriction. Cupos and guide availability are still validated.
+     */
+    @PostMapping("/admin/sendero")
+    public ResponseEntity<?> crearReservaSenderoAdmin(@Valid @RequestBody AdminReservaSenderoRequest request) {
+        try {
+            log.info("POST /reservas/admin/sendero - Creating manual sendero reservation");
+            ReservaResponse response = reservaService.crearReservaSenderoAdmin(request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success(response, "Reserva de sendero creada exitosamente"));
+        } catch (SinDisponibilidadException e) {
+            log.warn("[ADMIN] No availability for sendero reservation: {}", e.getMessage());
+            Map<String, Object> body = new HashMap<>();
+            body.put("error", e.getMessage());
+            body.put("alternativas", e.getAlternativas());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        } catch (IllegalArgumentException e) {
+            log.warn("[ADMIN] Validation error creating sendero reservation: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("[ADMIN] Error creating sendero reservation", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error interno al crear reserva: " + e.getMessage()));
+        }
+    }
+
+    /** Admin-side manual alojamiento booking. */
+    @PostMapping("/admin/alojamiento")
+    public ResponseEntity<?> crearReservaAlojamientoAdmin(@Valid @RequestBody AdminReservaAlojamientoRequest request) {
+        try {
+            log.info("POST /reservas/admin/alojamiento - Creating manual alojamiento reservation");
+            AlojamientoReservaResponse response = reservaService.crearReservaAlojamientoAdmin(request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success(response, "Reserva de alojamiento creada exitosamente"));
+        } catch (IllegalArgumentException e) {
+            log.warn("[ADMIN] Validation error creating alojamiento reservation: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("[ADMIN] Error creating alojamiento reservation", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error interno al crear reserva: " + e.getMessage()));
+        }
+    }
 
     @PutMapping("/admin/{id}/confirmar-sendero")
     public ResponseEntity<?> confirmarReservaSendero(@PathVariable UUID id) {

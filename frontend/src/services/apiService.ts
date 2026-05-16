@@ -1069,6 +1069,51 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  /**
+   * Admin-side manual sendero booking (e.g. walk-in or phone booking).
+   * Skips the public 2-day lead-time restriction.
+   */
+  async createReservaSenderoAdmin(data: {
+    emailContacto: string;
+    nombreContacto: string;
+    telefonoContacto?: string;
+    numeroPersonas: number;
+    fechaInicio: string;
+    senderoId: string;
+    turno: 'MANANA' | 'TARDE';
+    guiaId?: string | null;
+    observaciones?: string;
+    estadoInicial?: 'PENDIENTE' | 'CONFIRMADA';
+  }) {
+    const response = await fetch(`${this.baseURL}/reservas/admin/sendero`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
+  /** Admin-side manual alojamiento booking. */
+  async createReservaAlojamientoAdmin(data: {
+    emailContacto: string;
+    nombreContacto: string;
+    telefonoContacto?: string;
+    alojamientoId: string;
+    fechaCheckIn: string;
+    fechaCheckOut: string;
+    numeroHuespedes: number;
+    observaciones?: string;
+    observacionesEspeciales?: string;
+    estadoInicial?: 'PENDIENTE' | 'CONFIRMADA';
+  }) {
+    const response = await fetch(`${this.baseURL}/reservas/admin/alojamiento`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(response);
+  }
+
   // Get blocked dates for an accommodation in a date range
   async getFechasBloqueadas(alojamientoId: string, desde: string, hasta: string) {
     const response = await fetch(

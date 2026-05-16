@@ -3,6 +3,7 @@ import { Card, Table, Button, Badge, Modal, Form, Alert, Spinner, Row, Col, Inpu
 import { useReservasAdmin } from '../../hooks/useAdminApi';
 import Icon from '../../components/common/Icon';
 import BackendError from '../../components/common/BackendError';
+import CreateReservationModal from '../../components/admin/CreateReservationModal';
 
 interface Reserva {
   id: string;
@@ -73,6 +74,8 @@ const ReservationManagement: React.FC = () => {
     estadoPago: '',
     busqueda: ''
   });
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     loadReservas();
@@ -280,9 +283,14 @@ const ReservationManagement: React.FC = () => {
           <h2><Icon name="calendar" size="md" className="me-2" />Gestión de Reservas</h2>
           <p className="text-muted mb-0">Administra todas las reservas del sistema</p>
         </div>
-        <Button variant="outline-primary" onClick={loadReservas} disabled={loading}>
-          <Icon name="refresh" size="sm" className="me-2" />Actualizar
-        </Button>
+        <div className="d-flex gap-2">
+          <Button variant="primary" onClick={() => setShowCreateModal(true)} disabled={loading}>
+            <Icon name="plus" size="sm" className="me-2" />Nueva reserva
+          </Button>
+          <Button variant="outline-primary" onClick={loadReservas} disabled={loading}>
+            <Icon name="refresh" size="sm" className="me-2" />Actualizar
+          </Button>
+        </div>
       </div>
 
       {error && <BackendError error={error} className="mb-4" />}
@@ -827,6 +835,12 @@ const ReservationManagement: React.FC = () => {
           )}
         </Modal.Footer>
       </Modal>
+
+      <CreateReservationModal
+        show={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => loadReservas()}
+      />
     </div>
   );
 };

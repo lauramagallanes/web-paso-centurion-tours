@@ -1,5 +1,7 @@
 package com.tinambu.tours.service;
 
+import com.tinambu.tours.dto.request.AdminReservaAlojamientoRequest;
+import com.tinambu.tours.dto.request.AdminReservaSenderoRequest;
 import com.tinambu.tours.dto.request.AlojamientoReservaRequest;
 import com.tinambu.tours.dto.request.ReservaRequest;
 import com.tinambu.tours.dto.response.AlojamientoReservaResponse;
@@ -185,15 +187,26 @@ public class ReservaService {
      */
     private List<SenderoDisponibilidad> validarCuposDisponibles(
             Sendero sendero, LocalDate fecha, TurnoSendero turno, int numeroPersonas) {
+        return validarCuposDisponibles(sendero, fecha, turno, numeroPersonas, false);
+    }
+
+    /**
+     * Same as {@link #validarCuposDisponibles(Sendero, LocalDate, TurnoSendero, int)} but allows
+     * the caller to bypass the minimum lead time restriction. Used by admin-side bookings.
+     */
+    private List<SenderoDisponibilidad> validarCuposDisponibles(
+            Sendero sendero, LocalDate fecha, TurnoSendero turno, int numeroPersonas, boolean skipLeadTime) {
 
         // Reject the booking if the date is within the minimum lead time window.
-        LocalDate fechaMinima = LocalDate.now().plusDays(MIN_LEAD_DAYS_SENDERO);
-        if (fecha.isBefore(fechaMinima)) {
-            throw new SinDisponibilidadException(
-                    String.format(
-                            "Las reservas deben hacerse con al menos %d días de antelación. La fecha más temprana disponible es %s.",
-                            MIN_LEAD_DAYS_SENDERO, fechaMinima),
-                    List.of());
+        if (!skipLeadTime) {
+            LocalDate fechaMinima = LocalDate.now().plusDays(MIN_LEAD_DAYS_SENDERO);
+            if (fecha.isBefore(fechaMinima)) {
+                throw new SinDisponibilidadException(
+                        String.format(
+                                "Las reservas deben hacerse con al menos %d días de antelación. La fecha más temprana disponible es %s.",
+                                MIN_LEAD_DAYS_SENDERO, fechaMinima),
+                        List.of());
+            }
         }
 
         List<SenderoDisponibilidad> ventanas = disponibilidadRepository
@@ -234,6 +247,15 @@ public class ReservaService {
 
     /** Builds, validates, saves the reservation and creates the guide block. */
     private ReservaResponse persistirReserva(ReservaRequest request, Sendero sendero, Guia guia) {
+        return persistirReserva(request, sendero, guia, null);
+    }
+
+    /**
+     * Builds, validates, saves the reservation and creates the guide block.
+     * If {@code estadoInicial} is {@link EstadoReserva#CONFIRMADA}, the reservation is created already
+     * confirmed (used by the admin-side manual booking flow).
+     */
+    private ReservaResponse persistirReserva(ReservaRequest request, Sendero sendero, Guia guia, EstadoReserva estadoInicial) {
         SenderoReserva reserva = new SenderoReserva(
                 request.getEmailContacto(),
                 request.getNombreContacto(),
@@ -253,15 +275,196 @@ public class ReservaService {
         reserva.setSaldoPendiente(precio);
         reserva.setFechaLimitePago(request.getFechaInicio().minusDays(2));
 
+        if (estadoInicial != null) {
+            reserva.setEstado(estadoInicial);
+        }
+
         reserva.validarReserva();
 
         reserva = senderoReservaRepository.save(reserva);
-        log.info("Sendero reservation created: {}", reserva.getCodigoReserva());
+        log.info("Sendero reservation created: {} (estado={})", reserva.getCodigoReserva(), reserva.getEstado());
 
         bloquearGuiaParaReserva(guia.getId(), reserva.getId(),
                 request.getFechaInicio(), request.getTurno(), sendero.getNombre());
 
         return convertirSenderoReservaAResponse(reserva);
+    }
+
+    // ==================== ADMIN-SIDE BOOKINGS ====================
+
+    /**
+     * Creates a sendero reservation manually from the admin panel (e.g. walk-in or phone booking).
+     * Skips the public-flow lead-time restriction; cupos and guide availability are still validated.
+     */
+    public ReservaResponse crearReservaSenderoAdmin(AdminReservaSenderoRequest request) {
+        log.info("[ADMIN] Creating sendero reservation for: {} (estado={})",
+                request.getEmailContacto(), request.getEstadoInicial());
+
+        Sendero sendero = senderoRepository.findById(request.getSenderoId())
+                .orElseThrow(() -> new IllegalArgumentException("Sendero no encontrado: " + request.getSenderoId()));
+
+        if (!sendero.getActivo()) {
+            throw new IllegalArgumentException("El sendero no está disponible");
+        }
+
+        if (!sendero.puedeAcomodarGrupo(request.getNumeroPersonas())) {
+            throw new IllegalArgumentException(
+                    String.format("El sendero %s no puede acomodar %d personas (máximo: %d)",
+                            sendero.getNombre(), request.getNumeroPersonas(), sendero.getCapacidadMaximaGrupo()));
+        }
+
+        // Build a ReservaRequest reusing existing persistence/validation logic.
+        ReservaRequest legacy = ReservaRequest.sendero(
+                request.getEmailContacto(),
+                request.getNombreContacto(),
+                request.getNumeroPersonas(),
+                request.getFechaInicio(),
+                request.getFechaInicio(), // sendero is single-day
+                request.getSenderoId(),
+                request.getGuiaId(),
+                request.getTurno()
+        );
+        legacy.setTelefonoContacto(request.getTelefonoContacto());
+        legacy.setObservaciones(request.getObservaciones());
+
+        Guia guia;
+        if (request.getGuiaId() != null) {
+            // Explicit guide: validate active and not blocked elsewhere; admin can override lead-time
+            // but cannot pick a guide that is already busy in another sendero.
+            guia = guiaRepository.findById(request.getGuiaId())
+                    .orElseThrow(() -> new IllegalArgumentException("Guía no encontrado: " + request.getGuiaId()));
+            if (!guia.getActivo()) {
+                throw new IllegalArgumentException("El guía seleccionado no está activo");
+            }
+            // The block-check is OK to keep: if the guide is already on this sendero it's not "blocked"
+            // for this sendero. If it's blocked it's because it's working another sendero.
+            boolean bloqueado = guiaBloqueoRepository.isGuiaBlocked(
+                    guia.getId(), request.getFechaInicio(), request.getTurno());
+            if (bloqueado) {
+                // Allow re-using the guide if the existing block belongs to this same sendero
+                List<UUID> guiasYaEnEsteSendero = senderoReservaRepository.findGuiaIdsByReservasActivas(
+                        sendero.getId(), request.getFechaInicio(), request.getTurno());
+                if (!guiasYaEnEsteSendero.contains(guia.getId())) {
+                    throw new IllegalArgumentException(
+                            "El guía seleccionado no está disponible para esa fecha y horario");
+                }
+            }
+            validarCuposDisponibles(sendero, request.getFechaInicio(), request.getTurno(),
+                    request.getNumeroPersonas(), true);
+        } else {
+            // Auto-assign: same logic as public path but skipping lead-time.
+            List<SenderoDisponibilidad> ventanas = validarCuposDisponibles(
+                    sendero, request.getFechaInicio(), request.getTurno(),
+                    request.getNumeroPersonas(), true);
+
+            List<UUID> guiasYaEnEsteSendero = senderoReservaRepository.findGuiaIdsByReservasActivas(
+                    sendero.getId(), request.getFechaInicio(), request.getTurno());
+
+            UUID guiaIdElegido;
+            if (!guiasYaEnEsteSendero.isEmpty()) {
+                guiaIdElegido = guiasYaEnEsteSendero.get(0);
+            } else {
+                List<UUID> guiasHabilitados = ventanas.stream()
+                        .flatMap(v -> v.obtenerGuiaIds().stream())
+                        .distinct()
+                        .collect(Collectors.toList());
+
+                if (guiasHabilitados.isEmpty()) {
+                    guiasHabilitados = guiaRepository.findByActivoTrue().stream()
+                            .map(Guia::getId)
+                            .collect(Collectors.toList());
+                }
+
+                List<UUID> guiasOcupadosOtros = guiaBloqueoRepository.findBlockedGuiaIdsExcludingSendero(
+                        request.getFechaInicio(), request.getTurno(), sendero.getId());
+
+                guiaIdElegido = guiasHabilitados.stream()
+                        .filter(gid -> !guiasOcupadosOtros.contains(gid))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "No hay guías disponibles para la fecha y horario seleccionados."));
+            }
+
+            guia = guiaRepository.findById(guiaIdElegido)
+                    .orElseThrow(() -> new IllegalArgumentException("Guía no encontrado internamente"));
+        }
+
+        return persistirReserva(legacy, sendero, guia, request.getEstadoInicial());
+    }
+
+    /**
+     * Creates an alojamiento reservation manually from the admin panel.
+     * Allows same-day check-in and lets the admin decide the initial state.
+     */
+    public AlojamientoReservaResponse crearReservaAlojamientoAdmin(AdminReservaAlojamientoRequest request) {
+        log.info("[ADMIN] Creating alojamiento reservation for: {} (estado={})",
+                request.getEmailContacto(), request.getEstadoInicial());
+
+        String validationErrors = request.getValidationErrors();
+        if (!validationErrors.isEmpty()) {
+            throw new IllegalArgumentException("Errores de validación: " + validationErrors);
+        }
+
+        Alojamiento alojamiento = alojamientoRepository.findByIdAndActivoTrue(request.getAlojamientoId())
+                .orElseThrow(() -> new IllegalArgumentException("Alojamiento no encontrado: " + request.getAlojamientoId()));
+
+        if (!alojamiento.puedeAcomodar(request.getNumeroHuespedes())) {
+            throw new IllegalArgumentException(
+                    String.format("Alojamiento %s no puede acomodar %d huéspedes (capacidad: %d-%d)",
+                            alojamiento.getNombre(), request.getNumeroHuespedes(),
+                            alojamiento.getCapacidadMinima(), alojamiento.getCapacidadMaxima()));
+        }
+
+        boolean disponible = alojamientoService.verificarDisponibilidad(
+                request.getAlojamientoId(), request.getFechaCheckIn(), request.getFechaCheckOut());
+        if (!disponible) {
+            throw new IllegalArgumentException(
+                    "El alojamiento no está disponible para las fechas seleccionadas");
+        }
+
+        boolean existeSolapamiento = alojamientoReservaRepository.existeReservaEnRango(
+                request.getAlojamientoId(), request.getFechaCheckIn(), request.getFechaCheckOut());
+        if (existeSolapamiento) {
+            throw new IllegalArgumentException(
+                    "Ya existe una reserva para el alojamiento en las fechas seleccionadas");
+        }
+
+        int noches = request.calcularNumeroNoches();
+        BigDecimal precio = alojamiento.getPrecioPorNoche()
+                .multiply(BigDecimal.valueOf(noches))
+                .multiply(BigDecimal.valueOf(request.getNumeroHuespedes()));
+
+        EstadoReserva estado = request.getEstadoInicial() != null
+                ? request.getEstadoInicial() : EstadoReserva.PENDIENTE;
+
+        AlojamientoReserva reserva = AlojamientoReserva.builder()
+                .codigoReserva(generarCodigoReserva())
+                .emailContacto(request.getEmailContacto())
+                .nombreContacto(request.getNombreContacto())
+                .telefonoContacto(request.getTelefonoContacto())
+                .observaciones(request.getObservaciones())
+                .alojamientoId(request.getAlojamientoId())
+                .fechaCheckIn(request.getFechaCheckIn())
+                .fechaCheckOut(request.getFechaCheckOut())
+                .numeroHuespedes(request.getNumeroHuespedes())
+                .observacionesEspeciales(request.getObservacionesEspeciales())
+                .precioTotal(precio)
+                .saldoPendiente(precio)
+                .montoPagado(BigDecimal.ZERO)
+                .estadoPago(EstadoPago.PENDIENTE)
+                .estado(estado)
+                .fechaCreacion(LocalDateTime.now())
+                .build();
+
+        reserva = alojamientoReservaRepository.save(reserva);
+        log.info("[ADMIN] Alojamiento reservation created: {} (estado={})",
+                reserva.getCodigoReserva(), reserva.getEstado());
+
+        alojamientoService.bloquearAlojamientoParaReserva(
+                request.getAlojamientoId(), reserva.getId(),
+                request.getFechaCheckIn(), request.getFechaCheckOut());
+
+        return convertirAlojamientoReservaAResponse(reserva, alojamiento);
     }
 
     // ==================== AVAILABILITY CHECK ====================

@@ -565,6 +565,19 @@ resource "aws_apigatewayv2_route" "reservas_create_alojamiento" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+# Admin-side manual booking endpoints (walk-in / phone reservations).
+resource "aws_apigatewayv2_route" "reservas_admin_create_sendero" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /reservas/admin/sendero"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "reservas_admin_create_alojamiento" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /reservas/admin/alojamiento"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_apigatewayv2_route" "reservas_sendero_by_code" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "GET /reservas/sendero/codigo/{codigo}"

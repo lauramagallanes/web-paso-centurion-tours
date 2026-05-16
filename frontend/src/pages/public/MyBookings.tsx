@@ -25,6 +25,10 @@ interface BookingItem {
   fechaCreacion?: string;
 }
 
+/** Normaliza estado de pago del API (enum .name() suele ser MAYÚSCULAS). */
+const normalizeEstadoPago = (raw: string | undefined): string =>
+  (raw == null || raw === '' ? 'PENDIENTE' : String(raw)).toUpperCase();
+
 const PREX_HOURS_TO_EXPIRE = 12;
 
 /**
@@ -192,7 +196,7 @@ const MyBookings: React.FC = () => {
               name: r.nombreSendero || r.senderoNombre || 'Sendero',
               code: r.codigoReserva || r.codigo || '-',
               status: r.estado || 'PENDIENTE',
-              paymentStatus: r.estadoPago || 'PENDIENTE',
+              paymentStatus: normalizeEstadoPago(r.estadoPago),
               date: r.fechaInicio || r.fechaReserva || r.fecha || '',
               turno: r.turno || undefined,
               persons: r.numeroPersonas ?? r.cantidadPersonas ?? r.personas ?? 1,
@@ -216,7 +220,7 @@ const MyBookings: React.FC = () => {
               name: r.alojamientoNombre || r.nombreAlojamiento || 'Alojamiento',
               code: r.codigoReserva || r.codigo || '-',
               status: r.estado || 'PENDIENTE',
-              paymentStatus: r.estadoPago || 'PENDIENTE',
+              paymentStatus: normalizeEstadoPago(r.estadoPago),
               date: r.fechaCheckIn || r.fechaInicio || '',
               endDate: r.fechaCheckOut || r.fechaFin || '',
               persons: r.numeroHuespedes ?? r.cantidadPersonas ?? 1,
@@ -295,14 +299,30 @@ const MyBookings: React.FC = () => {
     return b.status === filterStatus;
   });
 
-  const canPay = (b: BookingItem) =>
-    b.metodoPago !== 'PREX' &&
-    (b.status === 'PENDIENTE' || b.status === 'CONFIRMADA') &&
-    b.paymentStatus !== 'COMPLETO' && b.paymentStatus !== 'PAGADO' &&
-    (b.paymentStatus === 'PENDIENTE' || b.paymentStatus === 'RESERVA_PAGA' || b.paymentStatus === 'PARCIAL');
+  /**
+   * Ocultar solo la reserva Prex todavía sin ningún pago (transferencia inicial pendiente).
+   * Si ya hay seña o pago parcial aunque metodoPago siga PREX, debe poder pagar saldo / resto.
+   */
+  const canPay = (b: BookingItem) => {
+    if (isPrexPending(b)) return false;
+    return (
+      (b.status === 'PENDIENTE' || b.status === 'CONFIRMADA') &&
+      b.paymentStatus !== 'COMPLETO' &&
+      b.paymentStatus !== 'PAGADO' &&
+      (b.paymentStatus === 'PENDIENTE' ||
+        b.paymentStatus === 'RESERVA_PAGA' ||
+        b.paymentStatus === 'PARCIAL')
+    );
+  };
 
   const hasPendingSaldo = (b: BookingItem) =>
-    b.paymentStatus === 'PARCIAL' || b.paymentStatus === 'RESERVA_PAGA';
+    b.paymentStatus === 'PARCIAL' ||
+    b.paymentStatus === 'RESERVA_PAGA' ||
+    (getSaldo(b) > 0 &&
+      b.status === 'CONFIRMADA' &&
+      b.paymentStatus !== 'COMPLETO' &&
+      b.paymentStatus !== 'PAGADO' &&
+      b.paid > 0);
 
   const getSaldo = (b: BookingItem) => {
     if (b.pending > 0) return b.pending;

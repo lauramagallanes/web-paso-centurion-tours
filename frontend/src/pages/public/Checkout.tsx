@@ -344,19 +344,19 @@ const Checkout: React.FC = () => {
         <div className="checkout-container">
           <div className="prex-result">
             <div className="prex-result-icon"><Icon name="check-circle" size="xl" color="success" /></div>
-            <h1 className="prex-result-title">¡Generamos tu orden!</h1>
+            <h1 className="prex-result-title">¡Tu orden está generada!</h1>
             <p className="prex-result-subtitle">
-              Para confirmar tu reserva, transferí el monto exacto a la cuenta Prex que figura abajo.
-              Te confirmaremos por email apenas recibamos el pago.
+              Para confirmar tu reserva, podés hacer la transferencia a la cuenta Prex que figura
+              debajo. Apenas nos llegue el comprobante te confirmamos por email. ¡Gracias por elegirnos!
             </p>
 
             <div className="prex-deadline-alert">
               <Icon name="clock" size="sm" />
               <div>
-                <strong>Tenés 12 horas para realizar la transferencia.</strong>
+                <strong>Tenés 12 horas para enviarnos el comprobante.</strong>
                 <span>
-                  Si no recibimos el comprobante dentro de ese plazo, tu reserva se cancelará
-                  automáticamente y los cupos quedarán libres.
+                  Si en ese plazo no nos llega, liberamos la reserva y los cupos vuelven a quedar
+                  disponibles para otras personas. ¡Sin problema, podés volver a reservar cuando quieras!
                 </span>
               </div>
             </div>
@@ -376,16 +376,13 @@ const Checkout: React.FC = () => {
               <h3>Datos de la cuenta Prex</h3>
               <ul>
                 <li><span>Titular:</span><strong>{PREX_ACCOUNT.titular}</strong></li>
-                <li><span>Alias:</span><strong>{PREX_ACCOUNT.alias}</strong></li>
                 <li><span>Número de cuenta:</span><strong>{PREX_ACCOUNT.cuenta}</strong></li>
-                <li><span>Documento:</span><strong>{PREX_ACCOUNT.documento}</strong></li>
-                <li><span>Teléfono:</span><strong>{PREX_ACCOUNT.telefono}</strong></li>
-                <li><span>Email para notificar transferencia:</span><strong>{PREX_ACCOUNT.email}</strong></li>
               </ul>
               <p className="prex-account-note">
-                Importante: en el concepto/referencia indicá el <strong>código de orden</strong> para
-                que podamos identificar tu pago rápido. Si necesitás soporte, escribinos al email de
-                contacto y mostrá el comprobante.
+                Una vez hecha la transferencia, mandanos el comprobante a{' '}
+                <strong>{PREX_ACCOUNT.email}</strong> con el asunto{' '}
+                <strong>“{PREX_ACCOUNT.asuntoEmail}”</strong>. Recordá incluir el{' '}
+                <strong>código de orden</strong> para que podamos identificar tu pago.
               </p>
             </div>
 

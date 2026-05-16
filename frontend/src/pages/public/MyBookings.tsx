@@ -44,8 +44,11 @@ const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) 
   if (!fechaCreacion) {
     return (
       <div className="mb-prex-banner">
-        <strong>Pago por transferencia Prex:</strong>
-        <span>Tenés 12 horas desde la reserva para enviar el comprobante; pasado ese plazo se cancela automáticamente.</span>
+        <strong>Pago por transferencia Prex</strong>
+        <span>
+          Tenés 12 horas desde el momento de la reserva para enviarnos el comprobante.
+          Si no llega a tiempo, liberamos la reserva automáticamente — ¡pero podés volver a reservar cuando quieras!
+        </span>
       </div>
     );
   }
@@ -57,8 +60,11 @@ const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) 
   if (remainingMs <= 0) {
     return (
       <div className="mb-prex-banner mb-prex-banner-expired">
-        <strong>El plazo de transferencia venció.</strong>
-        <span>Esta reserva está siendo cancelada automáticamente. Los cupos ya quedaron libres.</span>
+        <strong>Esta reserva ya se liberó</strong>
+        <span>
+          No alcanzamos a recibir el comprobante a tiempo, así que liberamos los cupos para otras personas.
+          ¡Si querés, podés volver a reservar en cualquier momento!
+        </span>
       </div>
     );
   }
@@ -72,10 +78,10 @@ const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) 
 
   return (
     <div className={`mb-prex-banner ${remainingMs < 60 * 60 * 1000 ? 'mb-prex-banner-warn' : ''}`}>
-      <strong>Pago pendiente por transferencia Prex.</strong>
+      <strong>Esperamos tu transferencia Prex</strong>
       <span>
-        Te quedan <b>{remainingLabel}</b> para enviar el comprobante. Si no, la reserva se cancela
-        automáticamente y los cupos quedan libres.
+        Te quedan <b>{remainingLabel}</b> para enviarnos el comprobante. Si no llega en ese plazo,
+        liberamos la reserva para que otras personas puedan reservar.
       </span>
     </div>
   );

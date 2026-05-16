@@ -96,40 +96,53 @@ public class ReservaService {
         List<SenderoDisponibilidad> ventanas = validarCuposDisponibles(
                 sendero, request.getFechaInicio(), request.getTurno(), request.getNumeroPersonas());
 
-        // 4. Collect guides assigned to the matching windows (intersection with active guides)
-        List<UUID> guiasHabilitados = ventanas.stream()
-                .flatMap(v -> v.obtenerGuiaIds().stream())
-                .distinct()
-                .collect(Collectors.toList());
+        // 4. ¿Ya hay una reserva activa para este sendero/fecha/turno?
+        //    Si la hay, reutilizamos ese guía: el grupo nuevo se suma al tour
+        //    existente, no se requiere un guía "libre" adicional.
+        List<UUID> guiasYaEnEsteSendero = senderoReservaRepository.findGuiaIdsByReservasActivas(
+                sendero.getId(), request.getFechaInicio(), request.getTurno());
 
-        // Fallback: if no guides assigned to windows, use all active guides
-        if (guiasHabilitados.isEmpty()) {
-            log.warn("No guides assigned to availability windows for sendero {}. Falling back to all active guides.", sendero.getNombre());
-            guiasHabilitados = guiaRepository.findByActivoTrue().stream()
-                    .map(Guia::getId)
+        UUID guiaIdElegido;
+        if (!guiasYaEnEsteSendero.isEmpty()) {
+            guiaIdElegido = guiasYaEnEsteSendero.get(0);
+            log.info("Reusing guide already assigned to sendero {} on {} {} (internal id {})",
+                    sendero.getNombre(), request.getFechaInicio(), request.getTurno(), guiaIdElegido);
+        } else {
+            // 5a. Guías habilitados para este sendero (ventanas activas o fallback a todos activos)
+            List<UUID> guiasHabilitados = ventanas.stream()
+                    .flatMap(v -> v.obtenerGuiaIds().stream())
+                    .distinct()
                     .collect(Collectors.toList());
+
+            if (guiasHabilitados.isEmpty()) {
+                log.warn("No guides assigned to availability windows for sendero {}. Falling back to all active guides.", sendero.getNombre());
+                guiasHabilitados = guiaRepository.findByActivoTrue().stream()
+                        .map(Guia::getId)
+                        .collect(Collectors.toList());
+            }
+
+            // 5b. Excluir guías ocupados en OTROS senderos (no en este) en (fecha, turno)
+            List<UUID> guiasOcupadosOtros = guiaBloqueoRepository.findBlockedGuiaIdsExcludingSendero(
+                    request.getFechaInicio(), request.getTurno(), sendero.getId());
+
+            guiaIdElegido = guiasHabilitados.stream()
+                    .filter(gid -> !guiasOcupadosOtros.contains(gid))
+                    .findFirst()
+                    .orElse(null);
+
+            if (guiaIdElegido == null) {
+                List<SinDisponibilidadException.AlternativaSendero> alts =
+                        buscarAlternativas(sendero.getId(), request.getFechaInicio(), request.getTurno());
+                throw new SinDisponibilidadException(
+                        "No hay guías disponibles para la fecha y horario seleccionados.", alts);
+            }
+
+            log.info("Auto-assigned guide (internal id {}) for sendero {} on {} {}",
+                    guiaIdElegido, sendero.getNombre(), request.getFechaInicio(), request.getTurno());
         }
 
-        // 5. Exclude guides already blocked on this date/shift (cross-sendero constraint)
-        List<UUID> guiasBloqueados = guiaBloqueoRepository.findBlockedGuiaIds(
-                request.getFechaInicio(), request.getTurno());
-
-        Optional<UUID> guiaIdOpt = guiasHabilitados.stream()
-                .filter(gid -> !guiasBloqueados.contains(gid))
-                .findFirst();
-
-        if (guiaIdOpt.isEmpty()) {
-            List<SinDisponibilidadException.AlternativaSendero> alts =
-                    buscarAlternativas(sendero.getId(), request.getFechaInicio(), request.getTurno());
-            throw new SinDisponibilidadException(
-                    "No hay guías disponibles para la fecha y horario seleccionados.", alts);
-        }
-
-        Guia guia = guiaRepository.findById(guiaIdOpt.get())
+        Guia guia = guiaRepository.findById(guiaIdElegido)
                 .orElseThrow(() -> new IllegalArgumentException("Guía no encontrado internamente"));
-
-        log.info("Auto-assigned guide (internal id {}) for sendero {} on {} {}", 
-                guia.getId(), sendero.getNombre(), request.getFechaInicio(), request.getTurno());
 
         return persistirReserva(request, sendero, guia);
     }
@@ -325,19 +338,32 @@ public class ReservaService {
         int cuposOcupados = senderoReservaRepository.sumPersonasReservadas(senderoId, fecha, turno);
         int cuposRestantes = Math.max(0, cuposTotal - cuposOcupados);
 
-        // Guide availability
-        List<UUID> guiasHabilitados = ventanas.stream()
-                .flatMap(v -> v.obtenerGuiaIds().stream())
-                .distinct()
-                .collect(Collectors.toList());
+        // Guide availability:
+        // - Si ya hay una reserva activa para este mismo sendero/fecha/turno,
+        //   el guía está ahí y puede recibir más personas mientras haya cupos.
+        // - Si no, miramos guías habilitados del sendero y excluimos los que
+        //   están ocupados en OTROS senderos (no en este) ese día/turno.
+        boolean yaAtendiendoEsteSendero = !senderoReservaRepository
+                .findGuiaIdsByReservasActivas(senderoId, fecha, turno).isEmpty();
 
-        if (guiasHabilitados.isEmpty()) {
-            guiasHabilitados = guiaRepository.findByActivoTrue().stream()
-                    .map(Guia::getId).collect(Collectors.toList());
+        boolean hayGuia;
+        if (yaAtendiendoEsteSendero) {
+            hayGuia = true;
+        } else {
+            List<UUID> guiasHabilitados = ventanas.stream()
+                    .flatMap(v -> v.obtenerGuiaIds().stream())
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            if (guiasHabilitados.isEmpty()) {
+                guiasHabilitados = guiaRepository.findByActivoTrue().stream()
+                        .map(Guia::getId).collect(Collectors.toList());
+            }
+
+            List<UUID> guiasOcupadosOtros = guiaBloqueoRepository
+                    .findBlockedGuiaIdsExcludingSendero(fecha, turno, senderoId);
+            hayGuia = guiasHabilitados.stream().anyMatch(gid -> !guiasOcupadosOtros.contains(gid));
         }
-
-        List<UUID> guiasBloqueados = guiaBloqueoRepository.findBlockedGuiaIds(fecha, turno);
-        boolean hayGuia = guiasHabilitados.stream().anyMatch(gid -> !guiasBloqueados.contains(gid));
 
         resp.setCuposTotal(cuposTotal);
         resp.setCuposOcupados(cuposOcupados);
@@ -373,8 +399,6 @@ public class ReservaService {
     private List<SinDisponibilidadException.AlternativaSendero> buscarAlternativas(
             UUID excluirSenderoId, LocalDate fecha, TurnoSendero turno) {
 
-        List<UUID> guiasBloqueados = guiaBloqueoRepository.findBlockedGuiaIds(fecha, turno);
-
         List<UUID> otrosSenderoIds = disponibilidadRepository
                 .findOtrosSenderoIdsConVentana(excluirSenderoId, fecha, turno);
 
@@ -387,16 +411,26 @@ public class ReservaService {
                             .collect(Collectors.toList());
                     if (ventanas.isEmpty()) return false;
 
-                    // Check guide availability
-                    List<UUID> guiasH = ventanas.stream()
-                            .flatMap(v -> v.obtenerGuiaIds().stream())
-                            .distinct().collect(Collectors.toList());
-                    if (guiasH.isEmpty()) {
-                        guiasH = guiaRepository.findByActivoTrue().stream()
-                                .map(Guia::getId).collect(Collectors.toList());
+                    // Check guide availability: si ya hay reserva del MISMO sendero
+                    // alternativo en (fecha, turno) → el guía está ahí; si no, hay
+                    // que tener al menos un guía habilitado no ocupado en otro sendero.
+                    boolean yaAtendiendo = !senderoReservaRepository
+                            .findGuiaIdsByReservasActivas(sid, fecha, turno).isEmpty();
+                    boolean hayGuia;
+                    if (yaAtendiendo) {
+                        hayGuia = true;
+                    } else {
+                        List<UUID> guiasH = ventanas.stream()
+                                .flatMap(v -> v.obtenerGuiaIds().stream())
+                                .distinct().collect(Collectors.toList());
+                        if (guiasH.isEmpty()) {
+                            guiasH = guiaRepository.findByActivoTrue().stream()
+                                    .map(Guia::getId).collect(Collectors.toList());
+                        }
+                        List<UUID> guiasOcupadosOtros = guiaBloqueoRepository
+                                .findBlockedGuiaIdsExcludingSendero(fecha, turno, sid);
+                        hayGuia = guiasH.stream().anyMatch(gid -> !guiasOcupadosOtros.contains(gid));
                     }
-                    List<UUID> guiasHFinal = guiasH;
-                    boolean hayGuia = guiasHFinal.stream().anyMatch(gid -> !guiasBloqueados.contains(gid));
                     if (!hayGuia) return false;
 
                     // Check cupos: single source of truth = sendero.capacidadMaximaGrupo

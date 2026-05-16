@@ -58,4 +58,20 @@ public interface SenderoReservaRepository extends JpaRepository<SenderoReserva, 
             @Param("senderoId") UUID senderoId,
             @Param("fecha")     LocalDate fecha,
             @Param("turno")     TurnoSendero turno);
+
+    /**
+     * Devuelve los IDs de guías que ya están asignados a una reserva activa
+     * para el mismo sendero/fecha/turno. Útil para reusar ese guía al sumar
+     * un grupo nuevo al mismo tour, en vez de buscar uno libre.
+     */
+    @Query("SELECT DISTINCT sr.guia.id FROM SenderoReserva sr " +
+           "WHERE sr.sendero.id = :senderoId " +
+           "AND sr.fechaInicio = :fecha " +
+           "AND sr.turno = :turno " +
+           "AND sr.estado IN ('CONFIRMADA', 'PENDIENTE') " +
+           "AND sr.guia IS NOT NULL")
+    List<UUID> findGuiaIdsByReservasActivas(
+            @Param("senderoId") UUID senderoId,
+            @Param("fecha")     LocalDate fecha,
+            @Param("turno")     TurnoSendero turno);
 }

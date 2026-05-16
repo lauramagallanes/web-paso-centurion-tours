@@ -34,6 +34,22 @@ public interface GuiaReservaBloqueoRepository extends JpaRepository<GuiaReservaB
     List<UUID> findBlockedGuiaIds(@Param("fecha") LocalDate fecha, 
                                  @Param("turno") TurnoSendero turno);
 
+    /**
+     * Devuelve los IDs de guías bloqueados en (fecha, turno) excluyendo los
+     * bloqueos generados por reservas del sendero indicado. Permite saber
+     * qué guías están realmente ocupados en OTROS senderos para ese turno,
+     * sin contar como ocupado al guía que ya está atendiendo este sendero.
+     */
+    @Query("SELECT DISTINCT grb.guiaId FROM GuiaReservaBloqueo grb " +
+           "WHERE grb.fecha = :fecha AND grb.turno = :turno AND grb.activo = true " +
+           "AND NOT EXISTS (" +
+           "  SELECT 1 FROM SenderoReserva sr " +
+           "  WHERE sr.id = grb.reservaId AND sr.sendero.id = :senderoId" +
+           ")")
+    List<UUID> findBlockedGuiaIdsExcludingSendero(@Param("fecha") LocalDate fecha,
+                                                 @Param("turno") TurnoSendero turno,
+                                                 @Param("senderoId") UUID senderoId);
+
     // Find all blocks for a reservation (for cleanup on cancellation)
     List<GuiaReservaBloqueo> findByReservaIdAndActivoTrue(UUID reservaId);
 

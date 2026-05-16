@@ -11,9 +11,13 @@ import com.tinambu.tours.dto.response.ReservaResponse;
 import com.tinambu.tours.dto.response.SesionPagoResponse;
 import com.tinambu.tours.entity.orden.OrdenCompra;
 import com.tinambu.tours.entity.orden.OrdenCompraItem;
+import com.tinambu.tours.entity.reserva.AlojamientoReserva;
+import com.tinambu.tours.entity.reserva.SenderoReserva;
 import com.tinambu.tours.entity.reserva.TipoReserva;
 import com.tinambu.tours.entity.sendero.TurnoSendero;
+import com.tinambu.tours.repository.AlojamientoReservaRepository;
 import com.tinambu.tours.repository.OrdenCompraRepository;
+import com.tinambu.tours.repository.SenderoReservaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +44,12 @@ public class CheckoutService {
     @Autowired
     private OrdenCompraRepository ordenCompraRepository;
 
+    @Autowired
+    private SenderoReservaRepository senderoReservaRepository;
+
+    @Autowired
+    private AlojamientoReservaRepository alojamientoReservaRepository;
+
     /**
      * Full checkout flow:
      * 1. Create all reservations transactionally.
@@ -61,16 +71,23 @@ public class CheckoutService {
         OrdenCompra orden = result.orden;
 
         // Step 2 (PREX): skip PlacetoPay; user transfers manually and admin confirms.
+        // Tag every reservation with metodoPago=PREX so the auto-cancel job can find them
+        // 12h after creation if the admin hasn't registered the payment.
         if ("PREX".equals(metodoPago)) {
-            log.info("Orden {} marked as pending Prex transfer", orden.getCodigoOrden());
+            marcarReservasComoPrex(result.reservasCreadas, tipoPago);
+            log.info("Orden {} marked as pending Prex transfer ({} reservas tagged)",
+                    orden.getCodigoOrden(), result.reservasCreadas.size());
             return CheckoutOrdenResponse.of(
                     orden.getId(), orden.getCodigoOrden(),
                     orden.getMontoTotal(), tipoPago,
                     null, "PENDIENTE_TRANSFERENCIA",
-                    "Orden generada. Realizá la transferencia para confirmar tu reserva.",
+                    "Orden generada. Realizá la transferencia para confirmar tu reserva. Tenés 12 horas para enviar el comprobante; pasado ese plazo, la reserva se cancelará automáticamente.",
                     result.reservasCreadas
             );
         }
+
+        // Tag CARD reservations too so admins can audit how the customer chose to pay
+        marcarReservasComoMetodoPago(result.reservasCreadas, "CARD", tipoPago);
 
         // Step 2 (CARD): call PlacetoPay (outside the transaction, failure is non-fatal for DB state)
         try {
@@ -222,6 +239,40 @@ public class CheckoutService {
         return String.format("Alojamiento %s - Check-in: %s / Check-out: %s (%d huéspedes)",
                 item.getProductoId(), item.getFechaCheckIn(), item.getFechaCheckOut(),
                 item.getNumeroHuespedes() != null ? item.getNumeroHuespedes() : 1);
+    }
+
+    /**
+     * Marks the just-created reservations as PREX. Required so the auto-cancel job can
+     * locate them after the 12h transfer window. Failures are logged but never block the
+     * checkout response (the order is already created).
+     */
+    private void marcarReservasComoPrex(List<ReservaCreada> reservas, String tipoPago) {
+        marcarReservasComoMetodoPago(reservas, "PREX", tipoPago);
+    }
+
+    private void marcarReservasComoMetodoPago(List<ReservaCreada> reservas, String metodoPago, String tipoPago) {
+        for (ReservaCreada rc : reservas) {
+            try {
+                if ("SENDERO".equalsIgnoreCase(rc.getTipoReserva())) {
+                    senderoReservaRepository.findById(rc.getReservaId()).ifPresent(r -> {
+                        SenderoReserva sr = (SenderoReserva) r;
+                        sr.setMetodoPago(metodoPago);
+                        sr.setTipoPago(tipoPago);
+                        senderoReservaRepository.save(sr);
+                    });
+                } else if ("ALOJAMIENTO".equalsIgnoreCase(rc.getTipoReserva())) {
+                    alojamientoReservaRepository.findById(rc.getReservaId()).ifPresent(r -> {
+                        AlojamientoReserva ar = (AlojamientoReserva) r;
+                        ar.setMetodoPago(metodoPago);
+                        ar.setTipoPago(tipoPago);
+                        alojamientoReservaRepository.save(ar);
+                    });
+                }
+            } catch (Exception e) {
+                log.warn("Could not tag reservation {} with metodoPago={}: {}",
+                        rc.getReservaId(), metodoPago, e.getMessage());
+            }
+        }
     }
 
     // Internal holder for transaction result

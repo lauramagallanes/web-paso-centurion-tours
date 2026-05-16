@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -71,4 +72,16 @@ public interface AlojamientoReservaRepository extends JpaRepository<AlojamientoR
     @Query("SELECT ar.alojamientoId, COUNT(ar) as total FROM AlojamientoReserva ar " +
            "WHERE ar.estado = 'CONFIRMADA' GROUP BY ar.alojamientoId ORDER BY total DESC")
     List<Object[]> findAlojamientosMasReservados();
+
+    /**
+     * Alojamiento reservations created via Prex transfer that are still PENDING and unpaid,
+     * created BEFORE the given threshold. Used by the auto-cancel flow to release blocked
+     * dates after the 12-hour transfer window expires.
+     */
+    @Query("SELECT ar FROM AlojamientoReserva ar " +
+           "WHERE ar.metodoPago = 'PREX' " +
+           "AND ar.estado = com.tinambu.tours.entity.reserva.EstadoReserva.PENDIENTE " +
+           "AND (ar.estadoPago = com.tinambu.tours.entity.reserva.EstadoPago.PENDIENTE OR ar.estadoPago IS NULL) " +
+           "AND ar.fechaCreacion < :threshold")
+    List<AlojamientoReserva> findExpiredPrexPending(@Param("threshold") LocalDateTime threshold);
 }

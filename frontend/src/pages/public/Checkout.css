@@ -742,6 +742,40 @@
   line-height: 1.5;
 }
 
+.prex-deadline-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  color: #ffd166;
+}
+
+.prex-deadline-alert > svg,
+.prex-deadline-alert > span:first-child {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.prex-deadline-alert > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.prex-deadline-alert strong {
+  color: var(--color-text-primary);
+}
+
+.prex-deadline-alert span {
+  color: var(--color-text-secondary);
+}
+
 .prex-summary-card {
   background: var(--color-surface-variant);
   border-radius: 8px;

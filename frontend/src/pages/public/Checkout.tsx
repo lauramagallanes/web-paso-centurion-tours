@@ -350,6 +350,17 @@ const Checkout: React.FC = () => {
               Te confirmaremos por email apenas recibamos el pago.
             </p>
 
+            <div className="prex-deadline-alert">
+              <Icon name="clock" size="sm" />
+              <div>
+                <strong>Tenés 12 horas para realizar la transferencia.</strong>
+                <span>
+                  Si no recibimos el comprobante dentro de ese plazo, tu reserva se cancelará
+                  automáticamente y los cupos quedarán libres.
+                </span>
+              </div>
+            </div>
+
             <div className="prex-summary-card">
               <div className="prex-summary-row">
                 <span>Código de orden:</span>

@@ -124,6 +124,35 @@ const ReservationManagement: React.FC = () => {
     }
   };
 
+  /**
+   * Returns a badge indicating how much time is left for a Prex pending reservation
+   * before it auto-cancels (12h after creation). Only shown for PREX + PENDIENTE +
+   * unpaid reservations; otherwise returns null.
+   */
+  const getPrexExpirationBadge = (reserva: Reserva) => {
+    if (reserva.metodoPago !== 'PREX') return null;
+    if (reserva.estado !== 'PENDIENTE') return null;
+    if (reserva.estadoPago === 'COMPLETO' || reserva.estadoPago === 'PARCIAL') return null;
+    if (!reserva.fechaCreacion) return null;
+
+    const created = new Date(reserva.fechaCreacion).getTime();
+    const deadline = created + 12 * 60 * 60 * 1000;
+    const remainingMs = deadline - Date.now();
+    if (remainingMs <= 0) {
+      return <Badge bg="danger" className="d-flex align-items-center gap-1 mt-1"><Icon name="clock" size="xs" />Prex vencida</Badge>;
+    }
+    const totalMin = Math.floor(remainingMs / 60000);
+    const hours = Math.floor(totalMin / 60);
+    const minutes = totalMin % 60;
+    const label = hours > 0 ? `${hours}h ${minutes.toString().padStart(2, '0')}m` : `${minutes}m`;
+    const variant = remainingMs < 60 * 60 * 1000 ? 'danger' : 'warning';
+    return (
+      <Badge bg={variant} className="d-flex align-items-center gap-1 mt-1">
+        <Icon name="clock" size="xs" />Prex: {label}
+      </Badge>
+    );
+  };
+
   const getTurnoText = (turno?: string) => {
     switch (turno) {
       case 'MANANA': return 'Mañana';
@@ -414,6 +443,7 @@ const ReservationManagement: React.FC = () => {
                       <td>{getEstadoBadge(reserva.estado)}</td>
                       <td>
                         {getEstadoPagoBadge(reserva.estadoPago)}
+                        {getPrexExpirationBadge(reserva)}
                         {reserva.montoPagado != null && reserva.montoPagado > 0 && (
                           <small className="d-block text-muted mt-1">{formatPrice(reserva.montoPagado)} pagado</small>
                         )}

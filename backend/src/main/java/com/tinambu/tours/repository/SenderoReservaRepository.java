@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,4 +75,16 @@ public interface SenderoReservaRepository extends JpaRepository<SenderoReserva, 
             @Param("senderoId") UUID senderoId,
             @Param("fecha")     LocalDate fecha,
             @Param("turno")     TurnoSendero turno);
+
+    /**
+     * Sendero reservations created via Prex transfer that are still PENDING and unpaid,
+     * created BEFORE the given threshold. Used by the auto-cancel flow to release cupos
+     * after the 12-hour transfer window expires.
+     */
+    @Query("SELECT sr FROM SenderoReserva sr " +
+           "WHERE sr.metodoPago = 'PREX' " +
+           "AND sr.estado = 'PENDIENTE' " +
+           "AND (sr.estadoPago = com.tinambu.tours.entity.reserva.EstadoPago.PENDIENTE OR sr.estadoPago IS NULL) " +
+           "AND sr.fechaCreacion < :threshold")
+    List<SenderoReserva> findExpiredPrexPending(@Param("threshold") LocalDateTime threshold);
 }

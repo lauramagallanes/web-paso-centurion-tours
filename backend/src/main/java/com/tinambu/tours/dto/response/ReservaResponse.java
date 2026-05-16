@@ -39,6 +39,10 @@ public class ReservaResponse {
     private BigDecimal saldoPendiente;
     private String turno;
 
+    // Payment method ("CARD", "PREX", etc.) — used by the frontend to show a countdown
+    // for Prex pending reservations that auto-cancel after 12h.
+    private String metodoPago;
+
     // Constructors
     public ReservaResponse() {}
 
@@ -102,4 +106,7 @@ public class ReservaResponse {
 
     public String getTurno() { return turno; }
     public void setTurno(String turno) { this.turno = turno; }
+
+    public String getMetodoPago() { return metodoPago; }
+    public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
 }

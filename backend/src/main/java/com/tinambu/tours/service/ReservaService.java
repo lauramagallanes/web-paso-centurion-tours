@@ -37,6 +37,13 @@ public class ReservaService {
     /** Minimum lead time (in days) required between today and the reservation date. */
     private static final int MIN_LEAD_DAYS_SENDERO = 2;
 
+    /**
+     * How long a Prex reservation can stay PENDIENTE waiting for a manual transfer.
+     * After this many hours since {@code fechaCreacion} the reservation is auto-cancelled
+     * (and the cupos / accommodation block are released).
+     */
+    private static final int PREX_HOURS_TO_EXPIRE = 12;
+
     @Autowired
     private SenderoReservaRepository senderoReservaRepository;
 
@@ -70,10 +77,16 @@ public class ReservaService {
     @Autowired
     private SenderoBloqueoRepository senderoBloqueoRepository;
 
+    @Autowired
+    private OrdenCompraRepository ordenCompraRepository;
+
     // ==================== SENDERO RESERVATIONS ====================
 
     public ReservaResponse crearReservaSendero(ReservaRequest request) {
         log.info("Creating sendero reservation for: {}", request.getEmailContacto());
+
+        // Free up cupos held by Prex reservations that didn't pay within 12h before validating.
+        runPrexCleanupSafely();
 
         // 1. Validate sendero
         Sendero sendero = senderoRepository.findById(request.getSenderoId())
@@ -290,6 +303,115 @@ public class ReservaService {
         return convertirSenderoReservaAResponse(reserva);
     }
 
+    // ==================== PREX EXPIRATION CLEANUP ====================
+
+    /**
+     * Cancels every Prex reservation that is still PENDIENTE and unpaid after the
+     * 12-hour transfer window. Used as a "lazy" cleanup, invoked from the most common
+     * read paths (availability checks, listings, "Mis Reservas") so we don't need a
+     * dedicated background job.
+     *
+     * <p>Each expired reservation is cancelled via {@link #cancelarReservaSendero(UUID)}
+     * or {@link #cancelarReservaAlojamiento(UUID)} (which also frees the guide block /
+     * accommodation block). The owning {@link com.tinambu.tours.entity.orden.OrdenCompra}
+     * is marked as cancelled when all of its items end up cancelled.
+     *
+     * <p>Errors per-reservation are logged and skipped — a single failure must not
+     * block the rest of the cleanup batch nor the user request that triggered it.
+     *
+     * @return the total number of reservations that were just cancelled
+     */
+    public int cancelExpiredPrexReservations() {
+        LocalDateTime threshold = LocalDateTime.now().minusHours(PREX_HOURS_TO_EXPIRE);
+
+        List<SenderoReserva> expiredSenderos;
+        List<AlojamientoReserva> expiredAlojamientos;
+        try {
+            expiredSenderos = senderoReservaRepository.findExpiredPrexPending(threshold);
+            expiredAlojamientos = alojamientoReservaRepository.findExpiredPrexPending(threshold);
+        } catch (Exception e) {
+            log.warn("Could not query for expired Prex reservations: {}", e.getMessage());
+            return 0;
+        }
+
+        if (expiredSenderos.isEmpty() && expiredAlojamientos.isEmpty()) {
+            return 0;
+        }
+
+        log.info("[PREX-CLEANUP] Found {} sendero + {} alojamiento expired Prex reservations to cancel",
+                expiredSenderos.size(), expiredAlojamientos.size());
+
+        Set<UUID> affectedOrdenIds = new HashSet<>();
+        int cancelled = 0;
+
+        for (SenderoReserva sr : expiredSenderos) {
+            try {
+                cancelarReservaSendero(sr.getId());
+                cancelled++;
+                ordenCompraRepository.findByReservaId(sr.getId())
+                        .forEach(o -> affectedOrdenIds.add(o.getId()));
+            } catch (Exception e) {
+                log.warn("[PREX-CLEANUP] Could not cancel sendero reserva {}: {}",
+                        sr.getCodigoReserva(), e.getMessage());
+            }
+        }
+
+        for (AlojamientoReserva ar : expiredAlojamientos) {
+            try {
+                cancelarReservaAlojamiento(ar.getId());
+                cancelled++;
+                ordenCompraRepository.findByReservaId(ar.getId())
+                        .forEach(o -> affectedOrdenIds.add(o.getId()));
+            } catch (Exception e) {
+                log.warn("[PREX-CLEANUP] Could not cancel alojamiento reserva {}: {}",
+                        ar.getCodigoReserva(), e.getMessage());
+            }
+        }
+
+        // For each affected order, mark it cancelled if every item is now cancelled.
+        for (UUID ordenId : affectedOrdenIds) {
+            try {
+                ordenCompraRepository.findById(ordenId).ifPresent(orden -> {
+                    boolean todasCanceladas = orden.getItems().stream().allMatch(item -> {
+                        if ("SENDERO".equalsIgnoreCase(item.getTipoReserva())) {
+                            return senderoReservaRepository.findById(item.getReservaId())
+                                    .map(r -> r.getEstado() == EstadoReserva.CANCELADA)
+                                    .orElse(true);
+                        } else if ("ALOJAMIENTO".equalsIgnoreCase(item.getTipoReserva())) {
+                            return alojamientoReservaRepository.findById(item.getReservaId())
+                                    .map(r -> r.getEstado() == EstadoReserva.CANCELADA)
+                                    .orElse(true);
+                        }
+                        return true;
+                    });
+                    if (todasCanceladas && !"CANCELADA".equalsIgnoreCase(orden.getEstado())) {
+                        orden.marcarCancelada();
+                        ordenCompraRepository.save(orden);
+                        log.info("[PREX-CLEANUP] OrdenCompra {} marked as CANCELADA", orden.getCodigoOrden());
+                    }
+                });
+            } catch (Exception e) {
+                log.warn("[PREX-CLEANUP] Could not update orden {}: {}", ordenId, e.getMessage());
+            }
+        }
+
+        log.info("[PREX-CLEANUP] Cancelled {} reservations and updated {} orders",
+                cancelled, affectedOrdenIds.size());
+        return cancelled;
+    }
+
+    /**
+     * Best-effort wrapper used by read paths that just want to make sure the cleanup
+     * runs before they return data to the caller. Never throws — failures are absorbed.
+     */
+    private void runPrexCleanupSafely() {
+        try {
+            cancelExpiredPrexReservations();
+        } catch (Exception e) {
+            log.warn("Background Prex cleanup failed silently: {}", e.getMessage());
+        }
+    }
+
     // ==================== ADMIN-SIDE BOOKINGS ====================
 
     /**
@@ -299,6 +421,8 @@ public class ReservaService {
     public ReservaResponse crearReservaSenderoAdmin(AdminReservaSenderoRequest request) {
         log.info("[ADMIN] Creating sendero reservation for: {} (estado={})",
                 request.getEmailContacto(), request.getEstadoInicial());
+
+        runPrexCleanupSafely();
 
         Sendero sendero = senderoRepository.findById(request.getSenderoId())
                 .orElseThrow(() -> new IllegalArgumentException("Sendero no encontrado: " + request.getSenderoId()));
@@ -400,6 +524,8 @@ public class ReservaService {
         log.info("[ADMIN] Creating alojamiento reservation for: {} (estado={})",
                 request.getEmailContacto(), request.getEstadoInicial());
 
+        runPrexCleanupSafely();
+
         String validationErrors = request.getValidationErrors();
         if (!validationErrors.isEmpty()) {
             throw new IllegalArgumentException("Errores de validación: " + validationErrors);
@@ -473,9 +599,11 @@ public class ReservaService {
      * Public availability check used by the frontend before entering checkout.
      * Never exposes guide names.
      */
-    @Transactional(readOnly = true)
     public DisponibilidadSenderoResponse verificarDisponibilidadSendero(
             UUID senderoId, LocalDate fecha, TurnoSendero turno) {
+
+        // Make sure expired Prex reservations are released before reporting cupos to the user.
+        runPrexCleanupSafely();
 
         DisponibilidadSenderoResponse resp = new DisponibilidadSenderoResponse();
 
@@ -674,6 +802,9 @@ public class ReservaService {
     public AlojamientoReservaResponse crearReservaAlojamiento(AlojamientoReservaRequest request) {
         log.info("Creating alojamiento reservation for: {}", request.getEmailContacto());
 
+        // Free up dates held by Prex reservations that didn't pay within 12h before validating.
+        runPrexCleanupSafely();
+
         // Validate request
         String validationErrors = request.getValidationErrors();
         if (!validationErrors.isEmpty()) {
@@ -825,15 +956,15 @@ public class ReservaService {
         return convertirAlojamientoReservaAResponse(reserva, alojamiento);
     }
 
-    @Transactional(readOnly = true)
     public List<ReservaResponse> obtenerReservasSenderoPorEmail(String email) {
+        runPrexCleanupSafely();
         return senderoReservaRepository.findByEmailContacto(email).stream()
                 .map(this::convertirSenderoReservaAResponse)
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
     public List<AlojamientoReservaResponse> obtenerReservasAlojamientoPorEmail(String email) {
+        runPrexCleanupSafely();
         // AlojamientoReserva doesn't have a findByEmail, so we get all and filter
         return alojamientoReservaRepository.findAll().stream()
                 .filter(r -> email.equalsIgnoreCase(r.getEmailContacto()))
@@ -853,15 +984,15 @@ public class ReservaService {
 
     // ==================== ADMIN OPERATIONS ====================
 
-    @Transactional(readOnly = true)
     public List<ReservaResponse> obtenerTodasReservasSendero() {
+        runPrexCleanupSafely();
         return senderoReservaRepository.findAllOrderByFechaCreacionDesc().stream()
                 .map(this::convertirSenderoReservaAResponse)
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
     public List<AlojamientoReservaResponse> obtenerTodasReservasAlojamiento() {
+        runPrexCleanupSafely();
         return alojamientoReservaRepository.findAll().stream()
                 .sorted((a, b) -> b.getFechaCreacion().compareTo(a.getFechaCreacion()))
                 .map(r -> {
@@ -943,6 +1074,7 @@ public class ReservaService {
         response.setEstadoPago(reserva.getEstadoPago() != null ? reserva.getEstadoPago().name() : "PENDIENTE");
         response.setMontoPagado(reserva.getMontoPagado());
         response.setSaldoPendiente(reserva.getSaldoPendiente());
+        response.setMetodoPago(reserva.getMetodoPago());
 
         // Additional info (guide info is internal only, not exposed to users)
         String info = String.format("Sendero: %s | Turno: %s",

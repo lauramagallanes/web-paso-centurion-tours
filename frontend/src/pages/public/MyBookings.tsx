@@ -20,7 +20,66 @@ interface BookingItem {
   paid: number;
   pending: number;
   currency: string;
+  metodoPago?: string;
+  fechaCreacion?: string;
 }
+
+const PREX_HOURS_TO_EXPIRE = 12;
+
+/**
+ * Small countdown banner shown on Prex pending reservations. Re-renders every minute
+ * so the user sees the time remaining shrink in real time. When the deadline passes
+ * the banner switches to an "expired" message; the actual cancellation happens
+ * server-side as soon as anyone hits the system again.
+ */
+const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) => {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!fechaCreacion) return;
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, [fechaCreacion]);
+
+  if (!fechaCreacion) {
+    return (
+      <div className="mb-prex-banner">
+        <strong>Pago por transferencia Prex:</strong>
+        <span>Tenés 12 horas desde la reserva para enviar el comprobante; pasado ese plazo se cancela automáticamente.</span>
+      </div>
+    );
+  }
+
+  const created = new Date(fechaCreacion + (fechaCreacion.includes('T') ? '' : 'T00:00:00')).getTime();
+  const deadline = created + PREX_HOURS_TO_EXPIRE * 60 * 60 * 1000;
+  const remainingMs = deadline - now;
+
+  if (remainingMs <= 0) {
+    return (
+      <div className="mb-prex-banner mb-prex-banner-expired">
+        <strong>El plazo de transferencia venció.</strong>
+        <span>Esta reserva está siendo cancelada automáticamente. Los cupos ya quedaron libres.</span>
+      </div>
+    );
+  }
+
+  const totalMinutes = Math.floor(remainingMs / 60_000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const remainingLabel = hours > 0
+    ? `${hours} h ${minutes.toString().padStart(2, '0')} min`
+    : `${minutes} min`;
+
+  return (
+    <div className={`mb-prex-banner ${remainingMs < 60 * 60 * 1000 ? 'mb-prex-banner-warn' : ''}`}>
+      <strong>Pago pendiente por transferencia Prex.</strong>
+      <span>
+        Te quedan <b>{remainingLabel}</b> para enviar el comprobante. Si no, la reserva se cancela
+        automáticamente y los cupos quedan libres.
+      </span>
+    </div>
+  );
+};
 
 const MyBookings: React.FC = () => {
   const { state } = useAuth();
@@ -66,6 +125,8 @@ const MyBookings: React.FC = () => {
               paid: r.montoPagado || 0,
               pending: r.saldoPendiente || 0,
               currency: 'UYU',
+              metodoPago: r.metodoPago || undefined,
+              fechaCreacion: r.fechaCreacion || undefined,
             });
           }
         }
@@ -88,6 +149,8 @@ const MyBookings: React.FC = () => {
               paid: r.montoPagado || 0,
               pending: r.saldoPendiente || 0,
               currency: 'UYU',
+              metodoPago: r.metodoPago || undefined,
+              fechaCreacion: r.fechaCreacion || undefined,
             });
           }
         }
@@ -136,6 +199,11 @@ const MyBookings: React.FC = () => {
     };
     return map[ps] || ps;
   };
+
+  const isPrexPending = (b: BookingItem) =>
+    b.metodoPago === 'PREX' &&
+    b.status === 'PENDIENTE' &&
+    (b.paymentStatus === 'PENDIENTE' || !b.paymentStatus);
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
@@ -334,6 +402,10 @@ const MyBookings: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {isPrexPending(booking) && (
+                  <PrexCountdown fechaCreacion={booking.fechaCreacion} />
+                )}
 
                 {/* Pay button for unpaid reservations */}
                 {canPay(booking) && (

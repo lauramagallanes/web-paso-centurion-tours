@@ -35,6 +35,14 @@ public class PlacetoPayService {
 
     private static final Logger log = LoggerFactory.getLogger(PlacetoPayService.class);
 
+    /**
+     * Reservas creadas como transferencia Prex no deben abrir sesión PlacetoPay desde el público:
+     * evita estados incoherentes y cancelaciones por cleanup que el usuario asocia al “volver” del gateway.
+     */
+    private static boolean esMetodoPrex(String metodoPago) {
+        return metodoPago != null && "PREX".equalsIgnoreCase(metodoPago.trim());
+    }
+
     @Autowired
     private PlacetoPayConfig config;
 
@@ -63,6 +71,12 @@ public class PlacetoPayService {
 
         SenderoReserva reserva = senderoReservaRepository.findById(reservaId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva de sendero no encontrada: " + reservaId));
+
+        if (esMetodoPrex(reserva.getMetodoPago())) {
+            throw new IllegalArgumentException(
+                    "Esta reserva está pendiente de transferencia Prex. Completá la transferencia con los datos "
+                            + "indicados en “Mis reservas” o contactanos si necesitás pagar con tarjeta.");
+        }
 
         // Calculate amount based on tipoPago (same logic as alojamiento)
         BigDecimal montoACobrar;
@@ -152,6 +166,12 @@ public class PlacetoPayService {
         AlojamientoReserva reserva = alojamientoReservaRepository.findById(reservaId)
                 .orElseThrow(() -> new IllegalArgumentException("Reserva de alojamiento no encontrada: " + reservaId));
 
+        if (esMetodoPrex(reserva.getMetodoPago())) {
+            throw new IllegalArgumentException(
+                    "Esta reserva está pendiente de transferencia Prex. Completá la transferencia con los datos "
+                            + "indicados en “Mis reservas” o contactanos si necesitás pagar con tarjeta.");
+        }
+
         // Calculate the amount to charge based on tipoPago
         BigDecimal montoACobrar;
         boolean esSena = "SENA".equalsIgnoreCase(tipoPago);
@@ -237,6 +257,24 @@ public class PlacetoPayService {
 
         OrdenCompra orden = ordenCompraRepository.findById(ordenId)
                 .orElseThrow(() -> new IllegalArgumentException("Orden de compra no encontrada: " + ordenId));
+
+        for (OrdenCompraItem item : orden.getItems()) {
+            if ("SENDERO".equalsIgnoreCase(item.getTipoReserva())) {
+                SenderoReserva r = senderoReservaRepository.findById(item.getReservaId()).orElse(null);
+                if (r != null && esMetodoPrex(r.getMetodoPago())) {
+                    throw new IllegalArgumentException(
+                            "Esta orden tiene reservas pendientes de transferencia Prex. "
+                                    + "Completá la transferencia o contactanos si necesitás pagar con tarjeta.");
+                }
+            } else if ("ALOJAMIENTO".equalsIgnoreCase(item.getTipoReserva())) {
+                AlojamientoReserva r = alojamientoReservaRepository.findById(item.getReservaId()).orElse(null);
+                if (r != null && esMetodoPrex(r.getMetodoPago())) {
+                    throw new IllegalArgumentException(
+                            "Esta orden tiene reservas pendientes de transferencia Prex. "
+                                    + "Completá la transferencia o contactanos si necesitás pagar con tarjeta.");
+                }
+            }
+        }
 
         if (!config.isConfigured()) {
             log.warn("PlacetoPay not configured, returning mock response for orden");

@@ -344,19 +344,20 @@ const Checkout: React.FC = () => {
         <div className="checkout-container">
           <div className="prex-result">
             <div className="prex-result-icon"><Icon name="check-circle" size="xl" color="success" /></div>
-            <h1 className="prex-result-title">¡Tu orden está generada!</h1>
+            <h1 className="prex-result-title">¡Su orden se ha registrado!</h1>
             <p className="prex-result-subtitle">
-              Para confirmar tu reserva, podés hacer la transferencia a la cuenta Prex que figura
-              debajo. Apenas nos llegue el comprobante te confirmamos por email. ¡Gracias por elegirnos!
+              Para confirmar su reserva, puede hacer la transferencia a la cuenta Prex que figura
+              debajo. Cuando recibamos el comprobante, le confirmaremos la reserva por correo electrónico.
+              Gracias por elegirnos.
             </p>
 
             <div className="prex-deadline-alert">
               <Icon name="clock" size="sm" />
               <div>
-                <strong>Tenés 12 horas para enviarnos el comprobante.</strong>
+                <strong>Dispone de 12 horas para enviarnos el comprobante.</strong>
                 <span>
-                  Si en ese plazo no nos llega, liberamos la reserva y los cupos vuelven a quedar
-                  disponibles para otras personas. ¡Sin problema, podés volver a reservar cuando quieras!
+                  Si en ese plazo no lo recibimos, liberamos la reserva y los cupos vuelven a quedar
+                  disponibles para otras personas. Puede volver a reservar en cualquier momento.
                 </span>
               </div>
             </div>
@@ -379,10 +380,10 @@ const Checkout: React.FC = () => {
                 <li><span>Número de cuenta:</span><strong>{PREX_ACCOUNT.cuenta}</strong></li>
               </ul>
               <p className="prex-account-note">
-                Una vez hecha la transferencia, mandanos el comprobante a{' '}
+                Una vez hecha la transferencia, envíe el comprobante a{' '}
                 <strong>{PREX_ACCOUNT.email}</strong> con el asunto{' '}
-                <strong>“{PREX_ACCOUNT.asuntoEmail}”</strong>. Recordá incluir el{' '}
-                <strong>código de orden</strong> para que podamos identificar tu pago.
+                <strong>“{PREX_ACCOUNT.asuntoEmail}”</strong>. Recuerde incluir el{' '}
+                <strong>código de orden</strong> para que podamos identificar su pago.
               </p>
             </div>
 
@@ -621,7 +622,7 @@ const Checkout: React.FC = () => {
                       <div className="payment-method-text">
                         <strong>Transferencia a cuenta Prex</strong>
                         <small>
-                          Disponible para Uruguay, Argentina, Chile y Perú. Te mostraremos los datos de
+                          Disponible para Uruguay, Argentina, Chile y Perú. Mostraremos los datos de
                           cuenta al confirmar.
                         </small>
                       </div>
@@ -643,7 +644,7 @@ const Checkout: React.FC = () => {
 
                 <p className="checkout-secure">
                   {metodoPago === 'PREX'
-                    ? 'Te mostraremos los datos de la cuenta Prex para completar la transferencia. Tu reserva se confirma cuando recibimos el pago.'
+                    ? 'Mostraremos los datos de la cuenta Prex para completar la transferencia. Su reserva se confirma cuando recibimos el pago.'
                     : 'Tu pago se procesa de forma segura a través de Getnet (PlacetoPay). No guardamos los datos de tu tarjeta.'}
                 </p>
               </div>

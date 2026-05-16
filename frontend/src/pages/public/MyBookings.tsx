@@ -60,10 +60,10 @@ const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) 
   if (!fechaCreacion) {
     return (
       <div className="mb-prex-banner">
-        <strong>Pago por transferencia Prex</strong>
+        <strong>Transferencia Prex</strong>
         <span>
-          Tenés 12 horas desde el momento de la reserva para enviarnos el comprobante.
-          Si no llega a tiempo, liberamos la reserva automáticamente — ¡pero podés volver a reservar cuando quieras!
+          Dispone de 12 horas desde el momento de la reserva para enviarnos el comprobante.
+          Si no lo recibimos a tiempo, la reserva se cancelará de forma automática; puede volver a reservar cuando lo desee.
         </span>
       </div>
     );
@@ -76,10 +76,10 @@ const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) 
   if (remainingMs <= 0) {
     return (
       <div className="mb-prex-banner mb-prex-banner-expired">
-        <strong>Esta reserva ya se liberó</strong>
+        <strong>Plazo finalizado</strong>
         <span>
-          No alcanzamos a recibir el comprobante a tiempo, así que liberamos los cupos para otras personas.
-          ¡Si querés, podés volver a reservar en cualquier momento!
+          No recibimos el comprobante dentro del plazo y la fecha quedó liberada.
+          Puede realizar una nueva reserva cuando quiera. Gracias por su interés.
         </span>
       </div>
     );
@@ -94,10 +94,11 @@ const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) 
 
   return (
     <div className={`mb-prex-banner ${remainingMs < 60 * 60 * 1000 ? 'mb-prex-banner-warn' : ''}`}>
-      <strong>Esperamos tu transferencia Prex</strong>
+      <strong>Gracias: solo falta el comprobante</strong>
       <span>
-        Te quedan <b>{remainingLabel}</b> para enviarnos el comprobante. Si no llega en ese plazo,
-        liberamos la reserva para que otras personas puedan reservar.
+        Dispone de <b>{remainingLabel}</b> para enviarnos el comprobante de su transferencia Prex.
+        Cuando lo recibamos, confirmaremos su reserva por correo electrónico.
+        Si no llega dentro de ese plazo, liberaremos la fecha para que otras personas puedan reservar.
       </span>
     </div>
   );
@@ -110,18 +111,18 @@ const PrexTransferDetails: React.FC<{ codigoReserva: string }> = ({ codigoReserv
   )}`;
   return (
     <div className="mb-prex-transfer-details">
-      <h4 className="mb-prex-transfer-title">Datos para tu transferencia</h4>
+      <h4 className="mb-prex-transfer-title">Datos para la transferencia</h4>
       <ul className="mb-prex-transfer-list">
         <li><span>Titular</span><strong>{PREX_ACCOUNT.titular}</strong></li>
         <li><span>Número de cuenta</span><strong>{PREX_ACCOUNT.cuenta}</strong></li>
       </ul>
       <p className="mb-prex-transfer-note">
-        Enviá el comprobante a <strong>{PREX_ACCOUNT.email}</strong> con el asunto{' '}
-        <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong> e incluí el código de reserva{' '}
+        Puede enviar el comprobante a <strong>{PREX_ACCOUNT.email}</strong> con el asunto{' '}
+        <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong> e incluir el código de reserva{' '}
         <strong className="mb-code-inline">{codigoReserva}</strong> en el cuerpo del mensaje.
       </p>
       <a className="mb-prex-mailto" href={mailto}>
-        Abrir email para enviar comprobante
+        Abrir el correo para enviar el comprobante
       </a>
     </div>
   );

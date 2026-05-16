@@ -346,6 +346,8 @@ public class ReservaService {
 
         for (SenderoReserva sr : expiredSenderos) {
             try {
+                log.info("[PREX-CLEANUP] Cancelling sendero id={} codigo={} fechaCreacion={} threshold={} placetoPayRequestId={}",
+                        sr.getId(), sr.getCodigoReserva(), sr.getFechaCreacion(), threshold, sr.getPlacetoPayRequestId());
                 cancelarReservaSendero(sr.getId());
                 cancelled++;
                 ordenCompraRepository.findByReservaId(sr.getId())
@@ -358,6 +360,8 @@ public class ReservaService {
 
         for (AlojamientoReserva ar : expiredAlojamientos) {
             try {
+                log.info("[PREX-CLEANUP] Cancelling alojamiento id={} codigo={} fechaCreacion={} threshold={} placetoPayRequestId={}",
+                        ar.getId(), ar.getCodigoReserva(), ar.getFechaCreacion(), threshold, ar.getPlacetoPayRequestId());
                 cancelarReservaAlojamiento(ar.getId());
                 cancelled++;
                 ordenCompraRepository.findByReservaId(ar.getId())

@@ -85,6 +85,7 @@ public interface SenderoReservaRepository extends JpaRepository<SenderoReserva, 
            "WHERE sr.metodoPago = 'PREX' " +
            "AND sr.estado = 'PENDIENTE' " +
            "AND (sr.estadoPago = com.tinambu.tours.entity.reserva.EstadoPago.PENDIENTE OR sr.estadoPago IS NULL) " +
+           "AND sr.placetoPayRequestId IS NULL " +
            "AND sr.fechaCreacion < :threshold")
     List<SenderoReserva> findExpiredPrexPending(@Param("threshold") LocalDateTime threshold);
 }

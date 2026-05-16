@@ -82,6 +82,7 @@ public interface AlojamientoReservaRepository extends JpaRepository<AlojamientoR
            "WHERE ar.metodoPago = 'PREX' " +
            "AND ar.estado = com.tinambu.tours.entity.reserva.EstadoReserva.PENDIENTE " +
            "AND (ar.estadoPago = com.tinambu.tours.entity.reserva.EstadoPago.PENDIENTE OR ar.estadoPago IS NULL) " +
+           "AND ar.placetoPayRequestId IS NULL " +
            "AND ar.fechaCreacion < :threshold")
     List<AlojamientoReserva> findExpiredPrexPending(@Param("threshold") LocalDateTime threshold);
 }

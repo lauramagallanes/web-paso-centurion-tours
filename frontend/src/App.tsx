@@ -19,7 +19,6 @@ import Activities from './pages/public/Activities'
 import ActivityDetails from './pages/public/ActivityDetails'
 import Book from './pages/public/Book';
 import MyBookings from './pages/public/MyBookings';
-import Favorites from './pages/public/Favorites';
 import Checkout from './pages/public/Checkout';
 import PaymentResult from './pages/public/PaymentResult';
 import PaymentCancelled from './pages/public/PaymentCancelled';
@@ -69,7 +68,6 @@ const App: React.FC = () => {
                 <MyBookings/>
               </ProtectedRoute>
             }/>
-            <Route path="/favoritos" element={<Favorites/>}/>
             <Route path="/calendario-demo" element={<CalendarDemo/>}/>
             <Route path="/logo-demo" element={<LogoDemo/>}/>
             <Route path="/iconos-demo" element={<IconDemo/>}/>

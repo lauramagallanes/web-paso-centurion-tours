@@ -26,7 +26,6 @@ const SenderoCardV2: React.FC<SenderoCardV2Props> = ({
 }) => {
   
   const [imageError, setImageError] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Build image gallery: main image + gallery images
@@ -50,11 +49,6 @@ const SenderoCardV2: React.FC<SenderoCardV2Props> = ({
   const handleNextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const toggleFavorite = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsFavorite(!isFavorite);
   };
 
   return (
@@ -95,15 +89,6 @@ const SenderoCardV2: React.FC<SenderoCardV2Props> = ({
             </button>
           </>
         )}
-        
-        {/* Favorite Button */}
-        <button 
-          className={`sendero-card-v2-favorite ${isFavorite ? 'active' : ''}`}
-          onClick={toggleFavorite}
-          aria-label={`${isFavorite ? 'Quitar de' : 'Agregar a'} favoritos`}
-        >
-          {isFavorite ? '❤️' : '♡'}
-        </button>
       </div>
 
       {/* Content Section - Minimal */}

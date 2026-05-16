@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
-  Heart, 
   Users, 
   Bed, 
   Clock, 
@@ -26,7 +25,6 @@ const AccommodationDetails: React.FC = () => {
   const [accommodation, setAccommodation] = useState<AlojamientoResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
   
   // Booking states
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -40,7 +38,6 @@ const AccommodationDetails: React.FC = () => {
   useEffect(() => {
     if (id) {
       loadAccommodation();
-      loadFavoriteStatus();
     }
   }, [id]);
 
@@ -69,14 +66,6 @@ const AccommodationDetails: React.FC = () => {
     }
   };
 
-  const loadFavoriteStatus = () => {
-    const savedFavorites = localStorage.getItem('accommodation-favorites');
-    if (savedFavorites && id) {
-      const favorites = JSON.parse(savedFavorites);
-      setIsFavorite(favorites.includes(id));
-    }
-  };
-
   const calculatePrice = () => {
     if (!accommodation || !checkInDate || !checkOutDate) return;
     
@@ -101,23 +90,6 @@ const AccommodationDetails: React.FC = () => {
       setIsAvailable(false);
     } finally {
       setCheckingAvailability(false);
-    }
-  };
-
-  const handleToggleFavorite = () => {
-    if (!id) return;
-    
-    const savedFavorites = localStorage.getItem('accommodation-favorites');
-    const favorites = savedFavorites ? JSON.parse(savedFavorites) : [];
-    
-    if (isFavorite) {
-      const newFavorites = favorites.filter((fav: string) => fav !== id);
-      localStorage.setItem('accommodation-favorites', JSON.stringify(newFavorites));
-      setIsFavorite(false);
-    } else {
-      favorites.push(id);
-      localStorage.setItem('accommodation-favorites', JSON.stringify(favorites));
-      setIsFavorite(true);
     }
   };
 
@@ -256,14 +228,6 @@ const AccommodationDetails: React.FC = () => {
                 <span>{accommodation.ubicacion}</span>
               </div>
             </div>
-            
-            <button 
-              className={`favorite-btn ${isFavorite ? 'active' : ''}`}
-              onClick={handleToggleFavorite}
-            >
-              <Heart className={`heart-icon ${isFavorite ? 'filled' : ''}`} />
-              {isFavorite ? 'Guardado' : 'Guardar'}
-            </button>
           </div>
         </div>
 

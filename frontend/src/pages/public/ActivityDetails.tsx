@@ -90,7 +90,6 @@ const ActivityDetails: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [participantsCount, setParticipantsCount] = useState(1);
   const [selectedTurno, setSelectedTurno] = useState<'MANANA' | 'TARDE'>('MANANA');
-  const [isFavorite, setIsFavorite] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAddedModal, setShowAddedModal] = useState(false);
 
@@ -241,12 +240,6 @@ const ActivityDetails: React.FC = () => {
     loadSenderoDetails();
   }, [id]);
 
-  // Load favorite status
-  useEffect(() => {
-    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    setIsFavorite(favorites.some((fav: any) => fav.id === id));
-  }, [id]);
-
   // Load active availability windows for this sendero (used by calendar filterDate)
   useEffect(() => {
     if (!sendero) return;
@@ -382,33 +375,6 @@ const ActivityDetails: React.FC = () => {
       setParticipantsCount(effectiveMax);
     }
   }, [disponibilidad, sendero, participantsCount]);
-
-  // Handlers
-  const handleFavoriteToggle = () => {
-    if (!sendero) return;
-    
-    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    let updatedFavorites;
-    
-    if (isFavorite) {
-      updatedFavorites = favorites.filter((fav: any) => fav.id !== sendero.id);
-    } else {
-      const favoriteItem = {
-        id: sendero.id,
-        type: 'activity',
-        name: sendero.nombre,
-        description: sendero.descripcion,
-        image: sendero.imagenes[0]?.url || '/placeholder-sendero.svg',
-        price: sendero.precio,
-        currency: sendero.moneda,
-        addedAt: new Date().toISOString()
-      };
-      updatedFavorites = [...favorites, favoriteItem];
-    }
-    
-    localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
-    setIsFavorite(!isFavorite);
-  };
 
   // Effective participant cap.
   // Rules:
@@ -575,16 +541,6 @@ const ActivityDetails: React.FC = () => {
                   alt={sendero.nombre}
                 />
               )}
-
-              {/* Favorite Button */}
-              <button 
-                className={`details-favorite-btn ${isFavorite ? 'active' : ''}`}
-                onClick={handleFavoriteToggle}
-              >
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                </svg>
-              </button>
             </div>
 
             {/* Title and Location */}

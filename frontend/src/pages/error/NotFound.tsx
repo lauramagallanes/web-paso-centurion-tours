@@ -93,13 +93,6 @@ const NotFound: React.FC = () => {
                   <Icon name="user" size="md" color="accent" />
                   <span>Sobre Nosotros</span>
                 </button>
-                <button 
-                  className="suggestion-item"
-                  onClick={() => navigate('/favoritos')}
-                >
-                  <Icon name="heart" size="md" color="accent" />
-                  <span>Favoritos</span>
-                </button>
               </div>
             </div>
           </div>

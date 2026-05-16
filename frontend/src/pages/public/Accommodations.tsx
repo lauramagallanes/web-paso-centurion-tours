@@ -9,7 +9,6 @@ const Accommodations: React.FC = () => {
   const [accommodations, setAccommodations] = useState<AlojamientoResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   // Cache key for accommodations
   const CACHE_KEY = 'accommodations_cache';
@@ -17,7 +16,6 @@ const Accommodations: React.FC = () => {
 
   useEffect(() => {
     loadAccommodations();
-    loadFavorites();
   }, []);
 
 
@@ -57,26 +55,6 @@ const Accommodations: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const loadFavorites = () => {
-    const savedFavorites = localStorage.getItem('accommodation-favorites');
-    if (savedFavorites) {
-      setFavorites(new Set(JSON.parse(savedFavorites)));
-    }
-  };
-
-
-  const handleToggleFavorite = (id: string) => {
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(id)) {
-      newFavorites.delete(id);
-    } else {
-      newFavorites.add(id);
-    }
-    setFavorites(newFavorites);
-    localStorage.setItem('accommodation-favorites', JSON.stringify(Array.from(newFavorites)));
-  };
-
 
   const getMockAccommodations = (): AlojamientoResponse[] => [
     {
@@ -167,8 +145,6 @@ const Accommodations: React.FC = () => {
                   <AccommodationCard
                     key={accommodation.id}
                     accommodation={accommodation}
-                    onToggleFavorite={handleToggleFavorite}
-                    isFavorite={favorites.has(accommodation.id)}
                   />
                 ))}
             </div>

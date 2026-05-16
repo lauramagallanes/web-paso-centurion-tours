@@ -5,7 +5,6 @@ import { HashRouter } from 'react-router-dom'
 import Context from './contexts/Context'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { CartProvider } from './contexts/CartContext'
-import { FavoritesProvider } from './contexts/FavoritesContext'
 import { initializeErrorHandlers } from './utils/errorHandlers'
 
 // Inicializar manejadores de errores globales
@@ -15,13 +14,11 @@ initializeErrorHandlers();
 createRoot(document.getElementById('root')!).render(
   <HashRouter>
     <ThemeProvider>
-      <FavoritesProvider>
-        <CartProvider>
-          <Context>
-            <App />
-          </Context>
-        </CartProvider>
-      </FavoritesProvider>
+      <CartProvider>
+        <Context>
+          <App />
+        </Context>
+      </CartProvider>
     </ThemeProvider>
   </HashRouter>
 ) 

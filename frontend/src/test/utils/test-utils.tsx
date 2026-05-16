@@ -3,18 +3,14 @@ import { render, RenderOptions } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { CartProvider } from '../../contexts/CartContext';
-import { FavoritesProvider } from '../../contexts/FavoritesContext';
 
-// Custom render function that includes all providers
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <FavoritesProvider>
-          <CartProvider>
-            {children}
-          </CartProvider>
-        </FavoritesProvider>
+        <CartProvider>
+          {children}
+        </CartProvider>
       </ThemeProvider>
     </BrowserRouter>
   );

@@ -67,58 +67,6 @@
   font-weight: 500;
 }
 
-.accommodation-card__favorite-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-  /* Remove backdrop-filter for better performance - use solid background instead */
-  background: rgba(255, 255, 255, 0.95);
-  /* Optimize scroll performance */
-  will-change: transform;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-.accommodation-card__favorite-btn:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-error);
-  transform: scale(1.1) translateZ(0);
-}
-
-.accommodation-card__favorite-btn.active {
-  background: var(--color-error);
-  color: white;
-  border-color: var(--color-error);
-}
-
-.heart-icon {
-  color: #64748b;
-  transition: all 0.2s ease;
-}
-
-.heart-icon.filled {
-  color: white;
-  fill: currentColor;
-}
-
-.accommodation-card__favorite-btn:hover .heart-icon {
-  color: #ef4444;
-}
-
-.accommodation-card__favorite-btn.active:hover .heart-icon {
-  color: white;
-}
-
 /* Content Section */
 .accommodation-card__content {
   padding: 20px;
@@ -282,20 +230,6 @@
 
 [data-theme="dark"] .price-period {
   color: #94a3b8;
-}
-
-[data-theme="dark"] .accommodation-card__favorite-btn {
-  background: rgba(30, 41, 59, 0.95);
-  border-color: #475569;
-}
-
-[data-theme="dark"] .accommodation-card__favorite-btn:hover {
-  background: rgba(30, 41, 59, 1);
-  border-color: #ef4444;
-}
-
-[data-theme="dark"] .heart-icon {
-  color: #cbd5e1;
 }
 
 [data-theme="dark"] .accommodation-card__gallery-indicator {

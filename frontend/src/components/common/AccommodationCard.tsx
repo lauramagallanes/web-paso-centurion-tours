@@ -1,32 +1,19 @@
 import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Users, Bed } from 'lucide-react';
+import { Users, Bed } from 'lucide-react';
 import './AccommodationCard.css';
 import { AlojamientoResponse } from '../../services/alojamientoApiService';
 
 interface AccommodationCardProps {
   accommodation: AlojamientoResponse;
-  onToggleFavorite?: (id: string) => void;
-  isFavorite?: boolean;
 }
 
 const AccommodationCard: React.FC<AccommodationCardProps> = memo(({
   accommodation,
-  onToggleFavorite,
-  isFavorite = false
 }) => {
-  // Early return if accommodation is undefined
   if (!accommodation) {
     return null;
   }
-
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (onToggleFavorite && accommodation.id) {
-      onToggleFavorite(accommodation.id);
-    }
-  };
 
   const getMainImageUrl = () => {
     if (!accommodation) return '/placeholder-sendero.svg';
@@ -95,15 +82,6 @@ const AccommodationCard: React.FC<AccommodationCardProps> = memo(({
               📷 {accommodation.totalImagenes || 0}
             </div>
           )}
-          
-          {/* Favorite Button */}
-          <button
-            className={`accommodation-card__favorite-btn ${isFavorite ? 'active' : ''}`}
-            onClick={handleFavoriteClick}
-            aria-label={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-          >
-            <Heart className={`heart-icon ${isFavorite ? 'filled' : ''}`} />
-          </button>
         </div>
 
         {/* Content Section */}

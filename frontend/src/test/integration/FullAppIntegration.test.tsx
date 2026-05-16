@@ -5,7 +5,6 @@ import { http, HttpResponse } from 'msw';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { CartProvider } from '../../contexts/CartContext';
-import { FavoritesProvider } from '../../contexts/FavoritesContext';
 import Activities from '../../pages/public/Activities';
 import Accommodations from '../../pages/public/Accommodations';
 import MyBookings from '../../pages/public/MyBookings';
@@ -14,11 +13,9 @@ import MyBookings from '../../pages/public/MyBookings';
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <BrowserRouter>
     <ThemeProvider>
-      <FavoritesProvider>
-        <CartProvider>
-          {children}
-        </CartProvider>
-      </FavoritesProvider>
+      <CartProvider>
+        {children}
+      </CartProvider>
     </ThemeProvider>
   </BrowserRouter>
 );

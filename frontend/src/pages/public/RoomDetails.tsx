@@ -63,7 +63,6 @@ const RoomDetails: React.FC = () => {
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [guestsCount, setGuestsCount] = useState(2);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [availabilityPeriods, setAvailabilityPeriods] = useState<{fechaInicio: string; fechaFin: string}[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -216,12 +215,6 @@ const RoomDetails: React.FC = () => {
     loadRoomDetails();
   }, [id]);
 
-  // Load favorite status
-  useEffect(() => {
-    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    setIsFavorite(favorites.some((fav: any) => fav.id === id));
-  }, [id]);
-
   // Load blocked dates and availability periods
   useEffect(() => {
     const loadAvailabilityData = async () => {
@@ -272,33 +265,6 @@ const RoomDetails: React.FC = () => {
       blocked.getDate() === date.getDate()
     );
     return !isBlocked;
-  };
-
-  // Handlers
-  const handleFavoriteToggle = () => {
-    if (!room) return;
-    
-    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    let updatedFavorites;
-    
-    if (isFavorite) {
-      updatedFavorites = favorites.filter((fav: any) => fav.id !== room.id);
-    } else {
-      const favoriteItem = {
-        id: room.id,
-        type: 'room',
-        name: room.nombre,
-        description: room.descripcion,
-        image: room.imagenes[0]?.url || '/placeholder-sendero.svg',
-        price: room.precioPorNoche,
-        currency: 'UYU',
-        addedAt: new Date().toISOString()
-      };
-      updatedFavorites = [...favorites, favoriteItem];
-    }
-    
-    localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
-    setIsFavorite(!isFavorite);
   };
 
   // Check availability whenever dates change
@@ -501,16 +467,6 @@ const RoomDetails: React.FC = () => {
                     }))}
                     altText={room.nombre}
                   />
-                  {/* Favorite Button */}
-                  <button 
-                    className={`details-favorite-btn ${isFavorite ? 'active' : ''}`}
-                    onClick={handleFavoriteToggle}
-                    style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10 }}
-                  >
-                    <svg viewBox="0 0 24 24">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
-                  </button>
                 </>
               ) : (
                 <>
@@ -519,16 +475,6 @@ const RoomDetails: React.FC = () => {
                     alt={room.nombre}
                     style={{ width: '100%', height: '400px', objectFit: 'cover', borderRadius: '12px' }}
                   />
-                  {/* Favorite Button */}
-                  <button 
-                    className={`details-favorite-btn ${isFavorite ? 'active' : ''}`}
-                    onClick={handleFavoriteToggle}
-                    style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10 }}
-                  >
-                    <svg viewBox="0 0 24 24">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
-                  </button>
                 </>
               )}
             </div>

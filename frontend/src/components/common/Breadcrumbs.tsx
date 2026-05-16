@@ -64,7 +64,6 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
       'senderismo-y-tours': 'Senderismo y Tours',
       'reservas': 'Reservas',
       'mis-reservas': 'Mis Reservas',
-      'favoritos': 'Favoritos',
       'perfil': 'Mi Perfil',
       'admin': 'Administración',
       'reservations': 'Gestión de Reservas',
@@ -93,7 +92,6 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
       'senderismo-y-tours': 'hiking',
       'reservas': 'calendar',
       'mis-reservas': 'calendar',
-      'favoritos': 'heart',
       'perfil': 'user',
       'admin': 'user'
     };

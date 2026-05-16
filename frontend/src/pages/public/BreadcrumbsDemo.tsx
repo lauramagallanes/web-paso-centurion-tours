@@ -166,12 +166,6 @@ const BreadcrumbsDemo: React.FC = () => {
                     Actividades
                   </Button>
                 </Link>
-                <Link to="/favoritos" className="nav-link">
-                  <Button variant="outline" size="sm">
-                    <Icon name="heart" size="xs" />
-                    Favoritos
-                  </Button>
-                </Link>
               </div>
             </CardBody>
           </Card>

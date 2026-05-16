@@ -40,9 +40,6 @@ const CookiePolicy: React.FC = () => (
       <li>
         <strong>Carrito de reservas</strong> y datos relacionados con tu selección de servicios antes del pago.
       </li>
-      <li>
-        <strong>Favoritos</strong> u otras listas guardadas localmente para recordar tus elecciones en el dispositivo.
-      </li>
     </ul>
     <p>
       Esta información permanece en tu equipo hasta que la borres desde la configuración del navegador o la aplicación limpie esos

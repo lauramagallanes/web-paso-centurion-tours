@@ -105,21 +105,44 @@ const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) 
 };
 
 /** Datos de cuenta + instrucciones (misma info que en el checkout post-Prex). */
-const PrexTransferDetails: React.FC<{ codigoReserva: string }> = ({ codigoReserva }) => {
-  const mailto = `mailto:${PREX_ACCOUNT.email}?subject=${encodeURIComponent(PREX_ACCOUNT.asuntoEmail)}&body=${encodeURIComponent(
-    `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nCódigo de reserva: ${codigoReserva}\n\nSaludos.`
-  )}`;
+const PrexTransferDetails: React.FC<{
+  codigoReserva: string;
+  saldoPendiente?: { monto: number; currency: string };
+}> = ({ codigoReserva, saldoPendiente }) => {
+  const mailBody = saldoPendiente
+    ? `Hola,\n\nAdjunto el comprobante de la transferencia Prex correspondiente al saldo pendiente de la reserva.\n\nCódigo de reserva: ${codigoReserva}\nImporte del saldo: $${saldoPendiente.monto.toLocaleString()} ${saldoPendiente.currency}\n\nSaludos.`
+    : `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nCódigo de reserva: ${codigoReserva}\n\nSaludos.`;
+  const mailto = `mailto:${PREX_ACCOUNT.email}?subject=${encodeURIComponent(PREX_ACCOUNT.asuntoEmail)}&body=${encodeURIComponent(mailBody)}`;
   return (
     <div className="mb-prex-transfer-details">
       <h4 className="mb-prex-transfer-title">Datos para la transferencia</h4>
+      {saldoPendiente && (
+        <p className="mb-prex-saldo-line">
+          Saldo a transferir:{' '}
+          <strong>
+            ${saldoPendiente.monto.toLocaleString()} {saldoPendiente.currency}
+          </strong>
+        </p>
+      )}
       <ul className="mb-prex-transfer-list">
         <li><span>Titular</span><strong>{PREX_ACCOUNT.titular}</strong></li>
         <li><span>Número de cuenta</span><strong>{PREX_ACCOUNT.cuenta}</strong></li>
       </ul>
       <p className="mb-prex-transfer-note">
-        Puede enviar el comprobante a <strong>{PREX_ACCOUNT.email}</strong> con el asunto{' '}
-        <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong> e incluir el código de reserva{' '}
-        <strong className="mb-code-inline">{codigoReserva}</strong> en el cuerpo del mensaje.
+        {saldoPendiente ? (
+          <>
+            Puede enviar el comprobante a <strong>{PREX_ACCOUNT.email}</strong> con el asunto{' '}
+            <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong>, incluyendo el código de reserva{' '}
+            <strong className="mb-code-inline">{codigoReserva}</strong> y el importe del saldo en el cuerpo del
+            mensaje. Cuando registremos el pago, actualizaremos el estado de su reserva.
+          </>
+        ) : (
+          <>
+            Puede enviar el comprobante a <strong>{PREX_ACCOUNT.email}</strong> con el asunto{' '}
+            <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong> e incluir el código de reserva{' '}
+            <strong className="mb-code-inline">{codigoReserva}</strong> en el cuerpo del mensaje.
+          </>
+        )}
       </p>
       <a className="mb-prex-mailto" href={mailto}>
         Abrir el correo para enviar el comprobante
@@ -138,6 +161,11 @@ const MyBookings: React.FC = () => {
   const [payingId, setPayingId] = useState<string | null>(null);
   const [paymentModal, setPaymentModal] = useState<BookingItem | null>(null);
   const [selectedTipoPago, setSelectedTipoPago] = useState<'TOTAL' | 'SENA' | 'SALDO'>('TOTAL');
+  const [saldoFlow, setSaldoFlow] = useState<
+    | { booking: BookingItem; step: 'metodo'; metodo: 'CARD' | 'PREX' }
+    | { booking: BookingItem; step: 'prex' }
+    | null
+  >(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -283,9 +311,10 @@ const MyBookings: React.FC = () => {
 
   const handlePayClick = (booking: BookingItem) => {
     if (hasPendingSaldo(booking)) {
-      // Already has partial payment - pay saldo directly
-      processPayment(booking, 'SALDO');
-    } else if (booking.type === 'alojamiento') {
+      setSaldoFlow({ booking, step: 'metodo', metodo: 'CARD' });
+      return;
+    }
+    if (booking.type === 'alojamiento') {
       // Show modal to choose payment type (total vs 30% reserva)
       setPaymentModal(booking);
       setSelectedTipoPago('TOTAL');
@@ -293,6 +322,17 @@ const MyBookings: React.FC = () => {
       // Sendero: pay directly
       processPayment(booking, 'TOTAL');
     }
+  };
+
+  const handleSaldoMetodoContinuar = () => {
+    if (!saldoFlow || saldoFlow.step !== 'metodo') return;
+    const { booking, metodo } = saldoFlow;
+    if (metodo === 'PREX') {
+      setSaldoFlow({ booking, step: 'prex' });
+      return;
+    }
+    setSaldoFlow(null);
+    void processPayment(booking, 'SALDO');
   };
 
   const processPayment = async (booking: BookingItem, tipoPago: 'TOTAL' | 'SENA' | 'SALDO') => {
@@ -527,6 +567,104 @@ const MyBookings: React.FC = () => {
                 Cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {saldoFlow && (
+        <div
+          className="mb-modal-overlay"
+          onClick={() => {
+            if (!payingId) setSaldoFlow(null);
+          }}
+        >
+          <div
+            className={`mb-modal ${saldoFlow.step === 'prex' ? 'mb-modal--saldo-prex' : ''}`}
+            onClick={e => e.stopPropagation()}
+          >
+            {saldoFlow.step === 'metodo' && (
+              <>
+                <h3 className="mb-modal-title">Pagar saldo pendiente</h3>
+                <p className="mb-modal-subtitle">
+                  {saldoFlow.booking.name} — Saldo: ${getSaldo(saldoFlow.booking).toLocaleString()}{' '}
+                  {saldoFlow.booking.currency}
+                </p>
+                <p className="mb-saldo-pay-intro">
+                  Elija el mismo tipo de pago que en el checkout: tarjeta en línea o transferencia Prex.
+                </p>
+                <div className="mb-modal-options">
+                  <label className={`mb-modal-option ${saldoFlow.metodo === 'CARD' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="saldoMetodoPago"
+                      checked={saldoFlow.metodo === 'CARD'}
+                      onChange={() => setSaldoFlow({ booking: saldoFlow.booking, step: 'metodo', metodo: 'CARD' })}
+                    />
+                    <div>
+                      <strong>Tarjeta de crédito o débito</strong>
+                      <small>Pago seguro con Getnet (PlacetoPay). Visa, Mastercard y otras tarjetas.</small>
+                    </div>
+                  </label>
+                  <label className={`mb-modal-option ${saldoFlow.metodo === 'PREX' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="saldoMetodoPago"
+                      checked={saldoFlow.metodo === 'PREX'}
+                      onChange={() => setSaldoFlow({ booking: saldoFlow.booking, step: 'metodo', metodo: 'PREX' })}
+                    />
+                    <div>
+                      <strong>Transferencia a cuenta Prex</strong>
+                      <small>Verá los datos de la cuenta y podrá enviarnos el comprobante por correo.</small>
+                    </div>
+                  </label>
+                </div>
+                <div className="mb-modal-actions">
+                  <button
+                    type="button"
+                    className="mb-btn-pay"
+                    onClick={handleSaldoMetodoContinuar}
+                    disabled={!!payingId}
+                  >
+                    {saldoFlow.metodo === 'PREX' ? 'Ver datos de transferencia' : 'Continuar con tarjeta'}
+                  </button>
+                  <button
+                    type="button"
+                    className="mb-btn-cancel"
+                    onClick={() => setSaldoFlow(null)}
+                    disabled={!!payingId}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            )}
+            {saldoFlow.step === 'prex' && (
+              <>
+                <h3 className="mb-modal-title">Transferencia Prex (saldo)</h3>
+                <p className="mb-modal-subtitle">
+                  Transfiera el importe del saldo y envíe el comprobante indicando el código de reserva.
+                </p>
+                <PrexTransferDetails
+                  codigoReserva={saldoFlow.booking.code}
+                  saldoPendiente={{
+                    monto: getSaldo(saldoFlow.booking),
+                    currency: saldoFlow.booking.currency,
+                  }}
+                />
+                <div className="mb-modal-actions">
+                  <button
+                    type="button"
+                    className="mb-btn-secondary"
+                    onClick={() => setSaldoFlow({ booking: saldoFlow.booking, step: 'metodo', metodo: 'PREX' })}
+                  >
+                    Volver
+                  </button>
+                  <button type="button" className="mb-btn-cancel" onClick={() => setSaldoFlow(null)}>
+                    Cerrar
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

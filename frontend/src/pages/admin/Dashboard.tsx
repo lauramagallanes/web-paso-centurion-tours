@@ -168,7 +168,7 @@ const Dashboard: React.FC = () => {
                           {r.tipoReserva === 'SENDERO'
                             ? (r.sendero?.nombre || r.informacionAdicional?.split('|')[0]?.trim() || 'Sendero')
                             : (r.habitacion?.nombre || 'Alojamiento')}
-                          {' · '}{new Date(r.fechaReserva).toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit' })}
+                          {' · '}{new Date(r.fechaReserva + 'T12:00:00').toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit' })}
                         </small>
                       </div>
                       <div className="d-flex align-items-center gap-2">

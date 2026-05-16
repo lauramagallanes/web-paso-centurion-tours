@@ -14,6 +14,7 @@ interface BookingItem {
   paymentStatus: string;
   date: string;
   endDate?: string;
+  turno?: string;
   persons: number;
   total: number;
   paid: number;
@@ -55,11 +56,12 @@ const MyBookings: React.FC = () => {
               id: r.id,
               type: 'sendero',
               name: r.nombreSendero || r.senderoNombre || 'Sendero',
-              code: r.codigo || r.codigoReserva || '-',
+              code: r.codigoReserva || r.codigo || '-',
               status: r.estado || 'PENDIENTE',
               paymentStatus: r.estadoPago || 'PENDIENTE',
-              date: r.fechaReserva || r.fecha || '',
-              persons: r.cantidadPersonas || r.personas || 1,
+              date: r.fechaInicio || r.fechaReserva || r.fecha || '',
+              turno: r.turno || undefined,
+              persons: r.numeroPersonas ?? r.cantidadPersonas ?? r.personas ?? 1,
               total: r.precioTotal || r.precio || 0,
               paid: r.montoPagado || 0,
               pending: r.saldoPendiente || 0,
@@ -75,13 +77,13 @@ const MyBookings: React.FC = () => {
             items.push({
               id: r.id,
               type: 'alojamiento',
-              name: r.nombreAlojamiento || r.alojamientoNombre || 'Alojamiento',
-              code: r.codigo || r.codigoReserva || '-',
+              name: r.alojamientoNombre || r.nombreAlojamiento || 'Alojamiento',
+              code: r.codigoReserva || r.codigo || '-',
               status: r.estado || 'PENDIENTE',
               paymentStatus: r.estadoPago || 'PENDIENTE',
               date: r.fechaCheckIn || r.fechaInicio || '',
               endDate: r.fechaCheckOut || r.fechaFin || '',
-              persons: r.numeroHuespedes || r.cantidadPersonas || 1,
+              persons: r.numeroHuespedes ?? r.cantidadPersonas ?? 1,
               total: r.precioTotal || r.precio || 0,
               paid: r.montoPagado || 0,
               pending: r.saldoPendiente || 0,
@@ -305,6 +307,14 @@ const MyBookings: React.FC = () => {
                       {booking.endDate && ` - ${formatDate(booking.endDate)}`}
                     </span>
                   </div>
+                  {booking.type === 'sendero' && booking.turno && (
+                    <div className="mb-detail">
+                      <span className="mb-detail-label">Turno</span>
+                      <span className="mb-detail-value">
+                        {booking.turno === 'MANANA' ? 'Mañana' : booking.turno === 'TARDE' ? 'Tarde' : booking.turno}
+                      </span>
+                    </div>
+                  )}
                   <div className="mb-detail">
                     <span className="mb-detail-label">Personas</span>
                     <span className="mb-detail-value">{booking.persons}</span>

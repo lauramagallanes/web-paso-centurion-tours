@@ -81,8 +81,15 @@ const ReservationManagement: React.FC = () => {
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', minimumFractionDigits: 0 }).format(price);
 
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('es-UY');
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    // Si viene solo fecha (YYYY-MM-DD), forzamos mediodía local para que el cambio
+    // de huso horario no la corra al día anterior.
+    const normalized = /^\d{4}-\d{2}-\d{2}$/.test(dateString)
+      ? `${dateString}T12:00:00`
+      : dateString;
+    return new Date(normalized).toLocaleDateString('es-UY');
+  };
 
   const formatDateTime = (dateString: string) =>
     new Date(dateString).toLocaleString('es-UY', {

@@ -959,6 +959,95 @@ public class ReservaService {
         log.info("Alojamiento reservation cancelled and accommodation unblocked: {}", reserva.getCodigoReserva());
     }
 
+    /**
+     * Cancelación solicitada por el usuario titular desde "Mis reservas".
+     * Reglas:
+     *   - El email del usuario autenticado debe coincidir con el de la reserva.
+     *   - Sólo se puede cancelar si la reserva está PENDIENTE o CONFIRMADA.
+     *   - La fecha de la reserva debe ser hoy o futura (no se cancelan reservas pasadas).
+     *   - Sin reembolso: marca la reserva como CANCELADA y libera bloqueos. El usuario puede
+     *     coordinar reagendamiento con el operador dentro de los 2 meses (gestionado fuera del sistema).
+     *   - Si se proporciona motivo, se guarda en observaciones para que el admin lo vea.
+     */
+    @Transactional
+    public void cancelarReservaPorUsuario(UUID reservaId, String tipo, String emailUsuarioAutenticado, String motivo) {
+        if (tipo == null) {
+            throw new IllegalArgumentException("El tipo de reserva es obligatorio");
+        }
+        String motivoLimpio = (motivo != null && !motivo.isBlank()) ? motivo.trim() : null;
+        String userEmail = emailUsuarioAutenticado != null ? emailUsuarioAutenticado.trim().toLowerCase() : "";
+        if (userEmail.isEmpty()) {
+            throw new IllegalArgumentException("Necesitas iniciar sesión para cancelar la reserva");
+        }
+
+        if ("SENDERO".equalsIgnoreCase(tipo)) {
+            SenderoReserva r = senderoReservaRepository.findById(reservaId)
+                    .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
+            assertOwnerEmail(r.getEmailContacto(), userEmail);
+            assertEstadoCancelable(r.getEstado());
+            assertFechaCancelable(r.getFechaInicio());
+
+            if (motivoLimpio != null) {
+                String prev = r.getObservaciones();
+                String linea = "[Cancelación por usuario] " + motivoLimpio;
+                r.setObservaciones(prev == null || prev.isBlank() ? linea : prev + "\n" + linea);
+                senderoReservaRepository.save(r);
+            }
+            cancelarReservaSendero(reservaId);
+            return;
+        }
+
+        if ("ALOJAMIENTO".equalsIgnoreCase(tipo)) {
+            AlojamientoReserva r = alojamientoReservaRepository.findById(reservaId)
+                    .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada: " + reservaId));
+            assertOwnerEmail(r.getEmailContacto(), userEmail);
+            assertEstadoCancelable(r.getEstado());
+            assertFechaCancelable(r.getFechaCheckIn());
+
+            if (motivoLimpio != null) {
+                String prev = r.getObservaciones();
+                String linea = "[Cancelación por usuario] " + motivoLimpio;
+                r.setObservaciones(prev == null || prev.isBlank() ? linea : prev + "\n" + linea);
+                alojamientoReservaRepository.save(r);
+            }
+            cancelarReservaAlojamiento(reservaId);
+            return;
+        }
+
+        throw new IllegalArgumentException("Tipo de reserva no válido: " + tipo);
+    }
+
+    private static void assertOwnerEmail(String emailReserva, String emailUsuarioNorm) {
+        if (emailReserva == null || emailReserva.isBlank()) {
+            throw new IllegalArgumentException("La reserva no tiene email de contacto");
+        }
+        if (!emailReserva.trim().toLowerCase().equals(emailUsuarioNorm)) {
+            throw new IllegalArgumentException("No tienes permiso para cancelar esta reserva");
+        }
+    }
+
+    private static void assertEstadoCancelable(EstadoReserva estado) {
+        if (estado == EstadoReserva.CANCELADA) {
+            throw new IllegalStateException("La reserva ya fue cancelada");
+        }
+        if (estado == EstadoReserva.COMPLETADA) {
+            throw new IllegalStateException("No se puede cancelar una reserva ya completada");
+        }
+        if (estado != EstadoReserva.PENDIENTE && estado != EstadoReserva.CONFIRMADA) {
+            throw new IllegalStateException("La reserva no admite cancelación en su estado actual");
+        }
+    }
+
+    private static void assertFechaCancelable(LocalDate fechaInicio) {
+        if (fechaInicio == null) {
+            return;
+        }
+        if (fechaInicio.isBefore(LocalDate.now())) {
+            throw new IllegalStateException(
+                    "No se puede cancelar una reserva cuya fecha ya pasó. Contactá al operador si necesitas reagendarla.");
+        }
+    }
+
     // ==================== QUERY OPERATIONS ====================
 
     @Transactional(readOnly = true)

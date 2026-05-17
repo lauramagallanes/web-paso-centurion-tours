@@ -999,6 +999,27 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  /**
+   * Cancelación solicitada por el usuario titular desde "Mis reservas".
+   * Sin reembolso; el reagendamiento se coordina con el operador (hasta 2 meses).
+   */
+  async cancelarReservaUsuario(id: string, tipo: 'SENDERO' | 'ALOJAMIENTO', motivo?: string) {
+    const params = new URLSearchParams({ tipo });
+    const url = `${this.baseURL}/reservas/usuario/${id}/cancelar?${params}`;
+    const put = () =>
+      fetch(url, {
+        method: 'PUT',
+        headers: this.getHeaders(true),
+        body: JSON.stringify(motivo && motivo.trim() ? { motivo: motivo.trim() } : {}),
+      });
+    let response = await put();
+    if (response.status === 401) {
+      const refreshed = await this.refreshToken();
+      if (refreshed) response = await put();
+    }
+    return this.handleResponse(response);
+  }
+
   // ========== Getnet (tarjeta) — sesión de pago ==========
 
   /**

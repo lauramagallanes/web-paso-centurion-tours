@@ -201,6 +201,12 @@ const MyBookings: React.FC = () => {
     | { step: 'prex'; items: BookingItem[]; total: number }
     | null
   >(null);
+  const [cancelFlow, setCancelFlow] = useState<{
+    booking: BookingItem;
+    motivo: string;
+    submitting: boolean;
+    error: string | null;
+  } | null>(null);
 
   const nombreQuienReservaUi =
     state.user?.nombreCompleto?.trim() || state.user?.email?.trim() || '';
@@ -357,6 +363,53 @@ const MyBookings: React.FC = () => {
       b.paymentStatus !== 'COMPLETO' &&
       b.paymentStatus !== 'PAGADO' &&
       b.paid > 0);
+
+  /**
+   * El usuario sólo puede solicitar cancelar si:
+   *  - La reserva está PENDIENTE o CONFIRMADA (no cancelada/completada).
+   *  - La fecha de la reserva todavía no pasó.
+   *  - No es una reserva Prex con la transferencia inicial pendiente: en ese caso
+   *    se cancela sola por inactividad y el botón sólo agregaría ruido.
+   */
+  const canRequestCancellation = (b: BookingItem): boolean => {
+    if (b.status !== 'PENDIENTE' && b.status !== 'CONFIRMADA') return false;
+    if (isPrexPending(b)) return false;
+    if (!b.date) return true;
+    try {
+      const start = new Date(b.date + (b.date.includes('T') ? '' : 'T00:00:00')).getTime();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return start >= today.getTime();
+    } catch {
+      return true;
+    }
+  };
+
+  const handleConfirmCancellation = async () => {
+    if (!cancelFlow || cancelFlow.submitting) return;
+    const { booking, motivo } = cancelFlow;
+    setCancelFlow({ ...cancelFlow, submitting: true, error: null });
+    try {
+      const tipo = booking.type === 'sendero' ? 'SENDERO' : 'ALOJAMIENTO';
+      await apiService.cancelarReservaUsuario(booking.id, tipo, motivo);
+      setBookings(prev =>
+        prev.map(b =>
+          b.id === booking.id ? { ...b, status: 'CANCELADA', paymentStatus: 'NO_CORRESPONDE' } : b,
+        ),
+      );
+      setCancelFlow(null);
+    } catch (err: any) {
+      setCancelFlow(prev =>
+        prev
+          ? {
+              ...prev,
+              submitting: false,
+              error: err?.message || 'No se pudo cancelar la reserva. Intentá nuevamente.',
+            }
+          : prev,
+      );
+    }
+  };
 
   const getSaldo = (b: BookingItem) => {
     if (b.pending > 0) return b.pending;
@@ -669,28 +722,48 @@ const MyBookings: React.FC = () => {
                   </>
                 )}
 
-                {/* Pay button for unpaid reservations */}
-                {canPay(booking) && (
+                {/* Pay button for unpaid reservations + cancel button when allowed */}
+                {(canPay(booking) || canRequestCancellation(booking)) && (
                   <div className="mb-card-actions">
-                    <button
-                      className="mb-btn-pay"
-                      onClick={() => handlePayClick(booking)}
-                      disabled={payingId === booking.id || payingId === 'batch'}
-                    >
-                      {payingId === booking.id ? (
-                        <>
-                          <div className="mb-btn-spinner" />
-                          Procesando...
-                        </>
-                      ) : (
-                        <>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
-                          </svg>
-                          {hasPendingSaldo(booking) ? `Pagar saldo ($${getSaldo(booking).toLocaleString()} ${booking.currency})` : 'Pagar ahora'}
-                        </>
-                      )}
-                    </button>
+                    {canPay(booking) && (
+                      <button
+                        className="mb-btn-pay"
+                        onClick={() => handlePayClick(booking)}
+                        disabled={payingId === booking.id || payingId === 'batch'}
+                      >
+                        {payingId === booking.id ? (
+                          <>
+                            <div className="mb-btn-spinner" />
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            <i className="bi bi-credit-card" aria-hidden="true" />
+                            {hasPendingSaldo(booking)
+                              ? `Pagar saldo ($${getSaldo(booking).toLocaleString()} ${booking.currency})`
+                              : 'Pagar ahora'}
+                          </>
+                        )}
+                      </button>
+                    )}
+                    {canRequestCancellation(booking) && (
+                      <button
+                        type="button"
+                        className="mb-btn-cancel-request"
+                        onClick={() =>
+                          setCancelFlow({
+                            booking,
+                            motivo: '',
+                            submitting: false,
+                            error: null,
+                          })
+                        }
+                        disabled={payingId === booking.id || payingId === 'batch'}
+                      >
+                        <i className="bi bi-x-circle" aria-hidden="true" />
+                        Solicitar cancelación
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -965,6 +1038,92 @@ const MyBookings: React.FC = () => {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {cancelFlow && (
+        <div
+          className="mb-modal-overlay"
+          onClick={() => {
+            if (!cancelFlow.submitting) setCancelFlow(null);
+          }}
+        >
+          <div
+            className="mb-modal mb-modal--cancel-request"
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-flow-title"
+          >
+            <h3 id="cancel-flow-title" className="mb-modal-title mb-modal-title--warn">
+              <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />
+              Solicitar cancelación
+            </h3>
+            <p className="mb-modal-subtitle">
+              {cancelFlow.booking.name} — {formatDate(cancelFlow.booking.date)}
+              {cancelFlow.booking.endDate ? ` al ${formatDate(cancelFlow.booking.endDate)}` : ''}
+            </p>
+
+            <div className="mb-cancel-warning">
+              <p className="mb-cancel-warning-lead">
+                <strong>Importante:</strong> esta cancelación <strong>no tiene reembolso</strong> de los
+                importes ya pagados.
+              </p>
+              <p>
+                Sí podés <strong>reagendar</strong> tu reserva para una nueva fecha dentro de los próximos
+                <strong> 2 meses </strong>
+                desde la fecha original. Para hacerlo, contactanos por WhatsApp o por correo y
+                te ayudamos a coordinar la nueva fecha según la disponibilidad.
+              </p>
+              <p className="mb-cancel-warning-note">
+                Al confirmar, tu reserva quedará cancelada y las fechas se liberarán para otros usuarios.
+              </p>
+            </div>
+
+            <label className="mb-cancel-motivo-label" htmlFor="cancel-motivo">
+              Motivo (opcional)
+            </label>
+            <textarea
+              id="cancel-motivo"
+              className="mb-cancel-motivo"
+              rows={3}
+              maxLength={500}
+              placeholder="Contanos brevemente por qué cancelás (opcional)..."
+              value={cancelFlow.motivo}
+              onChange={e =>
+                setCancelFlow(prev => (prev ? { ...prev, motivo: e.target.value } : prev))
+              }
+              disabled={cancelFlow.submitting}
+            />
+
+            {cancelFlow.error && <p className="mb-cancel-error">{cancelFlow.error}</p>}
+
+            <div className="mb-modal-actions">
+              <button
+                type="button"
+                className="mb-btn-cancel"
+                onClick={() => setCancelFlow(null)}
+                disabled={cancelFlow.submitting}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                className="mb-btn-confirm-cancel"
+                onClick={handleConfirmCancellation}
+                disabled={cancelFlow.submitting}
+              >
+                {cancelFlow.submitting ? (
+                  <>
+                    <div className="mb-btn-spinner" />
+                    Cancelando...
+                  </>
+                ) : (
+                  'Confirmar cancelación'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

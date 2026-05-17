@@ -9,6 +9,7 @@ import com.tinambu.tours.dto.response.ApiResponse;
 import com.tinambu.tours.dto.response.DisponibilidadSenderoResponse;
 import com.tinambu.tours.dto.response.ReservaResponse;
 import com.tinambu.tours.entity.sendero.TurnoSendero;
+import com.tinambu.tours.entity.usuario.Usuario;
 import com.tinambu.tours.exception.SinDisponibilidadException;
 import com.tinambu.tours.service.ReservaService;
 import jakarta.validation.Valid;
@@ -17,6 +18,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -130,6 +134,64 @@ public class ReservaController {
         log.info("GET /reservas/alojamiento/email/{} - Getting alojamiento reservations", email);
         List<AlojamientoReservaResponse> reservas = reservaService.obtenerReservasAlojamientoPorEmail(email);
         return ResponseEntity.ok(ApiResponse.success(reservas, "Reservas encontradas"));
+    }
+
+    /**
+     * Cancelación solicitada por el usuario titular desde "Mis reservas".
+     * No hay reembolso; el reagendamiento se coordina con el operador (hasta 2 meses).
+     * Valida ownership por email y libera los bloqueos asociados.
+     *
+     * Body opcional: { "motivo": "texto libre" }
+     */
+    @PutMapping("/usuario/{id}/cancelar")
+    public ResponseEntity<?> cancelarReservaUsuario(@PathVariable UUID id,
+                                                    @RequestParam String tipo,
+                                                    @RequestBody(required = false) Map<String, String> body,
+                                                    Authentication authentication) {
+        try {
+            log.info("PUT /reservas/usuario/{}/cancelar - tipo={}", id, tipo);
+            String email = resolveEmailUsuarioOrNull(authentication);
+            if (email == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Necesitas iniciar sesión para cancelar la reserva"));
+            }
+            String motivo = body != null ? body.get("motivo") : null;
+            reservaService.cancelarReservaPorUsuario(id, tipo, email, motivo);
+            return ResponseEntity.ok(ApiResponse.success("Reserva cancelada correctamente"));
+        } catch (IllegalStateException e) {
+            log.warn("State error cancelling reservation {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            log.warn("Validation error cancelling reservation {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error cancelling reservation {} for user", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error al cancelar la reserva: " + e.getMessage()));
+        }
+    }
+
+    private String resolveEmailUsuarioOrNull(Authentication authentication) {
+        Authentication auth = authentication != null
+                ? authentication
+                : SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return null;
+        }
+        Object principal = auth.getPrincipal();
+        if (principal instanceof Usuario usuario) {
+            return usuario.getEmail();
+        }
+        if (principal instanceof UserDetails ud) {
+            return ud.getUsername();
+        }
+        String name = auth.getName();
+        if (name == null || name.isBlank() || "anonymousUser".equalsIgnoreCase(name)) {
+            return null;
+        }
+        return name;
     }
 
     // ==================== ADMIN ENDPOINTS ====================

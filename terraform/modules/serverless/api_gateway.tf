@@ -840,6 +840,41 @@ resource "aws_apigatewayv2_route" "senderos_admin_delete_bloqueo" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+# ========== CART HOLD REVALIDATION ==========
+# Revalida si el usuario autenticado tiene bloqueo de carrito vigente para
+# las fechas indicadas (fuente de verdad para limpiar items "fantasma").
+resource "aws_apigatewayv2_route" "alojamientos_carrito_bloqueo_get" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /alojamientos/{id}/carrito-bloqueo"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# ========== CANCELACIÓN DE PAGO ABANDONADO ==========
+# Cancela una orden de compra pendiente cuando el usuario abandona la pasarela
+# (libera todos los bloqueos de fechas de las reservas asociadas).
+resource "aws_apigatewayv2_route" "pagos_orden_cancelar" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /pagos/orden/{ordenId}/cancelar"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# Cancela una reserva pendiente individual cuando el cancelUrl viene con
+# reservaId+tipo en lugar de ordenId.
+resource "aws_apigatewayv2_route" "pagos_reserva_cancelar" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /pagos/reserva/{reservaId}/cancelar"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# ========== CANCELACIÓN POR USUARIO (Mis Reservas) ==========
+# El titular puede solicitar cancelar su reserva desde "Mis reservas".
+# No hay reembolso (regla de negocio); el reagendamiento se coordina con el operador.
+resource "aws_apigatewayv2_route" "reservas_usuario_cancelar" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /reservas/usuario/{id}/cancelar"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Lambda permission for API Gateway
 resource "aws_lambda_permission" "api_gateway" {
   statement_id  = "AllowExecutionFromAPIGateway"

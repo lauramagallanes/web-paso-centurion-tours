@@ -6,6 +6,7 @@ import { useCart, CartItem } from '../../contexts/CartContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Icon from '../../components/common/Icon';
 import { PREX_ACCOUNT, PREX_COUNTRIES, PREX_WHATSAPP_DISPLAY, prexComprobanteWhatsAppUrl } from '../../config/prex';
+import { routes } from '../../utils/routes';
 import './Checkout.css';
 
 interface ContactInfo {
@@ -195,6 +196,12 @@ const Checkout: React.FC = () => {
       setMetodoPago('CARD');
     }
   }, [prexAvailable, metodoPago]);
+
+  // Al cambiar de paso, llevamos al usuario al inicio de la nueva vista
+  // (especialmente importante en mobile, donde la pantalla de Prex es larga).
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
 
   const handleEditItem = (item: CartItem) => {
     const path = item.type === 'sendero' ? `/actividades/${item.id}` : `/alojamientos/${item.id}`;
@@ -410,10 +417,10 @@ const Checkout: React.FC = () => {
             </div>
 
             <div className="prex-actions">
-              <button className="btn-primary" onClick={() => navigate('/mis-reservas')}>
+              <button className="btn-primary" onClick={() => navigate(routes.myBookings)}>
                 Ver mis reservas
               </button>
-              <button className="btn-secondary" onClick={() => navigate('/')}>
+              <button className="btn-secondary" onClick={() => navigate(routes.home)}>
                 Volver al inicio
               </button>
             </div>

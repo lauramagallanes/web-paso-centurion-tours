@@ -4,7 +4,7 @@ import DatePicker, { registerLocale } from 'react-datepicker';
 import { es } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 registerLocale('es', es);
-import { apiService } from '../../services/apiService';
+import { apiService, ALOJAMIENTO_CART_HOLD_HOURS } from '../../services/apiService';
 import { useCart } from '../../contexts/CartContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,6 +12,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ImageGridGallery from '../../components/common/ImageGridGallery';
 import LoginRequiredModal from '../../components/common/LoginRequiredModal';
 import AddedToCartModal from '../../components/common/AddedToCartModal';
+import CartHoldWarningModal from '../../components/common/CartHoldWarningModal';
 import './RoomDetails.css';
 
 interface RoomDetails {
@@ -67,6 +68,8 @@ const RoomDetails: React.FC = () => {
   const [availabilityPeriods, setAvailabilityPeriods] = useState<{fechaInicio: string; fechaFin: string}[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAddedModal, setShowAddedModal] = useState(false);
+  const [holdWarningOpen, setHoldWarningOpen] = useState(false);
+  const [pendingBookingMode, setPendingBookingMode] = useState<'cart' | 'checkout' | null>(null);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
 
@@ -298,17 +301,15 @@ const RoomDetails: React.FC = () => {
     setGuestsCount(newCount);
   };
 
-  const handleAddToCart = () => {
+  const validateBookingInputs = (): boolean => {
     if (!room || !checkInDate || !checkOutDate) {
       alert('Por favor selecciona las fechas de entrada y salida');
-      return;
+      return false;
     }
     if (availabilityError) {
       alert(availabilityError);
-      return;
+      return false;
     }
-
-    // Check authentication - save booking state before redirecting to login
     if (!authState.isAuthenticated) {
       sessionStorage.setItem(`booking_${id}`, JSON.stringify({
         checkIn: checkInDate?.toISOString(),
@@ -316,78 +317,64 @@ const RoomDetails: React.FC = () => {
         guests: guestsCount,
       }));
       setShowLoginModal(true);
-      return;
+      return false;
     }
-
     const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-
     if (nights <= 0) {
       alert('La fecha de salida debe ser posterior a la fecha de entrada');
-      return;
+      return false;
     }
+    return true;
+  };
 
+  const executeAlojamientoBookingWithHold = async (mode: 'cart' | 'checkout') => {
+    if (!room || !checkInDate || !checkOutDate) return;
+    const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
     const formatDate = (d: Date) => d.toISOString().split('T')[0];
+    try {
+      const hold = await apiService.registrarCarritoBloqueoAlojamiento(
+        room.id,
+        formatDate(checkInDate),
+        formatDate(checkOutDate),
+      );
+      addItem({
+        id: room.id,
+        type: 'alojamiento',
+        name: room.nombre,
+        description: room.descripcion,
+        image: room.imagenes[0]?.url || '/placeholder-sendero.svg',
+        price: room.precioPorNoche * guestsCount * nights,
+        currency: 'UYU',
+        checkIn: formatDate(checkInDate),
+        checkOut: formatDate(checkOutDate),
+        huespedes: guestsCount,
+        noches: nights,
+        cartHoldExpiresAt: hold.expiresAt,
+      });
+      if (mode === 'cart') {
+        setShowAddedModal(true);
+      } else {
+        navigate('/checkout');
+      }
+    } catch (e: unknown) {
+      const msg =
+        typeof e === 'object' && e !== null && 'message' in e
+          ? String((e as { message: string }).message)
+          : 'No se pudieron reservar temporalmente las fechas. Probá otras fechas.';
+      alert(msg);
+    }
+  };
 
-    addItem({
-      id: room.id,
-      type: 'alojamiento',
-      name: room.nombre,
-      description: room.descripcion,
-      image: room.imagenes[0]?.url || '/placeholder-sendero.svg',
-      price: room.precioPorNoche * guestsCount * nights,
-      currency: 'UYU',
-      checkIn: formatDate(checkInDate),
-      checkOut: formatDate(checkOutDate),
-      huespedes: guestsCount,
-      noches: nights,
-    });
-
-    setShowAddedModal(true);
+  const handleAddToCart = () => {
+    if (!validateBookingInputs()) return;
+    setPendingBookingMode('cart');
+    setHoldWarningOpen(true);
   };
 
   const handleBookNow = () => {
-    if (!room || !checkInDate || !checkOutDate) {
-      alert('Por favor selecciona las fechas de entrada y salida');
-      return;
-    }
-    if (availabilityError) {
-      alert(availabilityError);
-      return;
-    }
-
-    if (!authState.isAuthenticated) {
-      sessionStorage.setItem(`booking_${id}`, JSON.stringify({
-        checkIn: checkInDate?.toISOString(),
-        checkOut: checkOutDate?.toISOString(),
-        guests: guestsCount,
-      }));
-      setShowLoginModal(true);
-      return;
-    }
-
-    const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-    if (nights <= 0) {
-      alert('La fecha de salida debe ser posterior a la fecha de entrada');
-      return;
-    }
-
-    const formatDate = (d: Date) => d.toISOString().split('T')[0];
-
-    addItem({
-      id: room.id,
-      type: 'alojamiento',
-      name: room.nombre,
-      description: room.descripcion,
-      image: room.imagenes[0]?.url || '/placeholder-sendero.svg',
-      price: room.precioPorNoche * guestsCount * nights,
-      currency: 'UYU',
-      checkIn: formatDate(checkInDate),
-      checkOut: formatDate(checkOutDate),
-      huespedes: guestsCount,
-      noches: nights,
-    });
-
-    navigate('/checkout');
+    if (!validateBookingInputs()) return;
+    setPendingBookingMode('checkout');
+    setHoldWarningOpen(true);
   };
 
   const handleRelatedRoomClick = (roomId: string) => {
@@ -771,6 +758,24 @@ const RoomDetails: React.FC = () => {
         show={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         returnPath={`/alojamientos/${id}`}
+      />
+
+      <CartHoldWarningModal
+        isOpen={holdWarningOpen}
+        roomName={room?.nombre || 'Alojamiento'}
+        horasRetencion={ALOJAMIENTO_CART_HOLD_HOURS}
+        onCancel={() => {
+          setHoldWarningOpen(false);
+          setPendingBookingMode(null);
+        }}
+        onConfirm={async () => {
+          const mode = pendingBookingMode;
+          setHoldWarningOpen(false);
+          setPendingBookingMode(null);
+          if (mode) {
+            await executeAlojamientoBookingWithHold(mode);
+          }
+        }}
       />
 
       {/* Added to Cart Modal */}

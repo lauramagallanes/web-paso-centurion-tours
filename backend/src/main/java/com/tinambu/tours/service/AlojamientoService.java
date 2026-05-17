@@ -22,12 +22,15 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 import java.time.Duration;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class AlojamientoService {
+
+    public static final int HORAS_RETENCION_CARRITO_ALOJAMIENTO = 2;
 
     @Autowired
     private AlojamientoRepository alojamientoRepository;
@@ -216,24 +219,88 @@ public class AlojamientoService {
     }
 
     public boolean verificarDisponibilidad(UUID alojamientoId, LocalDate checkIn, LocalDate checkOut) {
+        return verificarDisponibilidad(alojamientoId, checkIn, checkOut, null);
+    }
+
+    /**
+     * @param excluirCarritoUsuarioId si no es null, no cuenta bloqueos de carrito de ese usuario
+     *                                 (para quien ya tiene la retención o va a completar la reserva).
+     */
+    @Transactional(readOnly = true)
+    public boolean verificarDisponibilidad(UUID alojamientoId, LocalDate checkIn, LocalDate checkOut,
+                                           UUID excluirCarritoUsuarioId) {
         System.out.println("🔍 Verificando disponibilidad para alojamiento " + alojamientoId + " del " + checkIn + " al " + checkOut);
-        
-        // Check if there's availability range that covers the requested dates
+
         boolean tieneDisponibilidad = disponibilidadRepository
                 .existeDisponibilidadParaRango(alojamientoId, checkIn, checkOut);
-        
+
         if (!tieneDisponibilidad) {
             System.out.println("❌ No hay disponibilidad configurada para las fechas solicitadas");
             return false;
         }
-        
-        // Check for blocks (excluding checkout date)
-        boolean tieneBloqueos = bloqueoRepository.tieneBloqueoEnRango(alojamientoId, checkIn, checkOut);
-        
+
+        LocalDateTime ahora = LocalDateTime.now();
+        boolean tieneBloqueos = bloqueoRepository.tieneBloqueoEnRango(
+                alojamientoId, checkIn, checkOut, excluirCarritoUsuarioId, ahora);
+
         boolean disponible = !tieneBloqueos;
         System.out.println("✅ Disponibilidad verificada: " + (disponible ? "DISPONIBLE" : "NO DISPONIBLE"));
-        
+
         return disponible;
+    }
+
+    public void limpiarBloqueosCarritoExpirados() {
+        bloqueoRepository.desactivarBloqueosCarritoExpirados(LocalDateTime.now());
+    }
+
+    /**
+     * Retiene fechas por carrito (máx. {@link #HORAS_RETENCION_CARRITO_ALOJAMIENTO} h).
+     */
+    public LocalDateTime registrarBloqueoCarrito(UUID usuarioId, UUID alojamientoId,
+                                                 LocalDate checkIn, LocalDate checkOut) {
+        if (!checkIn.isBefore(checkOut)) {
+            throw new IllegalArgumentException("La fecha de check-in debe ser anterior al check-out");
+        }
+
+        limpiarBloqueosCarritoExpirados();
+
+        boolean hayReserva = reservaRepository.existeReservaEnRango(alojamientoId, checkIn, checkOut);
+        if (hayReserva) {
+            throw new IllegalStateException("Las fechas ya tienen una reserva confirmada");
+        }
+
+        bloqueoRepository.desactivarBloqueosCarritoDeUsuarioParaAlojamiento(alojamientoId, usuarioId);
+
+        if (bloqueoRepository.tieneBloqueoEnRango(alojamientoId, checkIn, checkOut, null, LocalDateTime.now())) {
+            throw new IllegalStateException("Otro usuario tiene esas fechas retenidas o no disponibles");
+        }
+
+        LocalDateTime expira = LocalDateTime.now().plusHours(HORAS_RETENCION_CARRITO_ALOJAMIENTO);
+        List<AlojamientoReservaBloqueo> bloqueos = new ArrayList<>();
+        LocalDate fecha = checkIn;
+        while (fecha.isBefore(checkOut)) {
+            bloqueos.add(AlojamientoReservaBloqueo.builder()
+                    .alojamientoId(alojamientoId)
+                    .reservaId(null)
+                    .carritoUsuarioId(usuarioId)
+                    .carritoExpiraEn(expira)
+                    .fecha(fecha)
+                    .activo(true)
+                    .build());
+            fecha = fecha.plusDays(1);
+        }
+        bloqueoRepository.saveAll(bloqueos);
+        return expira;
+    }
+
+    public void liberarBloqueoCarrito(UUID usuarioId, UUID alojamientoId, LocalDate checkIn, LocalDate checkOut) {
+        limpiarBloqueosCarritoExpirados();
+        bloqueoRepository.desactivarBloqueosCarritoUsuarioEnRango(alojamientoId, usuarioId, checkIn, checkOut);
+    }
+
+    public void liberarTodosBloqueosCarritoDeUsuario(UUID usuarioId) {
+        limpiarBloqueosCarritoExpirados();
+        bloqueoRepository.desactivarTodosBloqueosCarritoDeUsuario(usuarioId);
     }
 
     // Blocking System Methods
@@ -322,9 +389,17 @@ public class AlojamientoService {
         System.out.println("✅ Bloqueo manual eliminado: " + fechaInicio + " al " + fechaFin);
     }
 
+    @Transactional(readOnly = true)
     public List<LocalDate> obtenerFechasBloqueadas(UUID alojamientoId, LocalDate desde, LocalDate hasta) {
+        return obtenerFechasBloqueadas(alojamientoId, desde, hasta, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<LocalDate> obtenerFechasBloqueadas(UUID alojamientoId, LocalDate desde, LocalDate hasta,
+                                                  UUID excluirCarritoUsuarioId) {
         System.out.println("📅 Obteniendo fechas bloqueadas para alojamiento " + alojamientoId + " del " + desde + " al " + hasta);
-        return bloqueoRepository.findFechasBloqueadasEnRango(alojamientoId, desde, hasta);
+        return bloqueoRepository.findFechasBloqueadasEnRango(
+                alojamientoId, desde, hasta, excluirCarritoUsuarioId, LocalDateTime.now());
     }
 
     public void desbloquearAlojamientoDeReserva(UUID reservaId) {

@@ -143,6 +143,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/habitaciones/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/senderos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/guias/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/alojamientos").permitAll()
+                .requestMatchers(HttpMethod.GET, "/alojamientos/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/alojamientos/*/fechas-bloqueadas").permitAll()
+                .requestMatchers(HttpMethod.GET, "/alojamientos/*/disponibilidad").permitAll()
+                .requestMatchers(HttpMethod.POST, "/alojamientos/*/verificar-disponibilidad").permitAll()
                 
                 // Endpoints públicos de reservas (para visitantes)
                 .requestMatchers(HttpMethod.POST, "/reservas").permitAll()

@@ -3,16 +3,17 @@ package com.tinambu.tours.controller;
 import com.tinambu.tours.dto.request.*;
 import com.tinambu.tours.dto.response.*;
 import com.tinambu.tours.service.AlojamientoService;
+import com.tinambu.tours.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.UUID;
 
 @RestController
@@ -22,6 +23,9 @@ public class AlojamientoController {
 
     @Autowired
     private AlojamientoService alojamientoService;
+
+    @Autowired
+    private UsuarioService usuarioService;
 
     // Public Endpoints
 
@@ -53,9 +57,11 @@ public class AlojamientoController {
     public ResponseEntity<Boolean> verificarDisponibilidad(
             @PathVariable UUID id,
             @RequestParam LocalDate checkIn,
-            @RequestParam LocalDate checkOut) {
+            @RequestParam LocalDate checkOut,
+            Authentication authentication) {
         try {
-            boolean disponible = alojamientoService.verificarDisponibilidad(id, checkIn, checkOut);
+            UUID excluirCarrito = resolveUsuarioIdOrNull(authentication);
+            boolean disponible = alojamientoService.verificarDisponibilidad(id, checkIn, checkOut, excluirCarrito);
             return ResponseEntity.ok(disponible);
         } catch (Exception e) {
             System.err.println("Error verificando disponibilidad: " + e.getMessage());
@@ -67,13 +73,96 @@ public class AlojamientoController {
     public ResponseEntity<?> obtenerFechasBloqueadas(
             @PathVariable UUID id,
             @RequestParam LocalDate desde,
-            @RequestParam LocalDate hasta) {
+            @RequestParam LocalDate hasta,
+            Authentication authentication) {
         try {
-            List<LocalDate> fechas = alojamientoService.obtenerFechasBloqueadas(id, desde, hasta);
+            UUID excluirCarrito = resolveUsuarioIdOrNull(authentication);
+            List<LocalDate> fechas = alojamientoService.obtenerFechasBloqueadas(id, desde, hasta, excluirCarrito);
             return ResponseEntity.ok(fechas);
         } catch (Exception e) {
             System.err.println("Error obteniendo fechas bloqueadas: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/{id}/carrito-bloqueo")
+    public ResponseEntity<?> registrarBloqueoCarrito(
+            @PathVariable UUID id,
+            @RequestParam LocalDate checkIn,
+            @RequestParam LocalDate checkOut,
+            Authentication authentication) {
+        try {
+            UUID usuarioId = requireUsuarioId(authentication);
+            var expira = alojamientoService.registrarBloqueoCarrito(usuarioId, id, checkIn, checkOut);
+            return ResponseEntity.ok(Map.of(
+                    "expiresAt", expira.toString(),
+                    "horasRetencion", AlojamientoService.HORAS_RETENCION_CARRITO_ALOJAMIENTO
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Error registrando bloqueo de carrito: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error interno al reservar fechas en el carrito"));
+        }
+    }
+
+    @DeleteMapping("/{id}/carrito-bloqueo")
+    public ResponseEntity<?> liberarBloqueoCarrito(
+            @PathVariable UUID id,
+            @RequestParam LocalDate checkIn,
+            @RequestParam LocalDate checkOut,
+            Authentication authentication) {
+        try {
+            UUID usuarioId = requireUsuarioId(authentication);
+            alojamientoService.liberarBloqueoCarrito(usuarioId, id, checkIn, checkOut);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Error liberando bloqueo de carrito: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error interno"));
+        }
+    }
+
+    @DeleteMapping("/carrito/bloqueos")
+    public ResponseEntity<?> liberarTodosBloqueosCarrito(Authentication authentication) {
+        try {
+            UUID usuarioId = requireUsuarioId(authentication);
+            alojamientoService.liberarTodosBloqueosCarritoDeUsuario(usuarioId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Error liberando bloqueos de carrito: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error interno"));
+        }
+    }
+
+    private UUID requireUsuarioId(Authentication authentication) {
+        UUID id = resolveUsuarioIdOrNull(authentication);
+        if (id == null) {
+            throw new IllegalArgumentException("Se requiere iniciar sesión");
+        }
+        return id;
+    }
+
+    private UUID resolveUsuarioIdOrNull(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        String email = authentication.getName();
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        try {
+            return usuarioService.obtenerUsuarioPorEmail(email).getId();
+        } catch (Exception e) {
+            return null;
         }
     }
 

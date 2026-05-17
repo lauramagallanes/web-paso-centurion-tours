@@ -207,7 +207,7 @@ const Checkout: React.FC = () => {
 
   const handleConfirmRemove = () => {
     if (removeConfirmItem) {
-      removeItem(removeConfirmItem.cartItemId);
+      void removeItem(removeConfirmItem.cartItemId);
       setRemoveConfirmItem(null);
     }
   };
@@ -292,13 +292,13 @@ const Checkout: React.FC = () => {
           monto: Number(data.montoTotal) || montoAPagar,
           currency,
         });
-        clearCart();
+        void clearCart();
         setStep('prex');
       } else if (data?.processUrl) {
-        clearCart();
+        void clearCart();
         window.location.href = data.processUrl;
       } else if (data?.status === 'MOCK') {
-        clearCart();
+        void clearCart();
         navigate(
           `/pago/resultado?ordenId=${data.ordenId}&mock=true`
         );

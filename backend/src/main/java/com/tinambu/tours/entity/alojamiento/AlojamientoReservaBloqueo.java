@@ -30,6 +30,12 @@ public class AlojamientoReservaBloqueo {
     @Column(name = "reserva_id", nullable = true)
     private UUID reservaId;
 
+    @Column(name = "carrito_usuario_id")
+    private UUID carritoUsuarioId;
+
+    @Column(name = "carrito_expira_en")
+    private LocalDateTime carritoExpiraEn;
+
     @Column(nullable = false)
     private LocalDate fecha;
 
@@ -64,6 +70,6 @@ public class AlojamientoReservaBloqueo {
     }
 
     public boolean perteneceAReserva(UUID idReserva) {
-        return reservaId.equals(idReserva);
+        return reservaId != null && reservaId.equals(idReserva);
     }
 }

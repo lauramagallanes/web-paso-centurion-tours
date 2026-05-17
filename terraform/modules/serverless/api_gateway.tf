@@ -448,6 +448,24 @@ resource "aws_apigatewayv2_route" "alojamientos_blocked_dates" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "alojamientos_carrito_bloqueo_post" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /alojamientos/{id}/carrito-bloqueo"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_carrito_bloqueo_delete" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /alojamientos/{id}/carrito-bloqueo"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "alojamientos_carrito_bloqueos_delete_all" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /alojamientos/carrito/bloqueos"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Admin reservation state management routes
 resource "aws_apigatewayv2_route" "reservas_update_estado_alojamiento" {
   api_id    = aws_apigatewayv2_api.main.id

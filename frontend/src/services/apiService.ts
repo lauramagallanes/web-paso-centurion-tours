@@ -36,6 +36,9 @@ export interface SenderoBloqueoRequest {
   motivo?: string | null;
 }
 
+// Coincide con AlojamientoService.HORAS_RETENCION_CARRITO_ALOJAMIENTO en backend
+export const ALOJAMIENTO_CART_HOLD_HOURS = 2;
+
 // Servicio para manejar todas las llamadas a la API
 class ApiService {
   private baseURL: string;
@@ -173,9 +176,10 @@ class ApiService {
 
   async verificarDisponibilidadAlojamiento(id: string, fechaCheckIn: string, fechaCheckOut: string, _numeroHuespedes?: number) {
     const params = new URLSearchParams({ checkIn: fechaCheckIn, checkOut: fechaCheckOut });
+    const hasToken = typeof localStorage !== 'undefined' && !!localStorage.getItem('accessToken');
     const response = await fetch(`${this.baseURL}/alojamientos/${id}/verificar-disponibilidad?${params}`, {
       method: 'POST',
-      headers: this.getHeaders(),
+      headers: this.getHeaders(hasToken),
     });
     if (!response.ok) return null; // ignore 500 errors — backend will validate at checkout
     const result = await response.json();
@@ -1116,11 +1120,68 @@ class ApiService {
 
   // Get blocked dates for an accommodation in a date range
   async getFechasBloqueadas(alojamientoId: string, desde: string, hasta: string) {
+    const hasToken = typeof localStorage !== 'undefined' && !!localStorage.getItem('accessToken');
     const response = await fetch(
       `${this.baseURL}/alojamientos/${alojamientoId}/fechas-bloqueadas?desde=${desde}&hasta=${hasta}`,
-      { headers: this.getHeaders() }
+      { headers: this.getHeaders(hasToken) }
     );
     return this.handleResponse(response);
+  }
+
+  async registrarCarritoBloqueoAlojamiento(
+    alojamientoId: string,
+    checkIn: string,
+    checkOut: string
+  ): Promise<{ expiresAt: string; horasRetencion: number }> {
+    const params = new URLSearchParams({ checkIn, checkOut });
+    const response = await fetch(
+      `${this.baseURL}/alojamientos/${alojamientoId}/carrito-bloqueo?${params}`,
+      { method: 'POST', headers: this.getHeaders(true) }
+    );
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const err = new Error((data as { error?: string }).error || `HTTP ${response.status}`) as Error & {
+        httpStatus: number;
+      };
+      err.httpStatus = response.status;
+      throw err;
+    }
+    return data as { expiresAt: string; horasRetencion: number };
+  }
+
+  async liberarCarritoAlojamiento(alojamientoId: string, checkIn: string, checkOut: string) {
+    const params = new URLSearchParams({ checkIn, checkOut });
+    const response = await fetch(
+      `${this.baseURL}/alojamientos/${alojamientoId}/carrito-bloqueo?${params}`,
+      { method: 'DELETE', headers: this.getHeaders(true) }
+    );
+    if (response.status === 204 || response.ok) return;
+    await this.handleResponse(response);
+  }
+
+  async liberarCarritoAlojamientoSilent(alojamientoId: string, checkIn: string, checkOut: string) {
+    try {
+      await this.liberarCarritoAlojamiento(alojamientoId, checkIn, checkOut);
+    } catch {
+      /* no bloquear UI si el backend ya liberó o no hay sesión */
+    }
+  }
+
+  async liberarTodosCarritoAlojamiento() {
+    const response = await fetch(`${this.baseURL}/alojamientos/carrito/bloqueos`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+    if (response.status === 204 || response.ok) return;
+    await this.handleResponse(response);
+  }
+
+  async liberarTodosCarritoAlojamientoSilent() {
+    try {
+      await this.liberarTodosCarritoAlojamiento();
+    } catch {
+      /* ignore */
+    }
   }
 
   // Crear sesión de pago con tarjeta (Getnet)

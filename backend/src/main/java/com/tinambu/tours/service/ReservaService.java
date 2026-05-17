@@ -80,7 +80,8 @@ public class ReservaService {
     @Autowired
     private OrdenCompraRepository ordenCompraRepository;
 
-    // ==================== SENDERO RESERVATIONS ====================
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public ReservaResponse crearReservaSendero(ReservaRequest request) {
         log.info("Creating sendero reservation for: {}", request.getEmailContacto());
@@ -829,8 +830,13 @@ public class ReservaService {
         }
 
         // Verify availability (no overlapping reservations or blocks)
+        UUID usuarioCarritoOpt = usuarioRepository.findByEmail(request.getEmailContacto())
+                .map(u -> u.getId())
+                .orElse(null);
+
         boolean disponible = alojamientoService.verificarDisponibilidad(
-                request.getAlojamientoId(), request.getFechaCheckIn(), request.getFechaCheckOut());
+                request.getAlojamientoId(), request.getFechaCheckIn(), request.getFechaCheckOut(),
+                usuarioCarritoOpt);
 
         if (!disponible) {
             throw new IllegalArgumentException(
@@ -879,6 +885,12 @@ public class ReservaService {
         alojamientoService.bloquearAlojamientoParaReserva(
                 request.getAlojamientoId(), reserva.getId(),
                 request.getFechaCheckIn(), request.getFechaCheckOut());
+
+        if (usuarioCarritoOpt != null) {
+            alojamientoService.liberarBloqueoCarrito(
+                    usuarioCarritoOpt, request.getAlojamientoId(),
+                    request.getFechaCheckIn(), request.getFechaCheckOut());
+        }
 
         return convertirAlojamientoReservaAResponse(reserva, alojamiento);
     }

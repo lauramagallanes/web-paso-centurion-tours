@@ -40,13 +40,21 @@ public interface AlojamientoReservaBloqueoRepository extends JpaRepository<Aloja
 
     @Query("SELECT CASE WHEN COUNT(arb) > 0 THEN true ELSE false END " +
            "FROM AlojamientoReservaBloqueo arb WHERE arb.alojamientoId = :alojamientoId " +
-           "AND arb.fecha >= :checkIn AND arb.fecha < :checkOut AND " + BLOQUEO_VIGENTE +
-           "AND (:excluirCarritoUsuario IS NULL OR arb.carritoUsuarioId IS NULL OR arb.carritoUsuarioId <> :excluirCarritoUsuario)")
+           "AND arb.fecha >= :checkIn AND arb.fecha < :checkOut AND " + BLOQUEO_VIGENTE)
     boolean tieneBloqueoEnRango(@Param("alojamientoId") UUID alojamientoId,
                                @Param("checkIn") LocalDate checkIn,
                                @Param("checkOut") LocalDate checkOut,
-                               @Param("excluirCarritoUsuario") UUID excluirCarritoUsuario,
                                @Param("ahora") LocalDateTime ahora);
+
+    @Query("SELECT CASE WHEN COUNT(arb) > 0 THEN true ELSE false END " +
+           "FROM AlojamientoReservaBloqueo arb WHERE arb.alojamientoId = :alojamientoId " +
+           "AND arb.fecha >= :checkIn AND arb.fecha < :checkOut AND " + BLOQUEO_VIGENTE +
+           "AND (arb.carritoUsuarioId IS NULL OR arb.carritoUsuarioId <> :excluirCarritoUsuario)")
+    boolean tieneBloqueoEnRangoExcluyendoCarrito(@Param("alojamientoId") UUID alojamientoId,
+                                                 @Param("checkIn") LocalDate checkIn,
+                                                 @Param("checkOut") LocalDate checkOut,
+                                                 @Param("excluirCarritoUsuario") UUID excluirCarritoUsuario,
+                                                 @Param("ahora") LocalDateTime ahora);
 
     @Modifying
     @Query("UPDATE AlojamientoReservaBloqueo arb SET arb.activo = false WHERE arb.reservaId = :reservaId")
@@ -54,9 +62,18 @@ public interface AlojamientoReservaBloqueoRepository extends JpaRepository<Aloja
 
     @Query("SELECT arb.fecha FROM AlojamientoReservaBloqueo arb WHERE arb.alojamientoId = :alojamientoId " +
            "AND arb.fecha >= :fechaInicio AND arb.fecha <= :fechaFin AND " + BLOQUEO_VIGENTE +
-           "AND (:excluirCarritoUsuario IS NULL OR arb.carritoUsuarioId IS NULL OR arb.carritoUsuarioId <> :excluirCarritoUsuario) " +
            "ORDER BY arb.fecha")
     List<LocalDate> findFechasBloqueadasEnRango(@Param("alojamientoId") UUID alojamientoId,
+                                               @Param("fechaInicio") LocalDate fechaInicio,
+                                               @Param("fechaFin") LocalDate fechaFin,
+                                               @Param("ahora") LocalDateTime ahora);
+
+    @Query("SELECT arb.fecha FROM AlojamientoReservaBloqueo arb WHERE arb.alojamientoId = :alojamientoId " +
+           "AND arb.fecha >= :fechaInicio AND arb.fecha <= :fechaFin AND " + BLOQUEO_VIGENTE +
+           "AND (arb.carritoUsuarioId IS NULL OR arb.carritoUsuarioId <> :excluirCarritoUsuario) " +
+           "ORDER BY arb.fecha")
+    List<LocalDate> findFechasBloqueadasEnRangoExcluyendoCarrito(
+                                               @Param("alojamientoId") UUID alojamientoId,
                                                @Param("fechaInicio") LocalDate fechaInicio,
                                                @Param("fechaFin") LocalDate fechaFin,
                                                @Param("excluirCarritoUsuario") UUID excluirCarritoUsuario,

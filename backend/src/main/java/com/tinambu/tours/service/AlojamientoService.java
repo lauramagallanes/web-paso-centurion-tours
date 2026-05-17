@@ -240,8 +240,10 @@ public class AlojamientoService {
         }
 
         LocalDateTime ahora = LocalDateTime.now();
-        boolean tieneBloqueos = bloqueoRepository.tieneBloqueoEnRango(
-                alojamientoId, checkIn, checkOut, excluirCarritoUsuarioId, ahora);
+        boolean tieneBloqueos = excluirCarritoUsuarioId == null
+                ? bloqueoRepository.tieneBloqueoEnRango(alojamientoId, checkIn, checkOut, ahora)
+                : bloqueoRepository.tieneBloqueoEnRangoExcluyendoCarrito(
+                        alojamientoId, checkIn, checkOut, excluirCarritoUsuarioId, ahora);
 
         boolean disponible = !tieneBloqueos;
         System.out.println("✅ Disponibilidad verificada: " + (disponible ? "DISPONIBLE" : "NO DISPONIBLE"));
@@ -271,7 +273,7 @@ public class AlojamientoService {
 
         bloqueoRepository.desactivarBloqueosCarritoDeUsuarioParaAlojamiento(alojamientoId, usuarioId);
 
-        if (bloqueoRepository.tieneBloqueoEnRango(alojamientoId, checkIn, checkOut, null, LocalDateTime.now())) {
+        if (bloqueoRepository.tieneBloqueoEnRango(alojamientoId, checkIn, checkOut, LocalDateTime.now())) {
             throw new IllegalStateException("Otro usuario tiene esas fechas retenidas o no disponibles");
         }
 
@@ -398,8 +400,11 @@ public class AlojamientoService {
     public List<LocalDate> obtenerFechasBloqueadas(UUID alojamientoId, LocalDate desde, LocalDate hasta,
                                                   UUID excluirCarritoUsuarioId) {
         System.out.println("📅 Obteniendo fechas bloqueadas para alojamiento " + alojamientoId + " del " + desde + " al " + hasta);
-        return bloqueoRepository.findFechasBloqueadasEnRango(
-                alojamientoId, desde, hasta, excluirCarritoUsuarioId, LocalDateTime.now());
+        LocalDateTime ahora = LocalDateTime.now();
+        return excluirCarritoUsuarioId == null
+                ? bloqueoRepository.findFechasBloqueadasEnRango(alojamientoId, desde, hasta, ahora)
+                : bloqueoRepository.findFechasBloqueadasEnRangoExcluyendoCarrito(
+                        alojamientoId, desde, hasta, excluirCarritoUsuarioId, ahora);
     }
 
     public void desbloquearAlojamientoDeReserva(UUID reservaId) {

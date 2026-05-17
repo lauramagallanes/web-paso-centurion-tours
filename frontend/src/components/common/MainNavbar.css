@@ -453,7 +453,7 @@
   gap: var(--space-3);
   padding: var(--space-4);
   min-height: 44px;
-  color: var(--color-neutral-300);
+  color: #ffffff;
   text-decoration: none;
   font-size: var(--text-base);
   font-weight: var(--font-medium);
@@ -462,18 +462,43 @@
   border: 1px solid transparent;
 }
 
-.mobile-nav-link:hover,
-.mobile-nav-link.active {
-  color: var(--color-accent-green);
-  background-color: rgba(107, 121, 46, 0.1);
-  border-color: rgba(107, 121, 46, 0.2);
+.mobile-nav-link .nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  font-size: 1.25rem;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.mobile-nav-link:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
   text-decoration: none;
+}
+
+.mobile-nav-link:hover .nav-icon {
+  color: #ffffff;
+}
+
+.mobile-nav-link.active {
+  color: var(--color-primary);
+  background-color: #ffffff;
+  border-color: #ffffff;
+  text-decoration: none;
+  font-weight: var(--font-semibold);
+}
+
+.mobile-nav-link.active .nav-icon {
+  color: var(--color-primary);
 }
 
 .mobile-nav-actions {
   margin-top: auto;
   padding-top: var(--space-6);
-  border-top: 1px solid var(--color-neutral-700);
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .mobile-theme-toggle {
@@ -487,15 +512,46 @@
 }
 
 .mobile-user-info .user-greeting {
-  color: var(--color-neutral-200);
+  color: #ffffff;
   margin-bottom: var(--space-4);
   font-size: var(--text-base);
+  font-weight: var(--font-medium);
 }
 
 .mobile-auth-buttons {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+/* Botones del menú móvil sobre fondo verde: forzamos contraste alto */
+.mobile-nav-actions .btn-outline {
+  background-color: transparent;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  min-height: 44px;
+}
+
+.mobile-nav-actions .btn-outline:hover,
+.mobile-nav-actions .btn-outline:focus {
+  background-color: #ffffff;
+  color: var(--color-primary);
+  border-color: #ffffff;
+}
+
+.mobile-nav-actions .btn-primary {
+  background-color: #ffffff;
+  color: var(--color-primary);
+  border: 2px solid #ffffff;
+  min-height: 44px;
+  font-weight: var(--font-semibold);
+}
+
+.mobile-nav-actions .btn-primary:hover,
+.mobile-nav-actions .btn-primary:focus {
+  background-color: rgba(255, 255, 255, 0.92);
+  color: var(--color-primary);
+  border-color: #ffffff;
 }
 
 .w-full {

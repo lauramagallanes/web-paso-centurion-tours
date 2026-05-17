@@ -303,7 +303,7 @@ const MainNavbar: React.FC = () => {
                 className={`mobile-nav-link ${isActiveRoute(routes.home) ? 'active' : ''}`}
                 onClick={closeMobileMenu}
               >
-                <span className="nav-icon">🏠</span>
+                <i className="nav-icon bi bi-house-door" aria-hidden="true"></i>
                 <span className="nav-label">Inicio</span>
               </Link>
               
@@ -312,7 +312,7 @@ const MainNavbar: React.FC = () => {
                 className={`mobile-nav-link ${isActiveRoute(routes.alojamientos) ? 'active' : ''}`}
                 onClick={closeMobileMenu}
               >
-                <span className="nav-icon">🏨</span>
+                <i className="nav-icon bi bi-building" aria-hidden="true"></i>
                 <span className="nav-label">Alojamiento</span>
               </Link>
               
@@ -321,8 +321,17 @@ const MainNavbar: React.FC = () => {
                 className={`mobile-nav-link ${isActiveRoute(routes.activities) ? 'active' : ''}`}
                 onClick={closeMobileMenu}
               >
-                <span className="nav-icon">🥾</span>
+                <i className="nav-icon bi bi-tree" aria-hidden="true"></i>
                 <span className="nav-label">Senderismo</span>
+              </Link>
+              
+              <Link
+                to={routes.birdwatching}
+                className={`mobile-nav-link ${isActiveRoute(routes.birdwatching) ? 'active' : ''}`}
+                onClick={closeMobileMenu}
+              >
+                <i className="nav-icon bi bi-binoculars" aria-hidden="true"></i>
+                <span className="nav-label">Birding</span>
               </Link>
               
               <Link
@@ -330,7 +339,7 @@ const MainNavbar: React.FC = () => {
                 className={`mobile-nav-link ${isActiveRoute(routes.about) ? 'active' : ''}`}
                 onClick={closeMobileMenu}
               >
-                <span className="nav-icon">ℹ️</span>
+                <i className="nav-icon bi bi-info-circle" aria-hidden="true"></i>
                 <span className="nav-label">Nosotros</span>
               </Link>
               
@@ -342,8 +351,8 @@ const MainNavbar: React.FC = () => {
                       className="mobile-nav-link admin-super-visible"
                       onClick={closeMobileMenu}
                     >
-                      <span className="nav-icon">⚙️</span>
-                      <span className="nav-label">🔥 PANEL ADMIN</span>
+                      <i className="nav-icon bi bi-gear" aria-hidden="true"></i>
+                      <span className="nav-label">Panel Admin</span>
                     </Link>
                   )}
                   
@@ -352,7 +361,7 @@ const MainNavbar: React.FC = () => {
                     className="mobile-nav-link"
                     onClick={closeMobileMenu}
                   >
-                    <span className="nav-icon">📋</span>
+                    <i className="nav-icon bi bi-journal-bookmark" aria-hidden="true"></i>
                     <span className="nav-label">Mis Reservas</span>
                   </Link>
                 </>

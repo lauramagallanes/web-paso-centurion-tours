@@ -28,10 +28,10 @@
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.1) 0%,
-    rgba(0, 0, 0, 0.05) 50%,
-    rgba(0, 0, 0, 0.1) 100%
+    180deg,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.45) 50%,
+    rgba(0, 0, 0, 0.65) 100%
   );
   z-index: 2;
   pointer-events: none; /* Permite que los clicks pasen a través */
@@ -53,26 +53,29 @@
   font-weight: var(--font-bold);
   margin: 0 0 var(--space-5) 0;
   line-height: var(--leading-tight);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
 }
 
 .hero-subtitle {
   font-size: var(--text-2xl);
   font-weight: var(--font-semibold);
   margin: 0 0 var(--space-5) 0;
-  opacity: 0.95;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  opacity: 1;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .hero-description {
   font-size: var(--text-lg);
   line-height: var(--leading-relaxed);
   margin: 0 0 var(--space-10) 0;
-  opacity: 0.9;
+  opacity: 1;
+  color: #f5f5f5;
   max-width: 700px;
   margin-left: auto;
   margin-right: auto;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
 }
 
 .hero-actions {
@@ -107,26 +110,29 @@
 }
 
 .hero-btn-primary {
-  background: linear-gradient(135deg, #8B6F47 0%, #6B792E 100%);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.3);
+  background: #ffffff;
+  color: var(--color-primary);
+  border-color: #ffffff;
+  font-weight: var(--font-bold);
 }
 
 .hero-btn-primary:hover {
-  background: linear-gradient(135deg, #9B7F57 0%, #7B893E 100%);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-primary);
+  border-color: #ffffff;
 }
 
 .hero-btn-secondary {
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--color-primary);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: transparent;
+  color: #ffffff;
+  border-color: #ffffff;
+  font-weight: var(--font-bold);
 }
 
 .hero-btn-secondary:hover {
-  background: white;
-  color: var(--color-secondary);
-  border-color: white;
+  background: #ffffff;
+  color: var(--color-primary);
+  border-color: #ffffff;
 }
 
 .hero-action-btn i {
@@ -319,8 +325,11 @@
   color: white;
 }
 
-.value-icon i {
+.value-icon i,
+.value-icon svg {
   font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
   color: white;
 }
 

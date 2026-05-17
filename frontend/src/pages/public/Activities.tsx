@@ -391,9 +391,9 @@ const Activities: React.FC = () => {
                   </div>
                   <h4 className="info-title">Guías de Naturaleza</h4>
                   <p className="info-description">
-                    Nuestros guías especializados están enfocados en brindar una experiencia 
-                    de conexión profunda con la naturaleza, educación ambiental, reconocimiento 
-                    de flora y fauna, y observación de aves. Cada recorrido es una oportunidad 
+                    Somos guías especializados, estamos enfocados en brindar una experiencia
+                    de conexión profunda con la naturaleza, educación ambiental, reconocimiento
+                    de flora y fauna, y observación de aves. Cada recorrido es una oportunidad
                     de aprendizaje y descubrimiento.
                   </p>
                 </div>
@@ -415,7 +415,7 @@ const Activities: React.FC = () => {
                   </div>
                   <h3 className="contact-title">¿Tienes alguna pregunta?</h3>
                   <p className="contact-description">
-                    Nuestros guías especializados están disponibles para ayudarte 
+                    Somos guías especializados, estamos disponibles para ayudarte
                     a elegir la actividad perfecta según tus intereses y nivel de experiencia.
                   </p>
                 </div>

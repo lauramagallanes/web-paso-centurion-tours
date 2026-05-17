@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Card, { CardBody } from '../../components/common/Card';
 import Icon from '../../components/common/Icon';
+import { BedIcon } from '../../components/common/BedIcon';
 import Illustration from '../../components/common/Illustration';
 import PhotoGallery from '../../components/common/PhotoGallery';
 import { routes } from '../../utils/routes';
@@ -91,12 +92,12 @@ const About: React.FC = () => {
       description: 'Más de 280 especies registradas. Experiencias guiadas para descubrir la rica avifauna del lugar.'
     },
     {
-      icon: 'bed' as const,
+      icon: 'bed-svg',
       title: 'Alojamiento',
       description: 'Alojamiento sustentable con habitaciones de bioconstrucción y techo vivo en entorno natural.'
     },
     {
-      icon: 'user' as const,
+      icon: 'bi-translate',
       title: 'Guías Bilingües',
       description: 'Guías especializados en naturaleza y observación de aves con servicio bilingüe español-inglés.'
     }
@@ -261,10 +262,10 @@ const About: React.FC = () => {
             {values.map((value, index) => (
               <div key={index} className="value-item">
                 <div className="value-icon">
-                  {value.icon.startsWith('bi-') ? (
-                    <i className={value.icon}></i>
+                  {value.icon === 'bed-svg' ? (
+                    <BedIcon />
                   ) : (
-                    <Icon name={value.icon as any} size="lg" color="accent" />
+                    <i className={value.icon}></i>
                   )}
                 </div>
                 <h4 className="value-title">{value.title}</h4>

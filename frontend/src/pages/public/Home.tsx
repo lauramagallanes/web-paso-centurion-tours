@@ -287,16 +287,16 @@ const Home: React.FC = () => {
 
             <div 
               className="experience-card experience-birdwatching"
-              onClick={() => navigate(routes.activities)}
+              onClick={() => navigate(routes.birdwatching)}
               style={{
                 backgroundImage: `url(https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/home/avistamiento.jpg)`
               }}
             >
               <div className="experience-overlay"></div>
               <div className="experience-content">
-                <p className="experience-subtitle">Más de 150 especies en un entorno protegido</p>
+                <p className="experience-subtitle">Más de 280 especies en un entorno protegido</p>
                 <h3 className="experience-title">
-                  Avistamiento de aves <span className="arrow">🔍</span>
+                  Avistamiento de aves <span className="arrow">→</span>
                 </h3>
               </div>
             </div>

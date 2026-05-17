@@ -122,7 +122,7 @@ const Footer: React.FC = () => {
         {/* Fila superior - Plataformas */}
         <div className="footer-row-top">
           <div className="footer-platforms">
-            <span className="platforms-label">Reserva en:</span>
+            <span className="platforms-label">Encuéntranos en:</span>
             {bookingPlatforms.map((platform) => (
               <a
                 key={platform.name}
@@ -143,14 +143,15 @@ const Footer: React.FC = () => {
           
           {/* MINTUR - más grande y a la derecha */}
           <a
-            href="https://www.gub.uy/ministerio-turismo/"
+            href="http://apps.mintur.gub.uy/operadores/operador.php?tipo=0&numero=56"
             target="_blank"
             rel="noopener noreferrer"
             className="mintur-link-large"
+            aria-label="Operador turístico registrado en MINTUR"
           >
             <img 
               src="/logos/mintur-certificado.jpeg" 
-              alt="MINTUR"
+              alt="Operador turístico registrado MINTUR"
               className="mintur-img-large"
             />
           </a>

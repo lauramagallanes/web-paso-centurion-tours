@@ -185,7 +185,7 @@ const Birding: React.FC = () => {
               </p>
               <div className="featured-stat-links">
                 <a 
-                  href="https://ebird.org/hotspot/L2762826" 
+                  href="https://ebird.org/hotspot/L2762826/illustrated-checklist" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="stat-link stat-link-ebird"

@@ -5,6 +5,8 @@ import com.tinambu.tours.dto.response.ApiResponse;
 import com.tinambu.tours.dto.response.EstadoPagoResponse;
 import com.tinambu.tours.dto.response.OrdenEstadoResponse;
 import com.tinambu.tours.dto.response.SesionPagoResponse;
+import com.tinambu.tours.entity.usuario.Usuario;
+import com.tinambu.tours.service.CheckoutService;
 import com.tinambu.tours.service.PlacetoPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -13,6 +15,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -27,6 +32,9 @@ public class PagoController {
 
     @Autowired
     private PlacetoPayService placetoPayService;
+
+    @Autowired
+    private CheckoutService checkoutService;
 
     @PostMapping("/crear-sesion")
     public ResponseEntity<?> crearSesionPago(@Valid @RequestBody CrearSesionPagoRequest request,
@@ -133,5 +141,81 @@ public class PagoController {
             log.error("Error processing webhook", e);
             return ResponseEntity.ok(Map.of("status", "error", "message", e.getMessage()));
         }
+    }
+
+    /**
+     * Cancela una orden de compra pendiente cuando el usuario abandona la pasarela de pago.
+     * Libera los bloqueos de las reservas asociadas para que las fechas vuelvan a estar disponibles.
+     * Idempotente: si ya está pagada o cancelada, devuelve cancelled=false.
+     */
+    @PostMapping("/orden/{ordenId}/cancelar")
+    public ResponseEntity<?> cancelarOrdenPendiente(@PathVariable UUID ordenId,
+                                                    Authentication authentication) {
+        try {
+            log.info("POST /pagos/orden/{}/cancelar - User abandoned payment", ordenId);
+            String email = resolveEmailUsuarioOrNull(authentication);
+            boolean cancelled = checkoutService.cancelarOrdenPendiente(ordenId, email);
+            return ResponseEntity.ok(Map.of("cancelled", cancelled));
+        } catch (IllegalArgumentException e) {
+            log.warn("Validation error cancelling orden {}: {}", ordenId, e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error cancelling orden {}", ordenId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error al cancelar la orden: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Cancela una reserva pendiente individual cuando el usuario abandona la pasarela.
+     * Útil para flujos sin orden agrupadora (p. ej. cancelUrl que llega con reservaId+tipo).
+     */
+    @PostMapping("/reserva/{reservaId}/cancelar")
+    public ResponseEntity<?> cancelarReservaPendiente(@PathVariable UUID reservaId,
+                                                      @RequestParam String tipo,
+                                                      Authentication authentication) {
+        try {
+            log.info("POST /pagos/reserva/{}/cancelar - tipo={}", reservaId, tipo);
+            String email = resolveEmailUsuarioOrNull(authentication);
+            boolean cancelled = checkoutService.cancelarReservaPendiente(reservaId, tipo, email);
+            return ResponseEntity.ok(Map.of("cancelled", cancelled));
+        } catch (IllegalArgumentException e) {
+            log.warn("Validation error cancelling reserva {}: {}", reservaId, e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error cancelling reserva {}", reservaId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error al cancelar la reserva: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Resuelve el email del usuario autenticado a partir del Authentication.
+     * Retorna null si no hay sesión válida.
+     */
+    private String resolveEmailUsuarioOrNull(Authentication authentication) {
+        Authentication auth = authentication != null
+                ? authentication
+                : SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            return null;
+        }
+
+        Object principal = auth.getPrincipal();
+        if (principal instanceof Usuario usuario) {
+            return usuario.getEmail();
+        }
+        if (principal instanceof UserDetails ud) {
+            return ud.getUsername();
+        }
+
+        String name = auth.getName();
+        if (name == null || name.isBlank() || "anonymousUser".equalsIgnoreCase(name)) {
+            return null;
+        }
+        return name;
     }
 }

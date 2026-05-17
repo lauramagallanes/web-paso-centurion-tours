@@ -57,6 +57,109 @@ public class CheckoutService {
     private AlojamientoReservaRepository alojamientoReservaRepository;
 
     /**
+     * Cancela una orden de compra pendiente y todas sus reservas asociadas (PENDIENTE).
+     * Pensado para el flujo en el que el usuario abandona la pasarela de pago (cancelUrl).
+     *
+     * Es idempotente: si la orden ya está PAGADA o CANCELADA, no hace nada.
+     * Valida que el email del usuario autenticado coincida con el de la orden.
+     *
+     * @return true si la orden estaba pendiente y fue cancelada, false si ya estaba en otro estado.
+     */
+    @Transactional
+    public boolean cancelarOrdenPendiente(UUID ordenId, String emailUsuarioAutenticado) {
+        OrdenCompra orden = ordenCompraRepository.findById(ordenId)
+                .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada: " + ordenId));
+
+        if (!"PENDIENTE".equalsIgnoreCase(orden.getEstado())) {
+            log.info("Orden {} no está pendiente (estado: {}), no se cancela",
+                    orden.getCodigoOrden(), orden.getEstado());
+            return false;
+        }
+
+        if (emailUsuarioAutenticado != null && !emailUsuarioAutenticado.isBlank()) {
+            String ordenEmail = normalizarEmail(orden.getEmailContacto());
+            String userEmail = normalizarEmail(emailUsuarioAutenticado);
+            if (!ordenEmail.isEmpty() && !ordenEmail.equals(userEmail)) {
+                throw new IllegalArgumentException("No tienes permiso para cancelar esta orden");
+            }
+        }
+
+        for (OrdenCompraItem item : orden.getItems()) {
+            UUID reservaId = item.getReservaId();
+            String tipo = item.getTipoReserva();
+            try {
+                if ("ALOJAMIENTO".equalsIgnoreCase(tipo)) {
+                    alojamientoReservaRepository.findById(reservaId).ifPresent(ar -> {
+                        if (ar.getEstado() == EstadoReserva.PENDIENTE) {
+                            reservaService.cancelarReservaAlojamiento(reservaId);
+                        }
+                    });
+                } else if ("SENDERO".equalsIgnoreCase(tipo)) {
+                    senderoReservaRepository.findById(reservaId).ifPresent(sr -> {
+                        if (sr.getEstado() == EstadoReserva.PENDIENTE) {
+                            reservaService.cancelarReservaSendero(reservaId);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                log.warn("Error cancelando reserva {} de orden {}: {}",
+                        reservaId, orden.getCodigoOrden(), e.getMessage());
+            }
+        }
+
+        orden.marcarCancelada();
+        ordenCompraRepository.save(orden);
+        log.info("Orden cancelada por usuario (pago abandonado): {}", orden.getCodigoOrden());
+        return true;
+    }
+
+    /**
+     * Cancela una reserva pendiente individual (alojamiento o sendero).
+     * Idempotente: si la reserva ya está confirmada/cancelada/completada, no hace nada.
+     */
+    @Transactional
+    public boolean cancelarReservaPendiente(UUID reservaId, String tipo, String emailUsuarioAutenticado) {
+        if (tipo == null) {
+            throw new IllegalArgumentException("El tipo de reserva es obligatorio");
+        }
+        String userEmail = emailUsuarioAutenticado != null ? normalizarEmail(emailUsuarioAutenticado) : "";
+
+        if ("ALOJAMIENTO".equalsIgnoreCase(tipo)) {
+            AlojamientoReserva ar = alojamientoReservaRepository.findById(reservaId).orElse(null);
+            if (ar == null) return false;
+            if (ar.getEstado() != EstadoReserva.PENDIENTE) return false;
+
+            if (!userEmail.isEmpty()) {
+                String reservaEmail = normalizarEmail(ar.getEmailContacto());
+                if (!reservaEmail.isEmpty() && !reservaEmail.equals(userEmail)) {
+                    throw new IllegalArgumentException("No tienes permiso para cancelar esta reserva");
+                }
+            }
+
+            reservaService.cancelarReservaAlojamiento(reservaId);
+            return true;
+        }
+
+        if ("SENDERO".equalsIgnoreCase(tipo)) {
+            SenderoReserva sr = senderoReservaRepository.findById(reservaId).orElse(null);
+            if (sr == null) return false;
+            if (sr.getEstado() != EstadoReserva.PENDIENTE) return false;
+
+            if (!userEmail.isEmpty()) {
+                String reservaEmail = normalizarEmail(sr.getEmailContacto());
+                if (!reservaEmail.isEmpty() && !reservaEmail.equals(userEmail)) {
+                    throw new IllegalArgumentException("No tienes permiso para cancelar esta reserva");
+                }
+            }
+
+            reservaService.cancelarReservaSendero(reservaId);
+            return true;
+        }
+
+        throw new IllegalArgumentException("Tipo de reserva no válido: " + tipo);
+    }
+
+    /**
      * Full checkout flow:
      * 1. Create all reservations transactionally.
      * 2. Create OrdenCompra grouping them.

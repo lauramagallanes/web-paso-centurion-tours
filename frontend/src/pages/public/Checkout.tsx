@@ -302,6 +302,18 @@ const Checkout: React.FC = () => {
         void clearCart();
         setStep('prex');
       } else if (data?.processUrl) {
+        // Guardamos snapshot de los items y la orden para poder restaurarlos
+        // si el usuario cancela el pago en la pasarela y vuelve al sitio.
+        try {
+          const snapshot = {
+            ordenId: data.ordenId,
+            savedAt: Date.now(),
+            items: items.map(({ cartItemId, ...rest }) => rest),
+          };
+          sessionStorage.setItem('tinambu-pending-checkout', JSON.stringify(snapshot));
+        } catch (storageErr) {
+          console.warn('No se pudo guardar snapshot del carrito para cancel-flow', storageErr);
+        }
         void clearCart();
         window.location.href = data.processUrl;
       } else if (data?.status === 'MOCK') {

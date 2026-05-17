@@ -122,6 +122,12 @@ interface CartContextType {
   toggleCart: () => void;
   closeCart: () => void;
   openCart: () => void;
+  /**
+   * Restaura un set de items en el carrito. Para alojamientos, re-registra el
+   * bloqueo de carrito en el backend (renueva 2h). Pensado para el flujo de
+   * cancelación de pago donde queremos devolver los items al carrito del usuario.
+   */
+  restoreItems: (items: Omit<CartItem, 'cartItemId'>[]) => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -348,6 +354,31 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     dispatch({ type: 'OPEN_CART' });
   };
 
+  const restoreItems = async (items: Omit<CartItem, 'cartItemId'>[]) => {
+    if (!Array.isArray(items) || items.length === 0) return;
+
+    const restored: Omit<CartItem, 'cartItemId'>[] = [];
+    for (const item of items) {
+      if (item.type === 'alojamiento' && item.checkIn && item.checkOut && getCurrentUserId()) {
+        try {
+          const { expiresAt } = await apiService.registrarCarritoBloqueoAlojamiento(
+            item.id,
+            item.checkIn,
+            item.checkOut,
+          );
+          restored.push({ ...item, cartHoldExpiresAt: expiresAt });
+        } catch {
+          restored.push(item);
+        }
+      } else {
+        restored.push(item);
+      }
+    }
+
+    const withIds: CartItem[] = restored.map(i => ({ ...i, cartItemId: generateId() }));
+    dispatch({ type: 'LOAD_CART', payload: withIds });
+  };
+
   const value: CartContextType = {
     state,
     addItem,
@@ -356,6 +387,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     toggleCart,
     closeCart,
     openCart,
+    restoreItems,
   };
 
   return (

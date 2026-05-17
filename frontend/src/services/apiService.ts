@@ -1001,6 +1001,56 @@ class ApiService {
 
   // ========== Getnet (tarjeta) — sesión de pago ==========
 
+  /**
+   * Cancela una orden de compra pendiente (cuando el usuario abandona la pasarela
+   * de pago). Libera todos los bloqueos de las reservas asociadas. Idempotente.
+   */
+  async cancelarPagoOrden(ordenId: string): Promise<{ cancelled: boolean }> {
+    const url = `${this.baseURL}/pagos/orden/${ordenId}/cancelar`;
+    const post = () =>
+      fetch(url, {
+        method: 'POST',
+        headers: this.getHeaders(true),
+      });
+    let response = await post();
+    if (response.status === 401) {
+      const refreshed = await this.refreshToken();
+      if (refreshed) response = await post();
+    }
+    if (!response.ok) {
+      return { cancelled: false };
+    }
+    const data = (await response.json().catch(() => ({}))) as { cancelled?: boolean };
+    return { cancelled: !!data.cancelled };
+  }
+
+  /**
+   * Cancela una reserva pendiente individual (alojamiento o sendero) cuando el
+   * usuario abandona la pasarela. Idempotente.
+   */
+  async cancelarPagoReserva(
+    reservaId: string,
+    tipo: string,
+  ): Promise<{ cancelled: boolean }> {
+    const params = new URLSearchParams({ tipo });
+    const url = `${this.baseURL}/pagos/reserva/${reservaId}/cancelar?${params}`;
+    const post = () =>
+      fetch(url, {
+        method: 'POST',
+        headers: this.getHeaders(true),
+      });
+    let response = await post();
+    if (response.status === 401) {
+      const refreshed = await this.refreshToken();
+      if (refreshed) response = await post();
+    }
+    if (!response.ok) {
+      return { cancelled: false };
+    }
+    const data = (await response.json().catch(() => ({}))) as { cancelled?: boolean };
+    return { cancelled: !!data.cancelled };
+  }
+
   // Create a sendero reservation
   async createSenderoReservation(data: {
     tipoReserva: string;

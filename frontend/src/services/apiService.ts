@@ -1134,10 +1134,21 @@ class ApiService {
     checkOut: string
   ): Promise<{ expiresAt: string; horasRetencion: number }> {
     const params = new URLSearchParams({ checkIn, checkOut });
-    const response = await fetch(
-      `${this.baseURL}/alojamientos/${alojamientoId}/carrito-bloqueo?${params}`,
-      { method: 'POST', headers: this.getHeaders(true) }
-    );
+    const url = `${this.baseURL}/alojamientos/${alojamientoId}/carrito-bloqueo?${params}`;
+    const post = () =>
+      fetch(url, {
+        method: 'POST',
+        headers: this.getHeaders(true),
+      });
+
+    let response = await post();
+    if (response.status === 401) {
+      const refreshed = await this.refreshToken();
+      if (refreshed) {
+        response = await post();
+      }
+    }
+
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       const err = new Error((data as { error?: string }).error || `HTTP ${response.status}`) as Error & {

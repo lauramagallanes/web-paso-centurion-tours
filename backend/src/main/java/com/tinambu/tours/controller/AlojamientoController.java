@@ -2,12 +2,15 @@ package com.tinambu.tours.controller;
 
 import com.tinambu.tours.dto.request.*;
 import com.tinambu.tours.dto.response.*;
+import com.tinambu.tours.entity.usuario.Usuario;
 import com.tinambu.tours.service.AlojamientoService;
 import com.tinambu.tours.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -146,21 +149,37 @@ public class AlojamientoController {
     private UUID requireUsuarioId(Authentication authentication) {
         UUID id = resolveUsuarioIdOrNull(authentication);
         if (id == null) {
-            throw new IllegalArgumentException("Se requiere iniciar sesión");
+            throw new IllegalArgumentException(
+                    "No pudimos confirmar tu sesión. Vuelve a iniciar sesión e inténtalo de nuevo.");
         }
         return id;
     }
 
     private UUID resolveUsuarioIdOrNull(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
+        Authentication auth = authentication != null
+                ? authentication
+                : SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
             return null;
         }
-        String email = authentication.getName();
-        if (email == null || email.isBlank()) {
+
+        Object principal = auth.getPrincipal();
+        if (principal instanceof Usuario usuario) {
+            return usuario.getId();
+        }
+
+        String name = auth.getName();
+        if (name == null || name.isBlank() || "anonymousUser".equalsIgnoreCase(name)) {
             return null;
         }
+
+        if (principal instanceof UserDetails ud) {
+            name = ud.getUsername();
+        }
+
         try {
-            return usuarioService.obtenerUsuarioPorEmail(email).getId();
+            return usuarioService.obtenerUsuarioPorEmail(name).getId();
         } catch (Exception e) {
             return null;
         }

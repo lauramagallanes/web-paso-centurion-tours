@@ -35,17 +35,17 @@ const CartHoldWarningModal: React.FC<CartHoldWarningModalProps> = ({
       <div className="added-modal-card" style={{ maxWidth: 460 }}>
         <div className="added-modal-content">
           <h2 className="added-modal-title" id="cart-hold-title">
-            Retención temporal de fechas
+            Reserva temporal de las fechas
           </h2>
           <p className="added-modal-subtitle" style={{ textAlign: 'left' }}>
-            Al agregar <strong>{roomName}</strong> al carrito, las fechas elegidas quedarán{' '}
-            <strong>reservadas temporalmente para vos</strong> y <strong>no estarán disponibles</strong>{' '}
-            para otros usuarios.
+            Al agregar <strong>{roomName}</strong> al carrito, las fechas que elegiste quedarán{' '}
+            <strong>apartadas temporalmente para ti</strong> y <strong>no podrán reservarlas otras personas</strong>{' '}
+            mientras completes el proceso.
           </p>
           <p className="added-modal-subtitle" style={{ textAlign: 'left', marginTop: '0.75rem' }}>
-            Tenés hasta <strong>{horasRetencion} horas</strong> para completar la reserva. Si no finalizás el
-            pago en ese plazo, <strong>el carrito se vaciará automáticamente</strong> y las fechas volverán a
-            estar disponibles para todos.
+            Tienes hasta <strong>{horasRetencion} horas</strong> para completar la reserva. Si no finalizas el
+            pago en ese tiempo, <strong>vaciamos el carrito por ti</strong> y las fechas vuelven a quedar libres
+            para todos.
           </p>
         </div>
 

@@ -280,19 +280,22 @@ const MainNavbar: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="mobile-menu-btn"
-            onClick={toggleMobileMenu}
-            aria-label="Toggle mobile menu"
-            aria-expanded={isMobileMenuOpen}
-          >
-            <span className={`hamburger ${isMobileMenuOpen ? 'open' : ''}`}>
-              <span></span>
-              <span></span>
-              <span></span>
-            </span>
-          </button>
+          {/* Mobile actions: cart (si auth) + hamburger */}
+          <div className="mobile-actions">
+            {state.isAuthenticated && <CartButton />}
+            <button
+              className="mobile-menu-btn"
+              onClick={toggleMobileMenu}
+              aria-label="Toggle mobile menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              <span className={`hamburger ${isMobileMenuOpen ? 'open' : ''}`}>
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}

@@ -12,14 +12,14 @@ const CartButton: React.FC = () => {
       aria-label={`Carrito de compras (${state.itemCount} elementos)`}
       title="Ver carrito"
     >
-      <div className="cart-icon">
-        🛒
+      <span className="cart-icon">
+        <i className="bi bi-cart3" aria-hidden="true"></i>
         {state.itemCount > 0 && (
           <span className="cart-badge">
             {state.itemCount > 99 ? '99+' : state.itemCount}
           </span>
         )}
-      </div>
+      </span>
       <span className="cart-text">Carrito</span>
     </button>
   );

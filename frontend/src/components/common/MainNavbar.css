@@ -233,6 +233,44 @@
   margin-left: auto;
 }
 
+/* Mobile Actions: contenedor con carrito + botón hamburger (sólo en mobile) */
+.mobile-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+/* Sobre el navbar verde, el carrito siempre debe verse blanco */
+.main-navbar .cart-button,
+.main-navbar .cart-button .cart-icon,
+.main-navbar .cart-button .cart-text,
+.main-navbar .cart-button i {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.main-navbar .cart-button:hover,
+.main-navbar .cart-button:hover .cart-icon,
+.main-navbar .cart-button:hover .cart-text,
+.main-navbar .cart-button:hover i {
+  color: #ffffff;
+}
+
+/* "Mis Reservas" y demás links del user-menu: blancos sobre el verde */
+.main-navbar .user-menu .nav-link,
+.main-navbar .user-menu .nav-link .nav-icon,
+.main-navbar .user-menu .nav-link i,
+.main-navbar .user-menu .nav-label {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.main-navbar .user-menu .nav-link:hover,
+.main-navbar .user-menu .nav-link:hover .nav-icon,
+.main-navbar .user-menu .nav-link:hover i,
+.main-navbar .user-menu .nav-link:hover .nav-label {
+  color: #ffffff;
+}
+
 .user-menu {
   display: flex;
   align-items: center;
@@ -755,7 +793,8 @@
     flex-direction: row !important;
   }
   
-  .mobile-menu-btn {
+  .mobile-menu-btn,
+  .mobile-actions {
     display: none !important;
   }
   

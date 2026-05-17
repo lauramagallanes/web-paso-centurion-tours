@@ -166,10 +166,9 @@ const About: React.FC = () => {
                   del país, donde la Mata Atlántica se encuentra con los pastizales naturales y el río Yaguarón.
                 </p>
                 <p>
-                  Somos guías de naturaleza, enfocados en la observación de aves, reconocimiento de flora y fauna nativa, 
-                  e interpretación ambiental. Como empresa familiar, nosotros mismos brindamos todos los servicios, 
-                  conociendo profundamente el territorio y sus secretos. Nuestra misión es ofrecer experiencias auténticas 
-                  de conexión con la naturaleza, promoviendo el disfrute responsable, el aprendizaje sobre la biodiversidad 
+                  Somos guías de naturaleza, enfocados en la observación de aves, reconocimiento de flora y fauna nativa,
+                  e interpretación ambiental. Nuestra misión es ofrecer experiencias auténticas
+                  de conexión con la naturaleza, promoviendo el disfrute responsable, el aprendizaje sobre la biodiversidad
                   local y la valoración de este paisaje único.
                 </p>
                 <p>
@@ -183,25 +182,11 @@ const About: React.FC = () => {
             </div>
             <div className="story-visual">
               <div className="story-image-container">
-                <img 
-                  src="https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/aves/gallery/ave9.jpg" 
+                <img
+                  src="https://tinambu-public-assets-dev.s3.us-east-1.amazonaws.com/aves/gallery/ave9.jpg"
                   alt="Paisaje natural de Tinambú"
                   className="story-image"
                 />
-                <div className="story-stats">
-                  <div className="stat-item">
-                    <span className="stat-number">280+</span>
-                    <span className="stat-label">Especies de aves registradas</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-number">+7</span>
-                    <span className="stat-label">Senderos para conocer</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-number">2</span>
-                    <span className="stat-label">Habitaciones bioconstrucción</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -215,13 +200,13 @@ const About: React.FC = () => {
             <Card variant="nature" className="mission-card">
               <CardBody>
                 <div className="mission-icon">
-                  <Icon name="hiking" size="xl" color="accent" />
+                  <i className="bi bi-person-walking" aria-hidden="true"></i>
                 </div>
-                <h3 className="mission-title">Nuestras Actividades</h3>
+                <h3 className="mission-title">Actividades</h3>
                 <p className="mission-text">
-                  Ofrecemos actividades ecoturísticas enfocadas en la observación de aves, reconocimiento de flora y fauna local, 
-                  e interpretación ambiental. Los senderos que realizamos recorren diferentes hábitats: bosques ribereños, 
-                  quebradas, serranías y cañadas. Cada sendero ofrece oportunidades únicas para observar una gran variedad de 
+                  Ofrecemos actividades ecoturísticas enfocadas en la observación de aves, reconocimiento de flora y fauna local,
+                  e interpretación ambiental. Los senderos que realizamos recorren diferentes hábitats: bosques ribereños,
+                  quebradas, serranías y cañadas. Cada sendero ofrece oportunidades únicas para observar una gran variedad de
                   especies de aves, incluyendo especies que solo están registradas para este lugar en Uruguay.
                 </p>
               </CardBody>
@@ -230,18 +215,14 @@ const About: React.FC = () => {
             <Card variant="nature" className="mission-card">
               <CardBody>
                 <div className="mission-icon">
-                  <Icon name="search" size="xl" color="primary" />
+                  <BedIcon />
                 </div>
-                <h3 className="mission-title">Nuestro Alojamiento</h3>
+                <h3 className="mission-title">Alojamiento</h3>
                 <p className="mission-text">
-                  Contamos con <strong>2 habitaciones de bioconstrucción</strong> con techo vivo, 
-                  cada una con capacidad para 4 personas. Nuestro alojamiento está diseñado con 
-                  técnicas sustentables que minimizan el impacto ambiental y se integran 
-                  armoniosamente con el entorno natural. Las habitaciones están ubicadas en un 
-                  entorno privilegiado con acceso directo a un comedero de aves y una cañada natural, 
-                  donde se puede observar una gran cantidad de especies de aves. Ubicación de fácil acceso 
-                  sobre Ruta 7 km 439, ideal para quienes buscan una experiencia de conexión 
-                  profunda con la naturaleza.
+                  Te ofrecemos <strong>habitaciones cómodas y equipadas</strong>, con baño privado, agua caliente,
+                  frigobar, TV y WiFi. Tendrás acceso a las áreas comunes y a un comedero de aves donde podés
+                  disfrutar de una gran variedad de especies en su entorno natural. Estamos sobre la <strong>Ruta 7</strong>,
+                  dentro del <strong>área protegida Paso Centurión y Sierra de Ríos</strong>, a sólo 3 km del Río Yaguarón.
                 </p>
               </CardBody>
             </Card>

@@ -89,6 +89,12 @@
   color: var(--accent-color, #4f9e3f);
 }
 
+.detail-value.detail-value--name {
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--text-primary, #e8e8e8);
+}
+
 .status-badge {
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
@@ -172,6 +178,18 @@
 .result-item-type {
   flex: 1;
   color: var(--color-text-primary, #e0e0e0);
+}
+
+.result-item-type-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.result-tipo-reserva-icon {
+  display: inline-flex;
+  color: var(--accent-color, #6b792e);
+  flex-shrink: 0;
 }
 
 .result-item-subtotal {

@@ -108,46 +108,32 @@ const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) 
   );
 };
 
-/** Datos de cuenta + instrucciones (misma info que en el checkout post-Prex). */
+/** Datos de cuenta + instrucciones (checkout y Mis reservas). Identificación por nombre de quien reserva. */
 const PrexTransferDetails: React.FC<{
   codigoReserva?: string;
-  ordenCodigo?: string;
+  nombreQuienReserva: string;
   codigosReserva?: string[];
   saldoPendiente?: { monto: number; currency: string };
-}> = ({ codigoReserva, ordenCodigo, codigosReserva, saldoPendiente }) => {
+}> = ({ codigoReserva, nombreQuienReserva, codigosReserva, saldoPendiente }) => {
+  const nombre = (nombreQuienReserva || '').trim() || '—';
   const codigosLista =
     codigosReserva && codigosReserva.length > 0
       ? codigosReserva
       : codigoReserva
         ? [codigoReserva]
         : [];
+  const listaCodigosTexto = codigosLista.join(', ');
 
   const mailBody = (() => {
-    if (ordenCodigo && saldoPendiente && codigosLista.length > 0) {
-      return (
-        `Hola,\n\nAdjunto el comprobante de la transferencia Prex por el pago agrupado de saldos pendientes.\n\n` +
-        `Orden: ${ordenCodigo}\n` +
-        `Importe total: $${saldoPendiente.monto.toLocaleString()} ${saldoPendiente.currency}\n` +
-        `Códigos de reserva: ${codigosLista.join(', ')}\n\n` +
-        `Saludos.`
-      );
+    let body = `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nNombre de quien reserva: ${nombre}\n`;
+    if (saldoPendiente) {
+      body += `Importe: $${saldoPendiente.monto.toLocaleString()} ${saldoPendiente.currency}\n`;
     }
-    if (saldoPendiente && codigoReserva) {
-      return (
-        `Hola,\n\nAdjunto el comprobante de la transferencia Prex correspondiente al saldo pendiente de la reserva.\n\n` +
-        `Código de reserva: ${codigoReserva}\n` +
-        `Importe del saldo: $${saldoPendiente.monto.toLocaleString()} ${saldoPendiente.currency}\n\n` +
-        `Saludos.`
-      );
+    if (listaCodigosTexto) {
+      body += `Códigos de reserva: ${listaCodigosTexto}\n`;
     }
-    if (codigoReserva) {
-      return (
-        `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\n` +
-        `Código de reserva: ${codigoReserva}\n\n` +
-        `Saludos.`
-      );
-    }
-    return `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nSaludos.`;
+    body += `\nSaludos.`;
+    return body;
   })();
 
   const mailto = `mailto:${PREX_ACCOUNT.email}?subject=${encodeURIComponent(PREX_ACCOUNT.asuntoEmail)}&body=${encodeURIComponent(mailBody)}`;
@@ -157,56 +143,31 @@ const PrexTransferDetails: React.FC<{
       <h4 className="mb-prex-transfer-title">Datos para la transferencia</h4>
       {saldoPendiente && (
         <p className="mb-prex-saldo-line">
-          {ordenCodigo ? 'Total a transferir' : 'Saldo a transferir'}:{' '}
+          {listaCodigosTexto && codigosLista.length > 1 ? 'Total a transferir' : 'Saldo a transferir'}:{' '}
           <strong>
             ${saldoPendiente.monto.toLocaleString()} {saldoPendiente.currency}
           </strong>
         </p>
       )}
-      {ordenCodigo && (
-        <p className="mb-prex-orden-line">
-          Código de orden: <strong className="mb-code-inline">{ordenCodigo}</strong>
-        </p>
-      )}
+      <p className="mb-prex-nombre-line">
+        Reserva a nombre de: <strong className="mb-code-inline">{nombre}</strong>
+      </p>
       <ul className="mb-prex-transfer-list">
         <li><span>Titular</span><strong>{PREX_ACCOUNT.titular}</strong></li>
         <li><span>Número de cuenta</span><strong>{PREX_ACCOUNT.cuenta}</strong></li>
       </ul>
       <p className="mb-prex-transfer-note">
-        {ordenCodigo ? (
+        Puede enviarnos el comprobante por correo a <strong>{PREX_ACCOUNT.email}</strong> (asunto{' '}
+        <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong>) o por WhatsApp al <strong>{PREX_WHATSAPP_DISPLAY}</strong>.
+        Indique en el mensaje el <strong>nombre completo de quien hizo la reserva</strong> (el mismo que figura arriba).
+        {listaCodigosTexto ? (
           <>
-            Puede enviarnos el comprobante por correo a <strong>{PREX_ACCOUNT.email}</strong> (asunto{' '}
-            <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong>) o por WhatsApp al{' '}
-            <strong>{PREX_WHATSAPP_DISPLAY}</strong>. Incluya el código de orden{' '}
-            <strong className="mb-code-inline">{ordenCodigo}</strong>
-            {codigosLista.length > 0 && (
-              <>
-                {' '}y los códigos de reserva:{' '}
-                {codigosLista.map((c, i) => (
-                  <React.Fragment key={c}>
-                    {i > 0 ? ', ' : ''}
-                    <strong className="mb-code-inline">{c}</strong>
-                  </React.Fragment>
-                ))}
-              </>
-            )}
-            . Cuando registremos el pago, actualizaremos el estado de cada reserva.
+            {' '}
+            Si lo desea, puede añadir también {codigosLista.length > 1 ? 'los códigos' : 'el código'} de reserva:{' '}
+            <strong className="mb-code-inline">{listaCodigosTexto}</strong>.
           </>
-        ) : saldoPendiente ? (
-          <>
-            Puede enviarnos el comprobante por correo a <strong>{PREX_ACCOUNT.email}</strong> (asunto{' '}
-            <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong>) o por WhatsApp al{' '}
-            <strong>{PREX_WHATSAPP_DISPLAY}</strong>. Incluya el código de reserva{' '}
-            <strong className="mb-code-inline">{codigoReserva}</strong> y el importe del saldo en el mensaje.
-            Cuando registremos el pago, actualizaremos el estado de su reserva.
-          </>
-        ) : (
-          <>
-            Puede enviarnos el comprobante por correo a <strong>{PREX_ACCOUNT.email}</strong> (asunto{' '}
-            <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong>) o por WhatsApp al <strong>{PREX_WHATSAPP_DISPLAY}</strong>.
-            Incluya el código de reserva <strong className="mb-code-inline">{codigoReserva}</strong> en el mensaje.
-          </>
-        )}
+        ) : null}{' '}
+        Cuando registremos el pago, actualizaremos el estado en el sistema.
       </p>
       <div className="mb-prex-contact-actions">
         <a className="mb-prex-mailto" href={mailto}>
@@ -237,9 +198,12 @@ const MyBookings: React.FC = () => {
   >(null);
   const [batchPayFlow, setBatchPayFlow] = useState<
     | { step: 'metodo'; metodo: 'CARD' | 'PREX'; items: BookingItem[]; total: number }
-    | { step: 'prex'; items: BookingItem[]; total: number; ordenCodigo: string }
+    | { step: 'prex'; items: BookingItem[]; total: number }
     | null
   >(null);
+
+  const nombreQuienReservaUi =
+    state.user?.nombreCompleto?.trim() || state.user?.email?.trim() || '';
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -446,15 +410,14 @@ const MyBookings: React.FC = () => {
         })),
       });
       const data = response?.data || response;
-      if (data?.status === 'PENDIENTE_TRANSFERENCIA' && data?.codigoOrden) {
+      if (data?.status === 'PENDIENTE_TRANSFERENCIA') {
         setBatchPayFlow({
           step: 'prex',
           items,
           total,
-          ordenCodigo: data.codigoOrden,
         });
       } else {
-        setError(data?.message || 'No se pudo generar la orden de transferencia');
+        setError(data?.message || 'No se pudo iniciar la transferencia Prex');
       }
     } catch (err: any) {
       setError(err?.message || 'Error al procesar el pago agrupado');
@@ -699,7 +662,10 @@ const MyBookings: React.FC = () => {
                 {isPrexPending(booking) && (
                   <>
                     <PrexCountdown fechaCreacion={booking.fechaCreacion} />
-                    <PrexTransferDetails codigoReserva={booking.code} />
+                    <PrexTransferDetails
+                      codigoReserva={booking.code}
+                      nombreQuienReserva={nombreQuienReservaUi}
+                    />
                   </>
                 )}
 
@@ -845,6 +811,7 @@ const MyBookings: React.FC = () => {
                 </p>
                 <PrexTransferDetails
                   codigoReserva={saldoFlow.booking.code}
+                  nombreQuienReserva={nombreQuienReservaUi}
                   saldoPendiente={{
                     monto: getSaldo(saldoFlow.booking),
                     currency: saldoFlow.booking.currency,
@@ -932,7 +899,7 @@ const MyBookings: React.FC = () => {
                     />
                     <div>
                       <strong>Transferencia a cuenta Prex</strong>
-                      <small>Se generará una orden; incluya su código en el comprobante.</small>
+                      <small>Verá los datos de la cuenta; indique su nombre en el comprobante.</small>
                     </div>
                   </label>
                 </div>
@@ -949,7 +916,7 @@ const MyBookings: React.FC = () => {
                         Procesando...
                       </>
                     ) : batchPayFlow.metodo === 'PREX' ? (
-                      'Generar orden y ver datos'
+                      'Ver datos para transferir'
                     ) : (
                       'Continuar con tarjeta'
                     )}
@@ -969,10 +936,11 @@ const MyBookings: React.FC = () => {
               <>
                 <h3 className="mb-modal-title">Transferencia Prex (pago agrupado)</h3>
                 <p className="mb-modal-subtitle">
-                  Transfiera el importe total e indique el código de orden y los códigos de reserva en el comprobante.
+                  Transfiera el importe total e indique en el comprobante el nombre de quien reserva (el mismo que
+                  figura en su cuenta). Si lo desea, puede añadir también los códigos de las reservas.
                 </p>
                 <PrexTransferDetails
-                  ordenCodigo={batchPayFlow.ordenCodigo}
+                  nombreQuienReserva={nombreQuienReservaUi}
                   codigosReserva={batchPayFlow.items.map(b => b.code)}
                   saldoPendiente={{ monto: batchPayFlow.total, currency: 'UYU' }}
                 />

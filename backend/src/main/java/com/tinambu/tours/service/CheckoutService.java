@@ -87,8 +87,11 @@ public class CheckoutService {
                     orden.getId(), orden.getCodigoOrden(),
                     orden.getMontoTotal(), tipoPago,
                     null, "PENDIENTE_TRANSFERENCIA",
-                    "Orden generada. Realizá la transferencia para confirmar tu reserva. Tenés 12 horas para enviar el comprobante; pasado ese plazo, la reserva se cancelará automáticamente.",
-                    result.reservasCreadas
+                    "Orden generada. Realizá la transferencia para confirmar tu reserva. Incluí en el comprobante el "
+                            + "nombre de quien reserva (el mismo que ingresaste al reservar) para identificar el pago. "
+                            + "Tenés 12 horas para enviar el comprobante; pasado ese plazo, la reserva se cancelará automáticamente.",
+                    result.reservasCreadas,
+                    nombreContactoTrim(request.getNombreContacto())
             );
         }
 
@@ -108,7 +111,8 @@ public class CheckoutService {
                     orden.getMontoTotal(), tipoPago,
                     processUrl, status,
                     "Sesión de pago creada. Redirigiendo al procesador de pagos.",
-                    result.reservasCreadas
+                    result.reservasCreadas,
+                    nombreContactoTrim(request.getNombreContacto())
             );
 
         } catch (Exception e) {
@@ -118,7 +122,8 @@ public class CheckoutService {
                     orden.getMontoTotal(), tipoPago,
                     null, "ERROR",
                     "Las reservas fueron creadas pero no se pudo iniciar el pago: " + e.getMessage(),
-                    result.reservasCreadas
+                    result.reservasCreadas,
+                    nombreContactoTrim(request.getNombreContacto())
             );
         }
     }
@@ -144,11 +149,13 @@ public class CheckoutService {
                     orden.getId(), orden.getCodigoOrden(),
                     orden.getMontoTotal(), tipoPago,
                     null, "PENDIENTE_TRANSFERENCIA",
-                    "Orden generada. Realizá una única transferencia por el total indicado e incluí en el comprobante "
-                            + "el código de la orden y los códigos de reserva. Las reservas aún no confirmadas que sigan "
-                            + "pendientes de este pago pueden cancelarse automáticamente si no recibimos el comprobante "
-                            + "en el plazo de 12 horas.",
-                    lineas
+                    "Orden generada. Realizá una única transferencia por el total indicado. Incluí en el comprobante el "
+                            + "nombre de quien reserva (el mismo que ingresaste) para identificar el pago. Si son varias "
+                            + "reservas, conviene indicar también los códigos de reserva. Las reservas aún no confirmadas "
+                            + "que sigan pendientes de este pago pueden cancelarse automáticamente si no recibimos el "
+                            + "comprobante en el plazo de 12 horas.",
+                    lineas,
+                    nombreContactoTrim(request.getNombreContacto())
             );
         }
 
@@ -165,7 +172,8 @@ public class CheckoutService {
                     orden.getMontoTotal(), tipoPago,
                     processUrl, status,
                     "Sesión de pago creada. Redirigiendo al procesador de pagos.",
-                    lineas
+                    lineas,
+                    nombreContactoTrim(request.getNombreContacto())
             );
 
         } catch (Exception e) {
@@ -175,9 +183,18 @@ public class CheckoutService {
                     orden.getMontoTotal(), tipoPago,
                     null, "ERROR",
                     "La orden fue creada pero no se pudo iniciar el pago: " + e.getMessage(),
-                    lineas
+                    lineas,
+                    nombreContactoTrim(request.getNombreContacto())
             );
         }
+    }
+
+    private static String nombreContactoTrim(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String t = raw.trim();
+        return t.isEmpty() ? null : t;
     }
 
     @Transactional

@@ -14,11 +14,12 @@ public class OrdenEstadoResponse {
     private String placetoPayStatus;
     private String placetoPayMessage;
     private List<ItemEstado> items;
+    private String nombreContacto;
 
     public static OrdenEstadoResponse of(UUID ordenId, String codigoOrden, String estadoOrden,
                                           BigDecimal montoTotal, String tipoPago,
                                           String p2pStatus, String p2pMessage,
-                                          List<ItemEstado> items) {
+                                          List<ItemEstado> items, String nombreContacto) {
         OrdenEstadoResponse r = new OrdenEstadoResponse();
         r.ordenId = ordenId;
         r.codigoOrden = codigoOrden;
@@ -28,6 +29,7 @@ public class OrdenEstadoResponse {
         r.placetoPayStatus = p2pStatus;
         r.placetoPayMessage = p2pMessage;
         r.items = items;
+        r.nombreContacto = nombreContacto;
         return r;
     }
 
@@ -40,6 +42,8 @@ public class OrdenEstadoResponse {
     public String getPlacetoPayStatus() { return placetoPayStatus; }
     public String getPlacetoPayMessage() { return placetoPayMessage; }
     public List<ItemEstado> getItems() { return items; }
+
+    public String getNombreContacto() { return nombreContacto; }
 
     public static class ItemEstado {
         private UUID reservaId;

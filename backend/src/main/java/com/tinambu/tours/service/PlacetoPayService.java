@@ -433,7 +433,8 @@ public class PlacetoPayService {
         return OrdenEstadoResponse.of(
                 orden.getId(), orden.getCodigoOrden(),
                 orden.getEstado(), orden.getMontoTotal(), orden.getTipoPago(),
-                p2pStatus, p2pMessage, itemStates
+                p2pStatus, p2pMessage, itemStates,
+                orden.getNombreContacto()
         );
     }
 

@@ -151,13 +151,13 @@
   color: #cbd5e1;
 }
 
-.mb-prex-orden-line {
+.mb-prex-nombre-line {
   margin: 0 0 0.75rem 0;
   font-size: 0.95rem;
   color: #444;
 }
 
-[data-theme="dark"] .mb-prex-orden-line {
+[data-theme="dark"] .mb-prex-nombre-line {
   color: #e2e8f0;
 }
 

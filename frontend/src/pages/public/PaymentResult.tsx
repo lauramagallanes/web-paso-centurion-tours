@@ -11,6 +11,7 @@ import './PaymentResult.css';
 interface OrdenStatus {
   ordenId: string;
   codigoOrden: string;
+  nombreContacto?: string;
   estadoOrden: string;
   montoTotal: number;
   tipoPago: string;
@@ -44,6 +45,25 @@ const formatCurrency = (amount: number, currency = 'UYU') =>
     currency,
     minimumFractionDigits: 0,
   }).format(amount);
+
+/** Mismos pictogramas que en Mis reservas / tarjetas de reserva (sendero vs alojamiento). */
+const TipoReservaIcon: React.FC<{ tipo: string }> = ({ tipo }) => {
+  const sendero = tipo === 'SENDERO';
+  return (
+    <span className="result-tipo-reserva-icon" aria-hidden>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        {sendero ? (
+          <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7" />
+        ) : (
+          <path d="M7 14c1.66 0 3-1.34 3-3S8.66 8 7 8s-3 1.34-3 3 1.34 3 3 3zm0-4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm12-3h-8v8H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4zm2 8h-8V9h6c1.1 0 2 .9 2 2v4z" />
+        )}
+      </svg>
+    </span>
+  );
+};
+
+const labelTipoReserva = (tipo: string) =>
+  tipo === 'SENDERO' ? 'Sendero' : 'Alojamiento';
 
 // ──────────────────────────────────────────────────────────────
 // Helpers
@@ -217,12 +237,17 @@ const PaymentResult: React.FC = () => {
           <p className="result-subtitle">{display.subtitle}</p>
 
           <div className="result-details">
-            {ordenStatus.codigoOrden && ordenStatus.codigoOrden !== 'ORD-MOCK' && (
+            {ordenStatus.nombreContacto ? (
+              <div className="detail-row">
+                <span>Reserva a nombre de:</span>
+                <span className="detail-value detail-value--name">{ordenStatus.nombreContacto}</span>
+              </div>
+            ) : ordenStatus.codigoOrden && ordenStatus.codigoOrden !== 'ORD-MOCK' ? (
               <div className="detail-row">
                 <span>Código de Orden:</span>
                 <span className="detail-value">{ordenStatus.codigoOrden}</span>
               </div>
-            )}
+            ) : null}
             {ordenStatus.montoTotal > 0 && (
               <div className="detail-row">
                 <span>Total pagado:</span>
@@ -235,7 +260,10 @@ const PaymentResult: React.FC = () => {
                 {ordenStatus.items.map(item => (
                   <div key={item.reservaId} className="result-item-row">
                     <span className="result-item-type">
-                      {item.tipoReserva === 'SENDERO' ? '🥾' : '🏠'} {item.tipoReserva}
+                      <span className="result-item-type-inner">
+                        <TipoReservaIcon tipo={item.tipoReserva} />
+                        <span>{labelTipoReserva(item.tipoReserva)}</span>
+                      </span>
                     </span>
                     <span className={`status-badge status-${item.estadoReserva?.toLowerCase()}`}>
                       {item.estadoReserva}

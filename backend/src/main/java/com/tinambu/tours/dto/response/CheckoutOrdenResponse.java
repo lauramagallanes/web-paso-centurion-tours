@@ -14,12 +14,14 @@ public class CheckoutOrdenResponse {
     private String status;
     private String message;
     private List<ReservaCreada> reservas;
+    /** Nombre de contacto tal como lo ingresó al reservar (identificación en comprobante Prex). */
+    private String nombreContacto;
 
     // Builder-style factory
     public static CheckoutOrdenResponse of(UUID ordenId, String codigoOrden,
                                             BigDecimal montoTotal, String tipoPago,
                                             String processUrl, String status, String message,
-                                            List<ReservaCreada> reservas) {
+                                            List<ReservaCreada> reservas, String nombreContacto) {
         CheckoutOrdenResponse r = new CheckoutOrdenResponse();
         r.ordenId = ordenId;
         r.codigoOrden = codigoOrden;
@@ -29,6 +31,7 @@ public class CheckoutOrdenResponse {
         r.status = status;
         r.message = message;
         r.reservas = reservas;
+        r.nombreContacto = nombreContacto;
         return r;
     }
 
@@ -41,6 +44,8 @@ public class CheckoutOrdenResponse {
     public String getStatus() { return status; }
     public String getMessage() { return message; }
     public List<ReservaCreada> getReservas() { return reservas; }
+
+    public String getNombreContacto() { return nombreContacto; }
 
     public static class ReservaCreada {
         private UUID reservaId;

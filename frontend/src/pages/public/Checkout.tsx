@@ -178,7 +178,7 @@ const Checkout: React.FC = () => {
   const [alternativasSendero, setAlternativasSendero] = useState<Array<{ id: string; nombre: string }>>([]);
   const [removeConfirmItem, setRemoveConfirmItem] = useState<CartItem | null>(null);
   const [prexResult, setPrexResult] = useState<{
-    codigoOrden: string;
+    nombreContacto: string;
     monto: number;
     currency: string;
   } | null>(null);
@@ -286,8 +286,9 @@ const Checkout: React.FC = () => {
 
       if (metodoPago === 'PREX' && data?.status === 'PENDIENTE_TRANSFERENCIA') {
         // Mostramos pantalla con instrucciones de transferencia y limpiamos carrito.
+        const nombreApi = typeof data?.nombreContacto === 'string' ? data.nombreContacto.trim() : '';
         setPrexResult({
-          codigoOrden: data.codigoOrden || '',
+          nombreContacto: nombreApi || contactInfo.nombreContacto.trim(),
           monto: Number(data.montoTotal) || montoAPagar,
           currency,
         });
@@ -344,7 +345,7 @@ const Checkout: React.FC = () => {
         <div className="checkout-container">
           <div className="prex-result">
             <div className="prex-result-icon"><Icon name="check-circle" size="xl" color="success" /></div>
-            <h1 className="prex-result-title">¡Su orden se ha registrado!</h1>
+            <h1 className="prex-result-title">¡Su reserva quedó registrada!</h1>
             <p className="prex-result-subtitle">
               Para confirmar su reserva, puede hacer la transferencia a la cuenta Prex que figura
               debajo. Cuando recibamos el comprobante, le confirmaremos la reserva por correo electrónico.
@@ -364,8 +365,8 @@ const Checkout: React.FC = () => {
 
             <div className="prex-summary-card">
               <div className="prex-summary-row">
-                <span>Código de orden:</span>
-                <strong>{prexResult.codigoOrden || '—'}</strong>
+                <span>Reserva a nombre de:</span>
+                <strong>{prexResult.nombreContacto || '—'}</strong>
               </div>
               <div className="prex-summary-row prex-summary-total">
                 <span>Monto a transferir:</span>
@@ -382,14 +383,15 @@ const Checkout: React.FC = () => {
               <p className="prex-account-note">
                 Una vez hecha la transferencia, envíe el comprobante por correo a{' '}
                 <strong>{PREX_ACCOUNT.email}</strong> (asunto <strong>“{PREX_ACCOUNT.asuntoEmail}”</strong>) o por
-                WhatsApp al <strong>{PREX_WHATSAPP_DISPLAY}</strong>. Recuerde incluir el{' '}
-                <strong>código de orden</strong> para que podamos identificar su pago.
+                WhatsApp al <strong>{PREX_WHATSAPP_DISPLAY}</strong>. Indique en el mensaje el{' '}
+                <strong>nombre completo de quien hizo la reserva</strong> (el mismo que figura arriba) para identificar
+                su pago.
               </p>
               <div className="prex-comprobante-actions">
                 <a
                   className="prex-comprobante-link"
-                  href={`mailto:${PREX_ACCOUNT.email}?subject=${encodeURIComponent(`${PREX_ACCOUNT.asuntoEmail} — ${prexResult.codigoOrden || ''}`)}&body=${encodeURIComponent(
-                    `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nCódigo de orden: ${prexResult.codigoOrden || '—'}\nMonto: ${formatCurrency(prexResult.monto, prexResult.currency)}\n\nSaludos.`,
+                  href={`mailto:${PREX_ACCOUNT.email}?subject=${encodeURIComponent(`${PREX_ACCOUNT.asuntoEmail} — ${prexResult.nombreContacto || ''}`)}&body=${encodeURIComponent(
+                    `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nNombre de quien reserva: ${prexResult.nombreContacto || '—'}\nMonto: ${formatCurrency(prexResult.monto, prexResult.currency)}\n\nSaludos.`,
                   )}`}
                 >
                   Abrir el correo
@@ -397,7 +399,7 @@ const Checkout: React.FC = () => {
                 <a
                   className="prex-comprobante-link prex-comprobante-link--wa"
                   href={prexComprobanteWhatsAppUrl(
-                    `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nCódigo de orden: ${prexResult.codigoOrden || '—'}\nMonto: ${formatCurrency(prexResult.monto, prexResult.currency)}\n\nSaludos.`,
+                    `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nNombre de quien reserva: ${prexResult.nombreContacto || '—'}\nMonto: ${formatCurrency(prexResult.monto, prexResult.currency)}\n\nSaludos.`,
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -658,7 +660,7 @@ const Checkout: React.FC = () => {
                   {loading
                     ? 'Procesando...'
                     : metodoPago === 'PREX'
-                      ? 'Generar orden y ver datos de transferencia'
+                      ? 'Ver datos para transferir con Prex'
                       : 'Pago seguro con tarjeta de crédito o débito'}
                 </button>
 

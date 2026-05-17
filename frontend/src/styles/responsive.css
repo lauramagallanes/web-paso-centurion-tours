@@ -1,0 +1,135 @@
+/* =====================================================================
+   responsive.css — Ajustes globales mobile-first y de accesibilidad táctil
+   Se carga una sola vez desde globals.css.
+   ===================================================================== */
+
+/* Asegurar que NUNCA haya scroll horizontal indeseado */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Imágenes y media siempre fluidas */
+img,
+picture,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Iframes (mapas, etc.) se adaptan al contenedor */
+iframe {
+  max-width: 100%;
+}
+
+/* Inputs y textareas que respeten ancho del contenedor en mobile */
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+}
+
+/* En iOS, fonts < 16px causan zoom automático al focusear inputs.
+   Forzamos mínimo 16px en mobile. */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="search"],
+  input[type="password"],
+  input[type="url"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* Touch targets mínimos 44x44 (WCAG 2.5.5) en mobile */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a.btn,
+  .btn,
+  [role="button"] {
+    min-height: 44px;
+  }
+}
+
+/* Safe-area para iOS notch/Home indicator */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Wrapper genérico responsivo: ningún hijo debería desbordar el viewport */
+.page,
+main {
+  max-width: 100%;
+}
+
+/* Cuando el carrito está abierto, esconder el botón de WhatsApp para
+   no tapar el cierre/checkout en mobile */
+body:has(.shopping-cart) .whatsapp-floating-btn {
+  display: none;
+}
+
+/* Botón flotante de WhatsApp (centralizado) */
+.whatsapp-floating-btn {
+  position: fixed;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  right: max(1rem, env(safe-area-inset-right));
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #25d366;
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 900;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.whatsapp-floating-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+
+.whatsapp-floating-btn img {
+  width: 30px;
+  height: 30px;
+}
+
+@media (max-width: 480px) {
+  .whatsapp-floating-btn {
+    width: 52px;
+    height: 52px;
+  }
+
+  .whatsapp-floating-btn img {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* Tablas: scroll horizontal en mobile en lugar de romper el layout */
+.table-responsive,
+table {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

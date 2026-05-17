@@ -5,6 +5,7 @@
 @import './colors.css';
 @import './typography.css';
 @import './layout.css';
+@import './responsive.css';
 
 /* Additional component-specific styles will be imported here */
 /* @import '../assets/styles/Home.css'; - DISABLED: Causes yellow background on cards */

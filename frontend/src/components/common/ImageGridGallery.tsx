@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './ImageGridGallery.css';
 
 interface ImageData {
@@ -16,7 +16,6 @@ const ImageGridGallery: React.FC<ImageGridGalleryProps> = ({ images, altText = '
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Validación: asegurar que images sea un array válido
   if (!images || !Array.isArray(images) || images.length === 0) {
     return (
       <div className="image-grid-empty">
@@ -25,7 +24,6 @@ const ImageGridGallery: React.FC<ImageGridGalleryProps> = ({ images, altText = '
     );
   }
 
-  // Tomar máximo 5 imágenes
   const displayImages = images.slice(0, 5);
   const remainingCount = Math.max(0, images.length - 5);
 
@@ -34,89 +32,72 @@ const ImageGridGallery: React.FC<ImageGridGalleryProps> = ({ images, altText = '
     setLightboxOpen(true);
   };
 
-  const closeLightbox = () => {
+  const closeLightbox = useCallback(() => {
     setLightboxOpen(false);
-  };
+  }, []);
 
-  const nextImage = () => {
+  const nextImage = useCallback(() => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  };
+  }, [images.length]);
 
-  const prevImage = () => {
+  const prevImage = useCallback(() => {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  }, [images.length]);
 
-  if (images.length === 0) {
-    return (
-      <div className="image-grid-empty">
-        <p>No hay imágenes disponibles</p>
-      </div>
-    );
-  }
-
-  // Estilos inline para forzar el layout correcto
-  const gridStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '2fr 1fr 1fr',
-    gridTemplateRows: '1fr 1fr',
-    gap: '8px',
-    height: '500px',
-    width: '100%',
-    borderRadius: '12px',
-    overflow: 'hidden',
-  };
-
-  const itemStyles: React.CSSProperties[] = [
-    { gridColumn: '1', gridRow: '1 / 3' }, // Item 0 - imagen principal (grande)
-    { gridColumn: '2', gridRow: '1' },      // Item 1
-    { gridColumn: '3', gridRow: '1' },      // Item 2
-    { gridColumn: '2', gridRow: '2' },      // Item 3
-    { gridColumn: '3', gridRow: '2' },      // Item 4
-  ];
-
-  const baseItemStyle: React.CSSProperties = {
-    position: 'relative',
-    overflow: 'hidden',
-    cursor: 'pointer',
-  };
+  useEffect(() => {
+    if (!lightboxOpen) return undefined;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') nextImage();
+      if (e.key === 'ArrowLeft') prevImage();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [lightboxOpen, closeLightbox, nextImage, prevImage]);
 
   return (
     <>
-      <div className="image-grid-gallery-v2" style={gridStyle}>
+      <div className="image-grid-gallery-v2">
         {displayImages.map((image, index) => (
-          <div
+          <button
             key={image.id}
+            type="button"
             className={`image-grid-item-v2 image-grid-item-${index}`}
-            style={{ ...baseItemStyle, ...itemStyles[index] }}
             onClick={() => openLightbox(index)}
+            aria-label={image.descripcion || `${altText} ${index + 1}`}
           >
             <img
               src={image.url}
               alt={image.descripcion || `${altText} ${index + 1}`}
               loading="lazy"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             />
             {index === 4 && remainingCount > 0 && (
-              <div className="image-grid-overlay">
-                <span>+{remainingCount}</span>
-                <span>Ver todas las fotos</span>
+              <div className="image-grid-overlay-count">
+                <span className="overlay-count-number">+{remainingCount}</span>
+                <span className="overlay-count-label">Ver todas las fotos</span>
               </div>
             )}
-          </div>
+          </button>
         ))}
       </div>
 
-      {/* Lightbox Modal */}
       {lightboxOpen && (
-        <div className="image-grid-lightbox" onClick={closeLightbox}>
-          <button className="lightbox-close" onClick={closeLightbox}>
+        <div className="image-grid-lightbox" onClick={closeLightbox} role="dialog" aria-modal="true">
+          <button className="lightbox-close" onClick={closeLightbox} aria-label="Cerrar">
             ×
           </button>
-          
-          <button className="lightbox-prev" onClick={(e) => { e.stopPropagation(); prevImage(); }}>
+
+          <button
+            className="lightbox-prev"
+            onClick={(e) => {
+              e.stopPropagation();
+              prevImage();
+            }}
+            aria-label="Imagen anterior"
+          >
             ‹
           </button>
-          
+
           <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
             <img
               src={images[currentImageIndex].url}
@@ -126,8 +107,15 @@ const ImageGridGallery: React.FC<ImageGridGalleryProps> = ({ images, altText = '
               {currentImageIndex + 1} / {images.length}
             </div>
           </div>
-          
-          <button className="lightbox-next" onClick={(e) => { e.stopPropagation(); nextImage(); }}>
+
+          <button
+            className="lightbox-next"
+            onClick={(e) => {
+              e.stopPropagation();
+              nextImage();
+            }}
+            aria-label="Siguiente imagen"
+          >
             ›
           </button>
         </div>

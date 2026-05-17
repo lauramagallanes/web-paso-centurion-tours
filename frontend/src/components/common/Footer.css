@@ -12,10 +12,10 @@
 .footer-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 var(--space-10);
+  padding: 0 clamp(var(--space-4), 4vw, var(--space-10));
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
+  gap: clamp(var(--space-8), 4vw, var(--space-12));
 }
 
 /* ===================================
@@ -74,8 +74,9 @@
 }
 
 .mintur-img-large {
-  height: 180px;
+  height: clamp(110px, 18vw, 180px);
   width: auto;
+  max-width: 100%;
   border-radius: var(--radius-lg);
   box-shadow: 0 8px 24px var(--color-shadow-lg);
 }
@@ -241,7 +242,7 @@
   }
 
   .mintur-img-large {
-    height: 160px;
+    max-height: 160px;
   }
 
   .footer-row-bottom {
@@ -304,7 +305,7 @@
   }
 
   .mintur-img-large {
-    height: 150px;
+    max-height: 130px;
   }
 
   .footer-row-bottom {

@@ -749,8 +749,8 @@ const ActivityDetails: React.FC = () => {
 
         {/* Related Senderos */}
         {relatedSenderos.length > 0 && (
-          <div style={{ marginTop: '4rem' }}>
-            <h2 className="section-title" style={{ marginBottom: '2rem' }}>
+          <div className="related-senderos-section">
+            <h2 className="section-title related-senderos-title">
               Senderos relacionados
             </h2>
             <div className="related-grid">

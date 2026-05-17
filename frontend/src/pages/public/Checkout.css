@@ -5,6 +5,12 @@
   color: var(--color-text);
 }
 
+@media (max-width: 480px) {
+  .checkout-page {
+    padding: 1rem 0.75rem;
+  }
+}
+
 .checkout-container {
   max-width: 1000px;
   margin: 0 auto;
@@ -22,8 +28,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
   margin-bottom: 2.5rem;
+  padding: 0 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .checkout-steps {
+    gap: 0.4rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .step-label {
+    font-size: 0.75rem;
+  }
+
+  .step-divider {
+    width: 24px;
+  }
 }
 
 .step {
@@ -139,6 +162,8 @@
 
 .detail-row {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
   justify-content: space-between;
   font-size: var(--text-sm);
   color: var(--color-text);
@@ -364,6 +389,19 @@
   margin-left: 0.5rem;
 }
 
+@media (max-width: 480px) {
+  .btn-secondary {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    padding: 0.85rem 1.25rem;
+  }
+}
+
 .btn-secondary:hover {
   background: var(--color-primary);
   color: var(--color-button-primary-text);
@@ -401,7 +439,7 @@
 /* Empty state */
 .checkout-empty {
   text-align: center;
-  padding: 4rem 2rem;
+  padding: clamp(2rem, 8vw, 4rem) clamp(1rem, 4vw, 2rem);
 }
 
 .checkout-empty h2 {
@@ -716,9 +754,35 @@
   margin: 2rem auto;
   background: var(--color-surface);
   border-radius: 12px;
-  padding: 2rem;
+  padding: clamp(1rem, 4vw, 2rem);
   color: var(--color-text);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 480px) {
+  .prex-result {
+    margin: 1rem auto;
+    border-radius: 10px;
+  }
+
+  .prex-result-title {
+    font-size: 1.25rem;
+  }
+
+  .prex-summary-card,
+  .prex-account-card {
+    padding: 0.85rem 1rem;
+  }
+
+  .prex-account-card li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .prex-account-card li strong {
+    text-align: left;
+  }
 }
 
 .prex-result-icon {

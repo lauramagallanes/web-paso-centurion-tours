@@ -13,7 +13,7 @@
 .birding-hero {
   position: relative;
   background: #1a1a1a;
-  padding: var(--space-32) 0 var(--space-24) 0;
+  padding: clamp(var(--space-16), 10vw, var(--space-32)) 0 clamp(var(--space-12), 8vw, var(--space-24)) 0;
   overflow: hidden;
 }
 
@@ -112,6 +112,19 @@
   transition: all 0.3s ease;
 }
 
+@media (max-width: 480px) {
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .hero-actions .btn {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
 /* Removed custom brown button styles - now using default secondary button color */
 
 .hero-actions .btn-secondary {
@@ -133,7 +146,7 @@
    =================================== */
 
 .birding-stats {
-  padding: var(--space-20) 0;
+  padding: clamp(var(--space-12), 8vw, var(--space-20)) 0;
   background: linear-gradient(135deg, #faf6f1 0%, #f5e9dc 50%, #ede3d5 100%);
 }
 
@@ -145,7 +158,7 @@
 .featured-stat-card {
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   border-radius: 24px;
-  padding: var(--space-12);
+  padding: clamp(var(--space-6), 5vw, var(--space-12));
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   border: 1px solid rgba(107, 124, 54, 0.1);
@@ -177,7 +190,7 @@
 }
 
 .featured-stat-icon i {
-  font-size: 52px;
+  font-size: clamp(36px, 5vw, 52px);
   color: #ffffff;
 }
 
@@ -318,14 +331,14 @@
    =================================== */
 
 .birding-area {
-  padding: var(--space-24) 0;
+  padding: clamp(var(--space-12), 8vw, var(--space-24)) 0;
   background: linear-gradient(135deg, #faf6f1 0%, #f5e9dc 50%, #ede3d5 100%);
 }
 
 .area-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-16);
+  gap: clamp(var(--space-8), 4vw, var(--space-16));
   align-items: center;
 }
 
@@ -358,7 +371,7 @@
 
 .area-features {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-4);
   margin-top: var(--space-10);
 }
@@ -479,7 +492,7 @@
    =================================== */
 
 .birding-habitats {
-  padding: var(--space-24) 0;
+  padding: clamp(var(--space-12), 8vw, var(--space-24)) 0;
   background: linear-gradient(135deg, #faf6f1 0%, #f5e9dc 50%, #ede3d5 100%);
 }
 
@@ -548,13 +561,12 @@
 }
 
 .habitat-icon i {
-  font-size: 48px;
+  font-size: clamp(36px, 5vw, 48px);
   color: #6B792E;
-  display: inline-block;
   transition: all 0.3s ease;
   background: linear-gradient(135deg, rgba(107, 121, 46, 0.1) 0%, rgba(139, 111, 71, 0.1) 100%);
-  width: 80px;
-  height: 80px;
+  width: clamp(64px, 12vw, 80px);
+  height: clamp(64px, 12vw, 80px);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -649,7 +661,7 @@
    =================================== */
 
 .birding-species {
-  padding: var(--space-24) 0;
+  padding: clamp(var(--space-12), 8vw, var(--space-24)) 0;
   background: linear-gradient(135deg, #faf6f1 0%, #f5e9dc 50%, #ede3d5 100%);
 }
 
@@ -719,7 +731,7 @@
    =================================== */
 
 .birding-seasons {
-  padding: var(--space-24) 0;
+  padding: clamp(var(--space-12), 8vw, var(--space-24)) 0;
   background: linear-gradient(135deg, #faf6f1 0%, #f5e9dc 50%, #ede3d5 100%);
 }
 
@@ -771,7 +783,7 @@
    =================================== */
 
 .birding-gallery {
-  padding: var(--space-24) 0;
+  padding: clamp(var(--space-12), 8vw, var(--space-24)) 0;
   background: linear-gradient(135deg, #faf6f1 0%, #f5e9dc 50%, #ede3d5 100%);
 }
 
@@ -780,7 +792,7 @@
    =================================== */
 
 .birding-resources {
-  padding: var(--space-24) 0;
+  padding: clamp(var(--space-12), 8vw, var(--space-24)) 0;
   background: linear-gradient(135deg, #faf6f1 0%, #f5e9dc 50%, #ede3d5 100%);
 }
 
@@ -799,7 +811,7 @@
 }
 
 .resource-icon-large {
-  font-size: 64px;
+  font-size: clamp(40px, 6vw, 64px);
 }
 
 .resource-title {
@@ -849,7 +861,7 @@
    =================================== */
 
 .birding-guides {
-  padding: var(--space-24) 0;
+  padding: clamp(var(--space-12), 8vw, var(--space-24)) 0;
   background: linear-gradient(135deg, #faf6f1 0%, #f5e9dc 50%, #ede3d5 100%);
 }
 
@@ -908,7 +920,7 @@
    =================================== */
 
 .birding-cta {
-  padding: var(--space-24) 0 var(--space-32) 0;
+  padding: clamp(var(--space-12), 8vw, var(--space-24)) 0 clamp(var(--space-16), 10vw, var(--space-32)) 0;
   background: linear-gradient(135deg, #2d4a2b 0%, #5a6a2c 100%);
 }
 
@@ -924,7 +936,7 @@
 
 .cta-content {
   text-align: center;
-  padding: var(--space-10);
+  padding: clamp(var(--space-6), 4vw, var(--space-10));
 }
 
 .cta-title {

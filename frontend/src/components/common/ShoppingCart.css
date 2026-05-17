@@ -6,7 +6,7 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
+  z-index: 1099;
   backdrop-filter: blur(4px);
 }
 
@@ -17,14 +17,16 @@
   width: 100%;
   max-width: 480px;
   height: 100vh;
+  height: 100dvh;
   background-color: var(--color-surface);
   border-left: 1px solid var(--color-border);
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 1100;
   display: flex;
   flex-direction: column;
   transform: translateX(0);
   animation: slideInRight 0.3s ease-out;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 @keyframes slideInRight {
@@ -174,8 +176,13 @@
   border: none;
   color: var(--color-text-muted);
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 8px;
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
   font-size: var(--text-sm);
   transition: all 0.2s ease;
 }
@@ -230,14 +237,14 @@
 .quantity-btn {
   background: none;
   border: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: var(--font-semibold);
   color: var(--color-text-secondary);
   transition: all 0.2s ease;
@@ -408,25 +415,43 @@
     max-width: 100%;
     width: 100%;
   }
-  
+
+  .cart-header {
+    padding: var(--space-4);
+  }
+
+  .cart-items {
+    padding: var(--space-3);
+  }
+
+  .cart-summary {
+    padding: var(--space-4);
+  }
+}
+
+@media (max-width: 480px) {
   .cart-item {
     flex-direction: column;
     gap: var(--space-3);
+    padding: var(--space-3);
   }
-  
+
   .cart-item-image {
     width: 100%;
-    height: 120px;
+    height: 140px;
+    aspect-ratio: 16 / 9;
   }
-  
+
   .cart-item-footer {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: var(--space-3);
-    align-items: stretch;
+    align-items: center;
+    justify-content: space-between;
   }
-  
-  .cart-item-quantity {
-    align-self: center;
+
+  .cart-item-price {
+    text-align: left;
   }
 }
 

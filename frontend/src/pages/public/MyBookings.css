@@ -164,7 +164,7 @@
 /* Loading */
 .mb-loading {
   text-align: center;
-  padding: 4rem 0;
+  padding: clamp(2rem, 8vw, 4rem) 0;
   color: #807a75;
 }
 
@@ -185,7 +185,7 @@
 /* Error */
 .mb-error-state {
   text-align: center;
-  padding: 3rem;
+  padding: clamp(1.5rem, 6vw, 3rem);
   color: #ef4444;
   background: #fef2f2;
   border-radius: 12px;
@@ -199,7 +199,7 @@
 /* Empty State */
 .mb-empty {
   text-align: center;
-  padding: 4rem 2rem;
+  padding: clamp(2rem, 8vw, 4rem) clamp(1rem, 4vw, 2rem);
   background: #fff;
   border-radius: 16px;
   border: 1px solid #e5e0db;
@@ -244,11 +244,11 @@
 /* Auth Required */
 .mb-auth-required {
   text-align: center;
-  padding: 4rem 2rem;
+  padding: clamp(2rem, 8vw, 4rem) clamp(1rem, 4vw, 2rem);
   background: #fff;
   border-radius: 16px;
   border: 1px solid #e5e0db;
-  margin-top: 4rem;
+  margin-top: clamp(1.5rem, 6vw, 4rem);
 }
 
 [data-theme="dark"] .mb-auth-required {
@@ -870,5 +870,32 @@
 
   .mb-card-details {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .mb-card {
+    padding: 1rem;
+  }
+
+  .mb-card-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mb-card-actions > * {
+    width: 100%;
+  }
+
+  .mb-empty-actions {
+    flex-direction: column;
+  }
+
+  .mb-empty-actions > * {
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .mb-card-details {
+    grid-template-columns: 1fr;
   }
 }

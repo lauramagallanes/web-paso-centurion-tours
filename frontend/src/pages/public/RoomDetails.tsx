@@ -460,7 +460,7 @@ const RoomDetails: React.FC = () => {
                   <img 
                     src="/placeholder-sendero.svg" 
                     alt={room.nombre}
-                    style={{ width: '100%', height: '400px', objectFit: 'cover', borderRadius: '12px' }}
+                    className="details-placeholder-img"
                   />
                 </>
               )}
@@ -715,8 +715,8 @@ const RoomDetails: React.FC = () => {
 
         {/* Related Rooms */}
         {relatedRooms.length > 0 && (
-          <div style={{ marginTop: '4rem' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#333', marginBottom: '2rem' }}>
+          <div className="related-rooms-section">
+            <h2 className="related-rooms-title">
               Otras habitaciones
             </h2>
             <div className="related-grid">

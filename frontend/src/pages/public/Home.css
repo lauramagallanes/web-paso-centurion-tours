@@ -221,6 +221,17 @@
   height: 500px;
 }
 
+@media (max-width: 1024px) {
+  .welcome-experiences {
+    grid-template-columns: 1fr 1fr;
+    height: auto;
+  }
+
+  .experience-card {
+    height: 320px;
+  }
+}
+
 .experience-card {
   position: relative;
   overflow: hidden;

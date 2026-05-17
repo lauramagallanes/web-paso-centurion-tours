@@ -61,45 +61,48 @@ body {
   color: var(--color-text);
 }
 
-/* Headings */
+/* Headings (mobile-first con clamp para escalado fluido) */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-primary);
   font-weight: var(--font-semibold);
   line-height: var(--leading-tight);
   color: var(--color-text);
   margin: 0 0 1rem 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 h1 {
-  font-size: var(--text-5xl);
+  font-size: clamp(1.75rem, 5.5vw, 3rem);
   font-weight: var(--font-bold);
   letter-spacing: var(--tracking-tight);
-  line-height: var(--leading-none);
+  line-height: var(--leading-tight);
 }
 
 h2 {
-  font-size: var(--text-4xl);
+  font-size: clamp(1.5rem, 4.5vw, 2.25rem);
   font-weight: var(--font-semibold);
   letter-spacing: var(--tracking-tight);
 }
 
 h3 {
-  font-size: var(--text-3xl);
+  font-size: clamp(1.25rem, 3.5vw, 1.875rem);
   font-weight: var(--font-semibold);
 }
 
 h4 {
-  font-size: var(--text-2xl);
+  font-size: clamp(1.125rem, 3vw, 1.5rem);
   font-weight: var(--font-medium);
 }
 
 h5 {
-  font-size: var(--text-xl);
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
   font-weight: var(--font-medium);
 }
 
 h6 {
-  font-size: var(--text-lg);
+  font-size: clamp(0.95rem, 2vw, 1.125rem);
   font-weight: var(--font-medium);
 }
 

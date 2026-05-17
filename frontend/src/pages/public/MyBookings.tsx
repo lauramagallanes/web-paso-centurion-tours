@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/apiService';
@@ -187,7 +187,8 @@ const MyBookings: React.FC = () => {
   const [bookings, setBookings] = useState<BookingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('PENDIENTE');
+  const [filterTouched, setFilterTouched] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [paymentModal, setPaymentModal] = useState<BookingItem | null>(null);
   const [selectedTipoPago, setSelectedTipoPago] = useState<'TOTAL' | 'SENA' | 'SALDO'>('TOTAL');
@@ -334,10 +335,56 @@ const MyBookings: React.FC = () => {
     }
   };
 
-  const filteredBookings = bookings.filter(b => {
-    if (filterStatus === 'all') return true;
-    return b.status === filterStatus;
-  });
+  // Conteo por estado para mostrar en cada pestaña.
+  const counts = useMemo(() => {
+    const acc: Record<string, number> = {
+      PENDIENTE: 0,
+      CONFIRMADA: 0,
+      CANCELADA: 0,
+      COMPLETADA: 0,
+    };
+    for (const b of bookings) {
+      if (acc[b.status] != null) acc[b.status] += 1;
+    }
+    return acc;
+  }, [bookings]);
+
+  // Pestañas a mostrar: las tres principales siempre, "Completadas" sólo si hay alguna.
+  const filterTabs = useMemo(() => {
+    const tabs: Array<{ value: string; label: string }> = [
+      { value: 'PENDIENTE', label: 'Pendientes' },
+      { value: 'CONFIRMADA', label: 'Confirmadas' },
+      { value: 'CANCELADA', label: 'Canceladas' },
+    ];
+    if (counts.COMPLETADA > 0) {
+      tabs.splice(2, 0, { value: 'COMPLETADA', label: 'Completadas' });
+    }
+    return tabs;
+  }, [counts.COMPLETADA]);
+
+  /**
+   * Si el usuario aún no tocó las pestañas y la pestaña actual está vacía, saltamos
+   * a la primera con resultados para no mostrar un estado vacío innecesario.
+   * Orden de prioridad: Pendientes → Confirmadas → Completadas → Canceladas.
+   */
+  useEffect(() => {
+    if (filterTouched) return;
+    if (bookings.length === 0) return;
+    if ((counts as Record<string, number>)[filterStatus] > 0) return;
+    const fallback = ['PENDIENTE', 'CONFIRMADA', 'COMPLETADA', 'CANCELADA'].find(
+      s => (counts as Record<string, number>)[s] > 0,
+    );
+    if (fallback && fallback !== filterStatus) {
+      setFilterStatus(fallback);
+    }
+  }, [bookings, counts, filterTouched, filterStatus]);
+
+  const handleSelectTab = (value: string) => {
+    setFilterStatus(value);
+    setFilterTouched(true);
+  };
+
+  const filteredBookings = bookings.filter(b => b.status === filterStatus);
 
   /**
    * Ocultar solo la reserva Prex todavía sin ningún pago (transferencia inicial pendiente).
@@ -576,22 +623,28 @@ const MyBookings: React.FC = () => {
           </p>
         </div>
 
-        {/* Filters */}
-        <div className="mb-filters">
-          {[
-            { value: 'all', label: 'Todas' },
-            { value: 'CONFIRMADA', label: 'Confirmadas' },
-            { value: 'PENDIENTE', label: 'Pendientes' },
-            { value: 'CANCELADA', label: 'Canceladas' },
-          ].map(f => (
-            <button
-              key={f.value}
-              className={`mb-filter ${filterStatus === f.value ? 'active' : ''}`}
-              onClick={() => setFilterStatus(f.value)}
-            >
-              {f.label}
-            </button>
-          ))}
+        {/* Filters / pestañas con contador (sin "Todas" para no saturar la vista) */}
+        <div className="mb-filters" role="tablist" aria-label="Filtrar reservas por estado">
+          {filterTabs.map(f => {
+            const count = (counts as Record<string, number>)[f.value] || 0;
+            const active = filterStatus === f.value;
+            return (
+              <button
+                key={f.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={`mb-filter ${active ? 'active' : ''}`}
+                onClick={() => handleSelectTab(f.value)}
+                disabled={count === 0}
+              >
+                <span>{f.label}</span>
+                <span className="mb-filter-count" aria-label={`${count} reservas`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {payableWithSaldoAll.length > 0 && totalSaldoPendienteAgrupado > 0 && (
@@ -633,16 +686,25 @@ const MyBookings: React.FC = () => {
             <svg width="64" height="64" viewBox="0 0 24 24" fill="#807a75">
               <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
             </svg>
-            <h3>No tienes reservas</h3>
-            <p>Explora nuestros senderos y alojamientos para comenzar.</p>
-            <div className="mb-empty-actions">
-              <button className="mb-btn-primary" onClick={() => navigate(routes.activities)}>
-                Ver senderos
-              </button>
-              <button className="mb-btn-secondary" onClick={() => navigate(routes.alojamientos)}>
-                Ver alojamientos
-              </button>
-            </div>
+            {bookings.length === 0 ? (
+              <>
+                <h3>No tienes reservas</h3>
+                <p>Explora nuestros senderos y alojamientos para comenzar.</p>
+                <div className="mb-empty-actions">
+                  <button className="mb-btn-primary" onClick={() => navigate(routes.activities)}>
+                    Ver senderos
+                  </button>
+                  <button className="mb-btn-secondary" onClick={() => navigate(routes.alojamientos)}>
+                    Ver alojamientos
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3>No hay reservas en esta categoría</h3>
+                <p>Probá con otra pestaña para ver el resto de tus reservas.</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="mb-list">

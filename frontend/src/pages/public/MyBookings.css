@@ -46,18 +46,21 @@
 }
 
 .mb-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   padding: 0.5rem 1rem;
   border: 1px solid #ddd6cf;
-  border-radius: 8px;
+  border-radius: 999px;
   background: #fff;
   color: #444;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.mb-filter:hover {
+.mb-filter:hover:not(:disabled) {
   border-color: #6b792e;
   color: #6b792e;
 }
@@ -68,13 +71,43 @@
   color: #fff;
 }
 
+.mb-filter:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.mb-filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.4rem;
+  padding: 0 0.45rem;
+  background: rgba(107, 121, 46, 0.12);
+  color: #6b792e;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mb-filter.active .mb-filter-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.mb-filter:disabled .mb-filter-count {
+  background: rgba(120, 120, 120, 0.12);
+  color: #888;
+}
+
 [data-theme="dark"] .mb-filter {
   background: #1a1a18;
   border-color: #3a3a37;
   color: #b8b5b2;
 }
 
-[data-theme="dark"] .mb-filter:hover {
+[data-theme="dark"] .mb-filter:hover:not(:disabled) {
   border-color: #6b792e;
   color: #8a9d4a;
 }
@@ -83,6 +116,21 @@
   background: #6b792e;
   border-color: #6b792e;
   color: #fff;
+}
+
+[data-theme="dark"] .mb-filter-count {
+  background: rgba(138, 157, 74, 0.18);
+  color: #b9c98a;
+}
+
+[data-theme="dark"] .mb-filter.active .mb-filter-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+[data-theme="dark"] .mb-filter:disabled .mb-filter-count {
+  background: rgba(180, 180, 180, 0.1);
+  color: #777;
 }
 
 .mb-batch-pay-bar {

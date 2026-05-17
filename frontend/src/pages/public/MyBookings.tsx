@@ -365,15 +365,15 @@ const MyBookings: React.FC = () => {
       b.paid > 0);
 
   /**
-   * El usuario sólo puede solicitar cancelar si:
-   *  - La reserva está PENDIENTE o CONFIRMADA (no cancelada/completada).
+   * El usuario puede solicitar cancelar si:
+   *  - La reserva está PENDIENTE o CONFIRMADA (no cancelada ni completada).
    *  - La fecha de la reserva todavía no pasó.
-   *  - No es una reserva Prex con la transferencia inicial pendiente: en ese caso
-   *    se cancela sola por inactividad y el botón sólo agregaría ruido.
+   * Las reservas Prex con la transferencia inicial pendiente también pueden
+   * cancelarse a petición: aunque hay un job que las libera a las 12 h, el
+   * usuario puede preferir cerrarlas antes y liberar las fechas de inmediato.
    */
   const canRequestCancellation = (b: BookingItem): boolean => {
     if (b.status !== 'PENDIENTE' && b.status !== 'CONFIRMADA') return false;
-    if (isPrexPending(b)) return false;
     if (!b.date) return true;
     try {
       const start = new Date(b.date + (b.date.includes('T') ? '' : 'T00:00:00')).getTime();

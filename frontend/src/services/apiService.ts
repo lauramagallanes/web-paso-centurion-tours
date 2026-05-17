@@ -1160,6 +1160,32 @@ class ApiService {
     return data as { expiresAt: string; horasRetencion: number };
   }
 
+  /**
+   * Consulta si el usuario autenticado actualmente tiene un bloqueo de carrito
+   * vigente sobre el alojamiento y rango indicados (fuente de verdad: backend).
+   */
+  async consultarCarritoBloqueoAlojamiento(
+    alojamientoId: string,
+    checkIn: string,
+    checkOut: string,
+  ): Promise<{ vigente: boolean }> {
+    const params = new URLSearchParams({ checkIn, checkOut });
+    const url = `${this.baseURL}/alojamientos/${alojamientoId}/carrito-bloqueo?${params}`;
+    const get = () =>
+      fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(true),
+      });
+    let response = await get();
+    if (response.status === 401) {
+      const refreshed = await this.refreshToken();
+      if (refreshed) response = await get();
+    }
+    if (!response.ok) return { vigente: false };
+    const data = await response.json().catch(() => ({}));
+    return { vigente: !!(data as { vigente?: boolean }).vigente };
+  }
+
   async liberarCarritoAlojamiento(alojamientoId: string, checkIn: string, checkOut: string) {
     const params = new URLSearchParams({ checkIn, checkOut });
     const response = await fetch(

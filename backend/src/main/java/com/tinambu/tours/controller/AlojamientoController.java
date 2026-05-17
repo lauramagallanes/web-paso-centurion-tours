@@ -112,6 +112,26 @@ public class AlojamientoController {
         }
     }
 
+    @GetMapping("/{id}/carrito-bloqueo")
+    public ResponseEntity<?> consultarBloqueoCarrito(
+            @PathVariable UUID id,
+            @RequestParam LocalDate checkIn,
+            @RequestParam LocalDate checkOut,
+            Authentication authentication) {
+        try {
+            UUID usuarioId = resolveUsuarioIdOrNull(authentication);
+            if (usuarioId == null) {
+                return ResponseEntity.ok(Map.of("vigente", false));
+            }
+            boolean vigente = alojamientoService.tieneBloqueoCarritoVigente(usuarioId, id, checkIn, checkOut);
+            return ResponseEntity.ok(Map.of("vigente", vigente));
+        } catch (Exception e) {
+            System.err.println("Error consultando bloqueo de carrito: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error interno"));
+        }
+    }
+
     @DeleteMapping("/{id}/carrito-bloqueo")
     public ResponseEntity<?> liberarBloqueoCarrito(
             @PathVariable UUID id,

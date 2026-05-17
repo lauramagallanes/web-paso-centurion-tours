@@ -146,4 +146,19 @@ public interface AlojamientoReservaBloqueoRepository extends JpaRepository<Aloja
                                                @Param("usuarioId") UUID usuarioId,
                                                @Param("checkIn") LocalDate checkIn,
                                                @Param("checkOut") LocalDate checkOut);
+
+    /**
+     * Cuenta cuántas fechas del rango [checkIn, checkOut) tienen un bloqueo de carrito
+     * activo y vigente perteneciente al usuario dado.
+     */
+    @Query("SELECT COUNT(DISTINCT b.fecha) FROM AlojamientoReservaBloqueo b " +
+           "WHERE b.alojamientoId = :alojId AND b.activo = true " +
+           "AND b.carritoUsuarioId = :usuarioId " +
+           "AND b.carritoExpiraEn IS NOT NULL AND b.carritoExpiraEn > :ahora " +
+           "AND b.fecha >= :checkIn AND b.fecha < :checkOut")
+    Long contarFechasBloqueoCarritoUsuario(@Param("alojId") UUID alojId,
+                                           @Param("usuarioId") UUID usuarioId,
+                                           @Param("checkIn") LocalDate checkIn,
+                                           @Param("checkOut") LocalDate checkOut,
+                                           @Param("ahora") LocalDateTime ahora);
 }

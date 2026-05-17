@@ -15,6 +15,15 @@ import java.util.UUID;
 @Repository
 public interface AlojamientoRepository extends JpaRepository<Alojamiento, UUID> {
 
+    /**
+     * Adquiere un advisory lock transaccional sobre el alojamiento para serializar
+     * operaciones concurrentes que reservan/liberan fechas (carrito o reserva).
+     * El lock se libera automáticamente al finalizar la transacción.
+     */
+    @Query(value = "SELECT pg_advisory_xact_lock(hashtext(CAST(:alojamientoId AS text)))",
+           nativeQuery = true)
+    void adquirirLockReservaPorAlojamiento(@Param("alojamientoId") UUID alojamientoId);
+
     List<Alojamiento> findByActivoTrue();
 
     @Query("SELECT a FROM Alojamiento a WHERE a.activo = true AND " +

@@ -820,6 +820,10 @@ public class ReservaService {
         Alojamiento alojamiento = alojamientoRepository.findByIdAndActivoTrue(request.getAlojamientoId())
                 .orElseThrow(() -> new IllegalArgumentException("Alojamiento no encontrado: " + request.getAlojamientoId()));
 
+        // Serializa con cualquier cart-hold concurrente sobre este alojamiento
+        // (evita race condition entre verificación y bloqueo). El lock es transaccional.
+        alojamientoRepository.adquirirLockReservaPorAlojamiento(request.getAlojamientoId());
+
         // Validate capacity
         if (!alojamiento.puedeAcomodar(request.getNumeroHuespedes())) {
             throw new IllegalArgumentException(

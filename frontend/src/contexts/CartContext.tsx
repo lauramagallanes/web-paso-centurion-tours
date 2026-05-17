@@ -141,12 +141,60 @@ const getCurrentUserId = (): string | null => {
 const cartKey = (userId: string | null) =>
   userId ? `tinambu-cart-${userId}` : null;
 
+/**
+ * Revalida los items de alojamiento contra el backend. El backend es la fuente
+ * de verdad: si el usuario actual no tiene bloqueo de carrito vigente para esas
+ * fechas, el item se elimina (evita carritos "fantasma" persistidos en
+ * localStorage de versiones previas o donde el bloqueo expiró server-side).
+ */
+const revalidateAlojamientoItems = async (items: CartItem[]): Promise<CartItem[]> => {
+  const cleaned: CartItem[] = [];
+  const userId = getCurrentUserId();
+  for (const i of items) {
+    if (i.type !== 'alojamiento' || !i.checkIn || !i.checkOut) {
+      cleaned.push(i);
+      continue;
+    }
+    // Sin sesión activa, no podemos consultar el backend; mantenemos el comportamiento
+    // previo (descartar si no hay expiración local válida).
+    if (!userId) {
+      if (i.cartHoldExpiresAt && new Date(i.cartHoldExpiresAt).getTime() > Date.now()) {
+        cleaned.push(i);
+      }
+      continue;
+    }
+    if (i.cartHoldExpiresAt && new Date(i.cartHoldExpiresAt).getTime() <= Date.now()) {
+      // Expirado localmente: avisamos al backend por si quedó algo y lo descartamos
+      await apiService.liberarCarritoAlojamientoSilent(i.id, i.checkIn, i.checkOut);
+      continue;
+    }
+    try {
+      const { vigente } = await apiService.consultarCarritoBloqueoAlojamiento(
+        i.id,
+        i.checkIn,
+        i.checkOut,
+      );
+      if (vigente) {
+        cleaned.push(i);
+      }
+    } catch {
+      // En error de red, conservamos el item si no expiró localmente
+      if (i.cartHoldExpiresAt && new Date(i.cartHoldExpiresAt).getTime() > Date.now()) {
+        cleaned.push(i);
+      }
+    }
+  }
+  return cleaned;
+};
+
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const lastUserIdRef = useRef<string | null>(getCurrentUserId());
   const hydratedRef = useRef(false);
 
-  // Load cart for the current user on mount (limpia ítems de alojamiento sin retención vigente)
+  // Load cart for the current user on mount.
+  // Revalida cada item de alojamiento contra el backend (fuente de verdad):
+  // si el bloqueo no está vigente para este usuario, eliminamos el item.
   useEffect(() => {
     const key = cartKey(getCurrentUserId());
     if (!key) {
@@ -162,17 +210,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           return;
         }
         const parsed: CartItem[] = JSON.parse(saved);
-        const cleaned: CartItem[] = [];
-        for (const i of parsed) {
-          if (cancelled) return;
-          if (i.type === 'alojamiento' && i.checkIn && i.checkOut) {
-            if (!i.cartHoldExpiresAt || new Date(i.cartHoldExpiresAt).getTime() <= Date.now()) {
-              await apiService.liberarCarritoAlojamientoSilent(i.id, i.checkIn, i.checkOut);
-              continue;
-            }
-          }
-          cleaned.push(i);
-        }
+        const cleaned: CartItem[] = await revalidateAlojamientoItems(parsed);
         if (!cancelled) {
           dispatch({ type: 'LOAD_CART', payload: cleaned });
           hydratedRef.current = true;
@@ -198,7 +236,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   // Detect user change (login / logout / switch) and reload the correct cart
   useEffect(() => {
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       const currentUserId = getCurrentUserId();
       if (currentUserId !== lastUserIdRef.current) {
         lastUserIdRef.current = currentUserId;
@@ -208,7 +246,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           try {
             const saved = localStorage.getItem(key);
             const parsed: CartItem[] = saved ? JSON.parse(saved) : [];
-            dispatch({ type: 'LOAD_CART', payload: parsed });
+            const cleaned = await revalidateAlojamientoItems(parsed);
+            dispatch({ type: 'LOAD_CART', payload: cleaned });
           } catch {
             dispatch({ type: 'CLEAR_CART' });
           }

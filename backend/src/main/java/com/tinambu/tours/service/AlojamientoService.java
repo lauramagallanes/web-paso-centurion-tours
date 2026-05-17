@@ -257,24 +257,42 @@ public class AlojamientoService {
 
     /**
      * Retiene fechas por carrito (máx. {@link #HORAS_RETENCION_CARRITO_ALOJAMIENTO} h).
+     *
+     * <p>Usa un advisory lock transaccional sobre el alojamiento para evitar
+     * race conditions: dos requests concurrentes para el mismo alojamiento se
+     * serializan, garantizando que la verificación + inserción sea atómica.
      */
     public LocalDateTime registrarBloqueoCarrito(UUID usuarioId, UUID alojamientoId,
                                                  LocalDate checkIn, LocalDate checkOut) {
+        if (usuarioId == null) {
+            throw new IllegalArgumentException("Usuario no autenticado");
+        }
         if (!checkIn.isBefore(checkOut)) {
             throw new IllegalArgumentException("La fecha de check-in debe ser anterior al check-out");
         }
 
-        limpiarBloqueosCarritoExpirados();
+        // Serializa concurrentes sobre el mismo alojamiento (se libera al fin de la TX)
+        alojamientoRepository.adquirirLockReservaPorAlojamiento(alojamientoId);
+
+        // Limpia bloqueos vencidos antes de validar
+        bloqueoRepository.desactivarBloqueosCarritoExpirados(LocalDateTime.now());
 
         boolean hayReserva = reservaRepository.existeReservaEnRango(alojamientoId, checkIn, checkOut);
         if (hayReserva) {
             throw new IllegalStateException("Las fechas ya tienen una reserva confirmada");
         }
 
+        // Desactivar SOLO los bloqueos previos del propio usuario para este alojamiento
+        // (renovamos su retención). Los de otros usuarios permanecen y bloquearán abajo.
         bloqueoRepository.desactivarBloqueosCarritoDeUsuarioParaAlojamiento(alojamientoId, usuarioId);
 
-        if (bloqueoRepository.tieneBloqueoEnRango(alojamientoId, checkIn, checkOut, LocalDateTime.now())) {
-            throw new IllegalStateException("Otro usuario tiene esas fechas retenidas o no disponibles");
+        // Verificar que ningún OTRO usuario (ni reserva/manual) tenga bloqueo vigente en el rango
+        boolean ocupado = bloqueoRepository.tieneBloqueoEnRangoExcluyendoCarrito(
+                alojamientoId, checkIn, checkOut, usuarioId, LocalDateTime.now());
+        if (ocupado) {
+            throw new IllegalStateException(
+                    "Otro usuario tiene esas fechas retenidas en su carrito o no están disponibles. " +
+                    "Probá con otras fechas.");
         }
 
         LocalDateTime expira = LocalDateTime.now().plusHours(HORAS_RETENCION_CARRITO_ALOJAMIENTO);
@@ -293,6 +311,23 @@ public class AlojamientoService {
         }
         bloqueoRepository.saveAll(bloqueos);
         return expira;
+    }
+
+    /**
+     * Indica si el usuario dado tiene un bloqueo de carrito vigente para todas las
+     * fechas del rango [checkIn, checkOut). Se usa para revalidar el carrito al
+     * cargarlo en el frontend (la fuente de verdad es el backend).
+     */
+    @Transactional(readOnly = true)
+    public boolean tieneBloqueoCarritoVigente(UUID usuarioId, UUID alojamientoId,
+                                              LocalDate checkIn, LocalDate checkOut) {
+        if (usuarioId == null || !checkIn.isBefore(checkOut)) {
+            return false;
+        }
+        long noches = checkIn.until(checkOut).getDays();
+        Long cubiertas = bloqueoRepository.contarFechasBloqueoCarritoUsuario(
+                alojamientoId, usuarioId, checkIn, checkOut, LocalDateTime.now());
+        return cubiertas != null && cubiertas == noches;
     }
 
     public void liberarBloqueoCarrito(UUID usuarioId, UUID alojamientoId, LocalDate checkIn, LocalDate checkOut) {

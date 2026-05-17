@@ -29,9 +29,9 @@
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.55) 0%,
-    rgba(0, 0, 0, 0.45) 50%,
-    rgba(0, 0, 0, 0.65) 100%
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.55) 50%,
+    rgba(0, 0, 0, 0.75) 100%
   );
   z-index: 2;
   pointer-events: none; /* Permite que los clicks pasen a través */
@@ -48,34 +48,41 @@
   pointer-events: auto; /* Asegura que el contenido sea clickeable */
 }
 
-.hero-title {
+.about-hero .hero-title {
   font-size: clamp(var(--text-3xl), 5vw, var(--text-5xl));
   font-weight: var(--font-bold);
   margin: 0 0 var(--space-5) 0;
   line-height: var(--leading-tight);
   color: #ffffff;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
+  opacity: 1;
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.85),
+    0 4px 14px rgba(0, 0, 0, 0.75);
 }
 
-.hero-subtitle {
+.about-hero .hero-subtitle {
   font-size: var(--text-2xl);
-  font-weight: var(--font-semibold);
+  font-weight: var(--font-bold);
   margin: 0 0 var(--space-5) 0;
   opacity: 1;
   color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.85),
+    0 3px 10px rgba(0, 0, 0, 0.7);
 }
 
-.hero-description {
+.about-hero .hero-description {
   font-size: var(--text-lg);
   line-height: var(--leading-relaxed);
   margin: 0 0 var(--space-10) 0;
   opacity: 1;
-  color: #f5f5f5;
+  color: #ffffff;
   max-width: 700px;
   margin-left: auto;
   margin-right: auto;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.85),
+    0 2px 8px rgba(0, 0, 0, 0.65);
 }
 
 .hero-actions {
@@ -109,30 +116,38 @@
   transform: translateY(-1px);
 }
 
-.hero-btn-primary {
+/* Especificidad alta para evitar que .btn-primary del Button.css gane la cascada */
+.about-hero .hero-action-btn.hero-btn-primary,
+.about-hero .hero-action-btn.hero-btn-primary:hover:not(.btn-disabled),
+.about-hero .hero-action-btn.hero-btn-primary:active:not(.btn-disabled) {
   background: #ffffff;
   color: var(--color-primary);
   border-color: #ffffff;
   font-weight: var(--font-bold);
+  text-shadow: none;
 }
 
-.hero-btn-primary:hover {
+.about-hero .hero-action-btn.hero-btn-primary:hover:not(.btn-disabled) {
   background: rgba(255, 255, 255, 0.92);
-  color: var(--color-primary);
-  border-color: #ffffff;
 }
 
-.hero-btn-secondary {
+.about-hero .hero-action-btn.hero-btn-secondary,
+.about-hero .hero-action-btn.hero-btn-secondary:active:not(.btn-disabled) {
   background: transparent;
   color: #ffffff;
   border-color: #ffffff;
+  border-width: 2px;
   font-weight: var(--font-bold);
 }
 
-.hero-btn-secondary:hover {
+.about-hero .hero-action-btn.hero-btn-secondary:hover:not(.btn-disabled) {
   background: #ffffff;
   color: var(--color-primary);
   border-color: #ffffff;
+}
+
+.about-hero .hero-action-btn .btn-content {
+  color: inherit;
 }
 
 .hero-action-btn i {

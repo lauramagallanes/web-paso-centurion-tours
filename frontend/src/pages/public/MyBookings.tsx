@@ -335,43 +335,71 @@ const MyBookings: React.FC = () => {
     }
   };
 
-  // Conteo por estado para mostrar en cada pestaña.
+  /**
+   * Una reserva se considera FINALIZADA cuando ya pasó la fecha del servicio
+   * (sendero) o el check-out (alojamiento) — independiente de que el backend
+   * la haya marcado como COMPLETADA o todavía esté como CONFIRMADA/PENDIENTE.
+   * Las CANCELADAs nunca son finalizadas (tienen su propia pestaña).
+   */
+  const isFinished = (b: BookingItem): boolean => {
+    if (b.status === 'CANCELADA') return false;
+    if (b.status === 'COMPLETADA') return true;
+    const last = b.endDate || b.date;
+    if (!last) return false;
+    try {
+      const lastTs = new Date(last + (last.includes('T') ? '' : 'T00:00:00')).getTime();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      // Alojamiento: endDate es el check-out (exclusivo) → finalizado al llegar a esa fecha.
+      // Sendero: la fecha es el día del servicio → finalizado el día siguiente.
+      return b.type === 'alojamiento' ? lastTs <= today.getTime() : lastTs < today.getTime();
+    } catch {
+      return false;
+    }
+  };
+
+  // Conteo por pestaña.
   const counts = useMemo(() => {
     const acc: Record<string, number> = {
       PENDIENTE: 0,
       CONFIRMADA: 0,
+      FINALIZADA: 0,
       CANCELADA: 0,
-      COMPLETADA: 0,
     };
     for (const b of bookings) {
-      if (acc[b.status] != null) acc[b.status] += 1;
+      if (b.status === 'CANCELADA') {
+        acc.CANCELADA += 1;
+      } else if (isFinished(b)) {
+        acc.FINALIZADA += 1;
+      } else if (b.status === 'PENDIENTE' || b.status === 'CONFIRMADA') {
+        acc[b.status] += 1;
+      }
     }
     return acc;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookings]);
 
-  // Pestañas a mostrar: las tres principales siempre, "Completadas" sólo si hay alguna.
-  const filterTabs = useMemo(() => {
-    const tabs: Array<{ value: string; label: string }> = [
+  // Pestañas: Pendientes / Confirmadas / Finalizadas / Canceladas.
+  const filterTabs = useMemo(
+    () => [
       { value: 'PENDIENTE', label: 'Pendientes' },
       { value: 'CONFIRMADA', label: 'Confirmadas' },
+      { value: 'FINALIZADA', label: 'Finalizadas' },
       { value: 'CANCELADA', label: 'Canceladas' },
-    ];
-    if (counts.COMPLETADA > 0) {
-      tabs.splice(2, 0, { value: 'COMPLETADA', label: 'Completadas' });
-    }
-    return tabs;
-  }, [counts.COMPLETADA]);
+    ],
+    [],
+  );
 
   /**
    * Si el usuario aún no tocó las pestañas y la pestaña actual está vacía, saltamos
    * a la primera con resultados para no mostrar un estado vacío innecesario.
-   * Orden de prioridad: Pendientes → Confirmadas → Completadas → Canceladas.
+   * Orden de prioridad: Pendientes → Confirmadas → Finalizadas → Canceladas.
    */
   useEffect(() => {
     if (filterTouched) return;
     if (bookings.length === 0) return;
     if ((counts as Record<string, number>)[filterStatus] > 0) return;
-    const fallback = ['PENDIENTE', 'CONFIRMADA', 'COMPLETADA', 'CANCELADA'].find(
+    const fallback = ['PENDIENTE', 'CONFIRMADA', 'FINALIZADA', 'CANCELADA'].find(
       s => (counts as Record<string, number>)[s] > 0,
     );
     if (fallback && fallback !== filterStatus) {
@@ -384,7 +412,12 @@ const MyBookings: React.FC = () => {
     setFilterTouched(true);
   };
 
-  const filteredBookings = bookings.filter(b => b.status === filterStatus);
+  const filteredBookings = bookings.filter(b => {
+    if (filterStatus === 'CANCELADA') return b.status === 'CANCELADA';
+    if (filterStatus === 'FINALIZADA') return isFinished(b);
+    // PENDIENTE / CONFIRMADA: sólo las activas (no finalizadas, no canceladas)
+    return b.status === filterStatus && !isFinished(b);
+  });
 
   /**
    * Ocultar solo la reserva Prex todavía sin ningún pago (transferencia inicial pendiente).
@@ -721,8 +754,12 @@ const MyBookings: React.FC = () => {
                     </svg>
                     <span>{booking.type === 'sendero' ? 'Sendero' : 'Alojamiento'}</span>
                   </div>
-                  <span className={`mb-status ${getStatusClass(booking.status)}`}>
-                    {getStatusLabel(booking.status)}
+                  <span
+                    className={`mb-status ${
+                      isFinished(booking) ? 'status-finished' : getStatusClass(booking.status)
+                    }`}
+                  >
+                    {isFinished(booking) ? 'Finalizada' : getStatusLabel(booking.status)}
                   </span>
                 </div>
 

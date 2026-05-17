@@ -260,28 +260,61 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Si vence la retención del backend, quitar el ítem del carrito
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      const now = Date.now();
-      state.items.forEach(item => {
-        if (
-          item.type === 'alojamiento' &&
-          item.cartHoldExpiresAt &&
-          item.checkIn &&
-          item.checkOut &&
-          new Date(item.cartHoldExpiresAt).getTime() <= now
-        ) {
-          void apiService
-            .liberarCarritoAlojamientoSilent(item.id, item.checkIn, item.checkOut)
-            .finally(() => {
-              dispatch({ type: 'REMOVE_ITEM', payload: item.cartItemId });
-            });
-        }
-      });
-    }, 60_000);
-    return () => clearInterval(id);
+  // Limpieza local: elimina items con retención expirada según el reloj del cliente.
+  const sweepExpiredAlojamientos = React.useCallback(() => {
+    const now = Date.now();
+    state.items.forEach(item => {
+      if (
+        item.type === 'alojamiento' &&
+        item.cartHoldExpiresAt &&
+        item.checkIn &&
+        item.checkOut &&
+        new Date(item.cartHoldExpiresAt).getTime() <= now
+      ) {
+        void apiService
+          .liberarCarritoAlojamientoSilent(item.id, item.checkIn, item.checkOut)
+          .finally(() => {
+            dispatch({ type: 'REMOVE_ITEM', payload: item.cartItemId });
+          });
+      }
+    });
   }, [state.items]);
+
+  // Revalida con backend que cada item siga teniendo bloqueo vigente para este usuario.
+  const revalidateWithBackend = React.useCallback(async () => {
+    if (!getCurrentUserId() || state.items.length === 0) return;
+    const cleaned = await revalidateAlojamientoItems(state.items);
+    if (cleaned.length !== state.items.length) {
+      dispatch({ type: 'LOAD_CART', payload: cleaned });
+    }
+  }, [state.items]);
+
+  // Sweep periódico (corre incluso si el setInterval previo quedó pausado por sleep)
+  useEffect(() => {
+    sweepExpiredAlojamientos();
+    const id = window.setInterval(sweepExpiredAlojamientos, 30_000);
+    return () => clearInterval(id);
+  }, [sweepExpiredAlojamientos]);
+
+  // Al volver a la pestaña / al focar la ventana, sweep + revalidación con backend
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        sweepExpiredAlojamientos();
+        void revalidateWithBackend();
+      }
+    };
+    const onFocus = () => {
+      sweepExpiredAlojamientos();
+      void revalidateWithBackend();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [sweepExpiredAlojamientos, revalidateWithBackend]);
 
   const addItem = (item: Omit<CartItem, 'cartItemId'>) => {
     dispatch({ type: 'ADD_ITEM', payload: item });
@@ -301,9 +334,19 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
     dispatch({ type: 'CLEAR_CART' });
   };
-  const toggleCart = () => dispatch({ type: 'TOGGLE_CART' });
+  const toggleCart = () => {
+    if (!state.isOpen) {
+      sweepExpiredAlojamientos();
+      void revalidateWithBackend();
+    }
+    dispatch({ type: 'TOGGLE_CART' });
+  };
   const closeCart = () => dispatch({ type: 'CLOSE_CART' });
-  const openCart = () => dispatch({ type: 'OPEN_CART' });
+  const openCart = () => {
+    sweepExpiredAlojamientos();
+    void revalidateWithBackend();
+    dispatch({ type: 'OPEN_CART' });
+  };
 
   const value: CartContextType = {
     state,

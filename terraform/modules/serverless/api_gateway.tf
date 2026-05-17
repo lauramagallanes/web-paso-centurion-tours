@@ -678,6 +678,12 @@ resource "aws_apigatewayv2_route" "checkout_orden" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+resource "aws_apigatewayv2_route" "checkout_orden_pendientes" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /checkout/orden-pendientes"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Guide Management Routes
 resource "aws_apigatewayv2_route" "senderos_assign_guide" {
   api_id    = aws_apigatewayv2_api.main.id

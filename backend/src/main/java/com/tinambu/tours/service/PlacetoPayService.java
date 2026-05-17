@@ -388,12 +388,18 @@ public class PlacetoPayService {
                             reserva.cambiarEstado(EstadoReserva.CONFIRMADA);
                             reserva.registrarPago(montoPagadoItem, "PLACETOPAY");
                             senderoReservaRepository.save(reserva);
+                        } else if (reserva.getEstado() == EstadoReserva.CONFIRMADA) {
+                            reserva.registrarPago(montoPagadoItem, "PLACETOPAY");
+                            senderoReservaRepository.save(reserva);
                         }
                     });
                 } else if ("ALOJAMIENTO".equals(item.getTipoReserva())) {
                     alojamientoReservaRepository.findById(item.getReservaId()).ifPresent(reserva -> {
                         if (reserva.getEstado() == EstadoReserva.PENDIENTE) {
                             reserva.setEstado(EstadoReserva.CONFIRMADA);
+                            reserva.registrarPago(montoPagadoItem, "PLACETOPAY");
+                            alojamientoReservaRepository.save(reserva);
+                        } else if (reserva.getEstado() == EstadoReserva.CONFIRMADA) {
                             reserva.registrarPago(montoPagadoItem, "PLACETOPAY");
                             alojamientoReservaRepository.save(reserva);
                         }

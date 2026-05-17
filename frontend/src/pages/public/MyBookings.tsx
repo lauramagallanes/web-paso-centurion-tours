@@ -110,12 +110,46 @@ const PrexCountdown: React.FC<{ fechaCreacion?: string }> = ({ fechaCreacion }) 
 
 /** Datos de cuenta + instrucciones (misma info que en el checkout post-Prex). */
 const PrexTransferDetails: React.FC<{
-  codigoReserva: string;
+  codigoReserva?: string;
+  ordenCodigo?: string;
+  codigosReserva?: string[];
   saldoPendiente?: { monto: number; currency: string };
-}> = ({ codigoReserva, saldoPendiente }) => {
-  const mailBody = saldoPendiente
-    ? `Hola,\n\nAdjunto el comprobante de la transferencia Prex correspondiente al saldo pendiente de la reserva.\n\nCódigo de reserva: ${codigoReserva}\nImporte del saldo: $${saldoPendiente.monto.toLocaleString()} ${saldoPendiente.currency}\n\nSaludos.`
-    : `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nCódigo de reserva: ${codigoReserva}\n\nSaludos.`;
+}> = ({ codigoReserva, ordenCodigo, codigosReserva, saldoPendiente }) => {
+  const codigosLista =
+    codigosReserva && codigosReserva.length > 0
+      ? codigosReserva
+      : codigoReserva
+        ? [codigoReserva]
+        : [];
+
+  const mailBody = (() => {
+    if (ordenCodigo && saldoPendiente && codigosLista.length > 0) {
+      return (
+        `Hola,\n\nAdjunto el comprobante de la transferencia Prex por el pago agrupado de saldos pendientes.\n\n` +
+        `Orden: ${ordenCodigo}\n` +
+        `Importe total: $${saldoPendiente.monto.toLocaleString()} ${saldoPendiente.currency}\n` +
+        `Códigos de reserva: ${codigosLista.join(', ')}\n\n` +
+        `Saludos.`
+      );
+    }
+    if (saldoPendiente && codigoReserva) {
+      return (
+        `Hola,\n\nAdjunto el comprobante de la transferencia Prex correspondiente al saldo pendiente de la reserva.\n\n` +
+        `Código de reserva: ${codigoReserva}\n` +
+        `Importe del saldo: $${saldoPendiente.monto.toLocaleString()} ${saldoPendiente.currency}\n\n` +
+        `Saludos.`
+      );
+    }
+    if (codigoReserva) {
+      return (
+        `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\n` +
+        `Código de reserva: ${codigoReserva}\n\n` +
+        `Saludos.`
+      );
+    }
+    return `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nSaludos.`;
+  })();
+
   const mailto = `mailto:${PREX_ACCOUNT.email}?subject=${encodeURIComponent(PREX_ACCOUNT.asuntoEmail)}&body=${encodeURIComponent(mailBody)}`;
   const whatsappUrl = prexComprobanteWhatsAppUrl(mailBody);
   return (
@@ -123,10 +157,15 @@ const PrexTransferDetails: React.FC<{
       <h4 className="mb-prex-transfer-title">Datos para la transferencia</h4>
       {saldoPendiente && (
         <p className="mb-prex-saldo-line">
-          Saldo a transferir:{' '}
+          {ordenCodigo ? 'Total a transferir' : 'Saldo a transferir'}:{' '}
           <strong>
             ${saldoPendiente.monto.toLocaleString()} {saldoPendiente.currency}
           </strong>
+        </p>
+      )}
+      {ordenCodigo && (
+        <p className="mb-prex-orden-line">
+          Código de orden: <strong className="mb-code-inline">{ordenCodigo}</strong>
         </p>
       )}
       <ul className="mb-prex-transfer-list">
@@ -134,7 +173,26 @@ const PrexTransferDetails: React.FC<{
         <li><span>Número de cuenta</span><strong>{PREX_ACCOUNT.cuenta}</strong></li>
       </ul>
       <p className="mb-prex-transfer-note">
-        {saldoPendiente ? (
+        {ordenCodigo ? (
+          <>
+            Puede enviarnos el comprobante por correo a <strong>{PREX_ACCOUNT.email}</strong> (asunto{' '}
+            <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong>) o por WhatsApp al{' '}
+            <strong>{PREX_WHATSAPP_DISPLAY}</strong>. Incluya el código de orden{' '}
+            <strong className="mb-code-inline">{ordenCodigo}</strong>
+            {codigosLista.length > 0 && (
+              <>
+                {' '}y los códigos de reserva:{' '}
+                {codigosLista.map((c, i) => (
+                  <React.Fragment key={c}>
+                    {i > 0 ? ', ' : ''}
+                    <strong className="mb-code-inline">{c}</strong>
+                  </React.Fragment>
+                ))}
+              </>
+            )}
+            . Cuando registremos el pago, actualizaremos el estado de cada reserva.
+          </>
+        ) : saldoPendiente ? (
           <>
             Puede enviarnos el comprobante por correo a <strong>{PREX_ACCOUNT.email}</strong> (asunto{' '}
             <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong>) o por WhatsApp al{' '}
@@ -175,6 +233,11 @@ const MyBookings: React.FC = () => {
   const [saldoFlow, setSaldoFlow] = useState<
     | { booking: BookingItem; step: 'metodo'; metodo: 'CARD' | 'PREX' }
     | { booking: BookingItem; step: 'prex' }
+    | null
+  >(null);
+  const [batchPayFlow, setBatchPayFlow] = useState<
+    | { step: 'metodo'; metodo: 'CARD' | 'PREX'; items: BookingItem[]; total: number }
+    | { step: 'prex'; items: BookingItem[]; total: number; ordenCodigo: string }
     | null
   >(null);
 
@@ -336,6 +399,91 @@ const MyBookings: React.FC = () => {
     return b.total - b.paid;
   };
 
+  const payableWithSaldoAll = bookings.filter(b => canPay(b) && getSaldo(b) > 0);
+  const totalSaldoPendienteAgrupado = payableWithSaldoAll.reduce((acc, b) => acc + getSaldo(b), 0);
+
+  const processBatchOrdenCard = async (items: BookingItem[]) => {
+    setPayingId('batch');
+    setError(null);
+    try {
+      const u = state.user;
+      if (!u?.email) throw new Error('No hay sesión');
+      const response: any = await apiService.createOrdenPagoPendientes({
+        emailContacto: u.email,
+        nombreContacto: u.nombreCompleto || u.email,
+        metodoPago: 'CARD',
+        items: items.map(it => ({
+          tipo: it.type === 'sendero' ? ('SENDERO' as const) : ('ALOJAMIENTO' as const),
+          reservaId: it.id,
+        })),
+      });
+      const data = response?.data || response;
+      if (data?.processUrl) {
+        window.location.href = data.processUrl;
+      } else {
+        setError(data?.message || 'Error al crear sesión de pago');
+        setPayingId(null);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Error al procesar el pago');
+      setPayingId(null);
+    }
+  };
+
+  const submitBatchOrdenPrex = async (items: BookingItem[], total: number) => {
+    setPayingId('batch');
+    setError(null);
+    try {
+      const u = state.user;
+      if (!u?.email) throw new Error('No hay sesión');
+      const response: any = await apiService.createOrdenPagoPendientes({
+        emailContacto: u.email,
+        nombreContacto: u.nombreCompleto || u.email,
+        metodoPago: 'PREX',
+        items: items.map(it => ({
+          tipo: it.type === 'sendero' ? ('SENDERO' as const) : ('ALOJAMIENTO' as const),
+          reservaId: it.id,
+        })),
+      });
+      const data = response?.data || response;
+      if (data?.status === 'PENDIENTE_TRANSFERENCIA' && data?.codigoOrden) {
+        setBatchPayFlow({
+          step: 'prex',
+          items,
+          total,
+          ordenCodigo: data.codigoOrden,
+        });
+      } else {
+        setError(data?.message || 'No se pudo generar la orden de transferencia');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Error al procesar el pago agrupado');
+    } finally {
+      setPayingId(null);
+    }
+  };
+
+  const handleOpenBatchPay = () => {
+    if (payableWithSaldoAll.length === 0 || totalSaldoPendienteAgrupado <= 0) return;
+    setBatchPayFlow({
+      step: 'metodo',
+      metodo: 'CARD',
+      items: payableWithSaldoAll,
+      total: totalSaldoPendienteAgrupado,
+    });
+  };
+
+  const handleBatchMetodoContinuar = () => {
+    if (!batchPayFlow || batchPayFlow.step !== 'metodo') return;
+    const { items, metodo, total } = batchPayFlow;
+    if (metodo === 'PREX') {
+      void submitBatchOrdenPrex(items, total);
+      return;
+    }
+    setBatchPayFlow(null);
+    void processBatchOrdenCard(items);
+  };
+
   const handlePayClick = (booking: BookingItem) => {
     if (hasPendingSaldo(booking)) {
       setSaldoFlow({ booking, step: 'metodo', metodo: 'CARD' });
@@ -429,6 +577,30 @@ const MyBookings: React.FC = () => {
             </button>
           ))}
         </div>
+
+        {payableWithSaldoAll.length > 0 && totalSaldoPendienteAgrupado > 0 && (
+          <div className="mb-batch-pay-bar">
+            <div className="mb-batch-pay-info">
+              <strong>Pagar todo junto</strong>
+              <p className="mb-batch-pay-desc">
+                Saldo total pendiente:{' '}
+                <span className="mb-batch-pay-amount">
+                  ${totalSaldoPendienteAgrupado.toLocaleString()} UYU
+                </span>{' '}
+                ({payableWithSaldoAll.length}{' '}
+                {payableWithSaldoAll.length === 1 ? 'reserva' : 'reservas'})
+              </p>
+            </div>
+            <button
+              type="button"
+              className="mb-btn-pay mb-batch-pay-btn"
+              onClick={handleOpenBatchPay}
+              disabled={!!payingId}
+            >
+              Elegir forma de pago
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         {loading ? (
@@ -537,7 +709,7 @@ const MyBookings: React.FC = () => {
                     <button
                       className="mb-btn-pay"
                       onClick={() => handlePayClick(booking)}
-                      disabled={payingId === booking.id}
+                      disabled={payingId === booking.id || payingId === 'batch'}
                     >
                       {payingId === booking.id ? (
                         <>
@@ -687,6 +859,139 @@ const MyBookings: React.FC = () => {
                     Volver
                   </button>
                   <button type="button" className="mb-btn-cancel" onClick={() => setSaldoFlow(null)}>
+                    Cerrar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {batchPayFlow && (
+        <div
+          className="mb-modal-overlay"
+          onClick={() => {
+            if (!payingId) setBatchPayFlow(null);
+          }}
+        >
+          <div
+            className={`mb-modal ${batchPayFlow.step === 'prex' ? 'mb-modal--saldo-prex' : ''}`}
+            onClick={e => e.stopPropagation()}
+          >
+            {batchPayFlow.step === 'metodo' && (
+              <>
+                <h3 className="mb-modal-title">Pagar todo lo pendiente</h3>
+                <p className="mb-modal-subtitle">
+                  Total: ${batchPayFlow.total.toLocaleString()} UYU — {batchPayFlow.items.length}{' '}
+                  {batchPayFlow.items.length === 1 ? 'reserva' : 'reservas'}
+                </p>
+                <ul className="mb-batch-resumen">
+                  {batchPayFlow.items.map(it => (
+                    <li key={it.id}>
+                      {it.name} ({it.code}) — ${getSaldo(it).toLocaleString()} {it.currency}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mb-saldo-pay-intro">
+                  Una sola operación por el saldo total. Elija tarjeta (Getnet) o transferencia Prex.
+                </p>
+                <div className="mb-modal-options">
+                  <label className={`mb-modal-option ${batchPayFlow.metodo === 'CARD' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="batchMetodoPago"
+                      checked={batchPayFlow.metodo === 'CARD'}
+                      onChange={() =>
+                        setBatchPayFlow({
+                          step: 'metodo',
+                          metodo: 'CARD',
+                          items: batchPayFlow.items,
+                          total: batchPayFlow.total,
+                        })
+                      }
+                    />
+                    <div>
+                      <strong>Tarjeta de crédito o débito</strong>
+                      <small>Pago seguro con Getnet. Visa, Mastercard y otras tarjetas.</small>
+                    </div>
+                  </label>
+                  <label className={`mb-modal-option ${batchPayFlow.metodo === 'PREX' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="batchMetodoPago"
+                      checked={batchPayFlow.metodo === 'PREX'}
+                      onChange={() =>
+                        setBatchPayFlow({
+                          step: 'metodo',
+                          metodo: 'PREX',
+                          items: batchPayFlow.items,
+                          total: batchPayFlow.total,
+                        })
+                      }
+                    />
+                    <div>
+                      <strong>Transferencia a cuenta Prex</strong>
+                      <small>Se generará una orden; incluya su código en el comprobante.</small>
+                    </div>
+                  </label>
+                </div>
+                <div className="mb-modal-actions">
+                  <button
+                    type="button"
+                    className="mb-btn-pay"
+                    onClick={handleBatchMetodoContinuar}
+                    disabled={!!payingId}
+                  >
+                    {payingId === 'batch' ? (
+                      <>
+                        <div className="mb-btn-spinner" />
+                        Procesando...
+                      </>
+                    ) : batchPayFlow.metodo === 'PREX' ? (
+                      'Generar orden y ver datos'
+                    ) : (
+                      'Continuar con tarjeta'
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="mb-btn-cancel"
+                    onClick={() => setBatchPayFlow(null)}
+                    disabled={!!payingId}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            )}
+            {batchPayFlow.step === 'prex' && (
+              <>
+                <h3 className="mb-modal-title">Transferencia Prex (pago agrupado)</h3>
+                <p className="mb-modal-subtitle">
+                  Transfiera el importe total e indique el código de orden y los códigos de reserva en el comprobante.
+                </p>
+                <PrexTransferDetails
+                  ordenCodigo={batchPayFlow.ordenCodigo}
+                  codigosReserva={batchPayFlow.items.map(b => b.code)}
+                  saldoPendiente={{ monto: batchPayFlow.total, currency: 'UYU' }}
+                />
+                <div className="mb-modal-actions">
+                  <button
+                    type="button"
+                    className="mb-btn-secondary"
+                    onClick={() =>
+                      setBatchPayFlow({
+                        step: 'metodo',
+                        metodo: 'PREX',
+                        items: batchPayFlow.items,
+                        total: batchPayFlow.total,
+                      })
+                    }
+                  >
+                    Volver
+                  </button>
+                  <button type="button" className="mb-btn-cancel" onClick={() => setBatchPayFlow(null)}>
                     Cerrar
                   </button>
                 </div>

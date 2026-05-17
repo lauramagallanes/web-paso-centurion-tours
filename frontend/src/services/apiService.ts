@@ -1180,6 +1180,24 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  /** Una sola orden de pago por el saldo pendiente de varias reservas ya existentes (CARD o PREX). */
+  async createOrdenPagoPendientes(payload: {
+    emailContacto: string;
+    nombreContacto: string;
+    telefonoContacto?: string;
+    observaciones?: string;
+    metodoPago?: 'CARD' | 'PREX';
+    items: Array<{ tipo: 'SENDERO' | 'ALOJAMIENTO'; reservaId: string }>;
+  }) {
+    const response = await fetch(`${this.baseURL}/checkout/orden-pendientes`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    return this.handleResponse(response);
+  }
+
   // Get payment status for an orden (multi-item order)
   async getOrdenPaymentStatus(ordenId: string) {
     const response = await fetch(

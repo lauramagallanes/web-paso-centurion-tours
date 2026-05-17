@@ -1,6 +1,7 @@
 package com.tinambu.tours.controller;
 
 import com.tinambu.tours.dto.request.CheckoutOrdenRequest;
+import com.tinambu.tours.dto.request.CheckoutPagarPendientesRequest;
 import com.tinambu.tours.dto.response.ApiResponse;
 import com.tinambu.tours.dto.response.CheckoutOrdenResponse;
 import com.tinambu.tours.exception.SinDisponibilidadException;
@@ -57,6 +58,38 @@ public class CheckoutController {
             log.error("Error processing checkout orden", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Error al procesar el checkout: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/orden-pendientes")
+    public ResponseEntity<?> crearOrdenPagoPendientes(@Valid @RequestBody CheckoutPagarPendientesRequest request,
+                                                      HttpServletRequest httpRequest) {
+        try {
+            log.info("POST /checkout/orden-pendientes - {} items for {}",
+                    request.getItems().size(), request.getEmailContacto());
+
+            String ipAddress = httpRequest.getHeader("X-Forwarded-For") != null
+                    ? httpRequest.getHeader("X-Forwarded-For")
+                    : httpRequest.getRemoteAddr();
+            String userAgent = httpRequest.getHeader("User-Agent");
+
+            CheckoutOrdenResponse response = checkoutService.procesarPagoPendientes(request, ipAddress, userAgent);
+
+            if ("ERROR".equals(response.getStatus())) {
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                        .body(ApiResponse.error(response.getMessage()));
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(response, "Orden por saldos pendientes creada"));
+
+        } catch (IllegalArgumentException e) {
+            log.warn("Validation error (orden-pendientes): {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error processing orden-pendientes", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error al procesar el pago agrupado: " + e.getMessage()));
         }
     }
 }

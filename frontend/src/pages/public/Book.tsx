@@ -46,13 +46,15 @@ const Book: React.FC = () => {
                 <div className="booking-type-card-icon">
                   <i className="bi bi-house-door-fill" />
                 </div>
-                <h3 className="booking-type-card-title">Alojamiento</h3>
-                <p className="booking-type-card-desc">
-                  Explorá nuestras habitaciones y cabañas, elegí la que más te guste y reservá tu estadía
-                </p>
-                <span className="booking-type-card-cta">
-                  Ver alojamientos <i className="bi bi-arrow-right" />
-                </span>
+                <div className="booking-type-card-content">
+                  <h3 className="booking-type-card-title">Alojamiento</h3>
+                  <p className="booking-type-card-desc">
+                    Explorá nuestras habitaciones y cabañas, elegí la que más te guste y reservá tu estadía
+                  </p>
+                  <span className="booking-type-card-cta">
+                    Ver alojamientos <i className="bi bi-arrow-right" />
+                  </span>
+                </div>
               </div>
 
               {/* Sendero */}
@@ -66,13 +68,15 @@ const Book: React.FC = () => {
                 <div className="booking-type-card-icon">
                   <i className="bi bi-signpost-2-fill" />
                 </div>
-                <h3 className="booking-type-card-title">Sendero</h3>
-                <p className="booking-type-card-desc">
-                  Conocé nuestros senderos guiados, elegí tu excursión y reservá tu lugar
-                </p>
-                <span className="booking-type-card-cta">
-                  Ver senderos <i className="bi bi-arrow-right" />
-                </span>
+                <div className="booking-type-card-content">
+                  <h3 className="booking-type-card-title">Sendero</h3>
+                  <p className="booking-type-card-desc">
+                    Conocé nuestros senderos guiados, elegí tu excursión y reservá tu lugar
+                  </p>
+                  <span className="booking-type-card-cta">
+                    Ver senderos <i className="bi bi-arrow-right" />
+                  </span>
+                </div>
               </div>
             </div>
           </div>

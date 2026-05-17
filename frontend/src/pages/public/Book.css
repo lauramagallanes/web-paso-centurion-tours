@@ -213,6 +213,15 @@
   color: #fff;
 }
 
+/* ── Content wrapper (used in mobile horizontal layout) ── */
+.booking-type-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: inherit;
+  gap: 8px;
+  min-width: 0;
+}
+
 /* ── Texts ── */
 .booking-type-card-title {
   font-size: 22px;
@@ -296,39 +305,75 @@
   .book-hero {
     height: auto;
     min-height: 260px;
-    padding: 60px 0;
+    padding: 48px 0;
   }
 
   .book-form-section {
-    padding: 36px 0 64px;
+    padding: 32px 0 56px;
   }
 
   .booking-type-cards {
     grid-template-columns: 1fr;
-    gap: 18px;
+    gap: 16px;
   }
 
   .booking-type-card {
     flex-direction: row;
     text-align: left;
-    padding: 28px 24px;
-    gap: 20px;
-    align-items: flex-start;
+    padding: 20px 18px;
+    gap: 16px;
+    align-items: center;
   }
 
   .booking-type-card-icon {
-    width: 60px;
-    height: 60px;
-    font-size: 26px;
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
     flex-shrink: 0;
+  }
+
+  .booking-type-card-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .booking-type-card-title {
+    font-size: 18px;
+    margin-bottom: 4px;
   }
 
   .booking-type-card-desc {
     max-width: 100%;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 6px;
   }
 
   .booking-type-card-cta {
     opacity: 1;
     transform: translateY(0);
+    margin-top: 0;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-type-card {
+    padding: 16px 14px;
+    gap: 12px;
+  }
+
+  .booking-type-card-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+  }
+
+  .booking-type-card-title {
+    font-size: 17px;
+  }
+
+  .booking-type-card-desc {
+    font-size: 13px;
   }
 }

@@ -57,13 +57,16 @@
 
 .platform-img {
   height: 36px;
+  max-width: 160px;
   width: auto;
   object-fit: contain;
 }
 
 /* MINTUR más grande y más a la derecha */
 .mintur-link-large {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.2s ease;
   margin-left: auto;
   padding-right: var(--space-6);
@@ -222,10 +225,6 @@
    =================================== */
 
 @media (max-width: 1024px) {
-  .footer-container {
-    padding: 0 var(--space-8);
-  }
-
   .footer-row-top {
     flex-direction: column;
     align-items: center;
@@ -234,11 +233,26 @@
 
   .footer-platforms {
     justify-content: center;
-    gap: var(--space-4);
+    flex-wrap: wrap;
+    gap: var(--space-5);
+    width: 100%;
+  }
+
+  .platforms-label {
+    width: 100%;
+    text-align: center;
+    margin-right: 0;
+    margin-bottom: var(--space-2);
   }
 
   .platform-img {
     height: 32px;
+    max-width: 140px;
+  }
+
+  .mintur-link-large {
+    margin-left: 0;
+    padding-right: 0;
   }
 
   .mintur-img-large {
@@ -249,10 +263,12 @@
     grid-template-columns: 1fr;
     gap: var(--space-8);
     text-align: center;
+    justify-items: center;
   }
 
   .footer-brand {
     align-items: center;
+    text-align: center;
   }
 
   .brand-ave-large {
@@ -282,26 +298,31 @@
     padding: var(--space-12) 0 var(--space-8) 0;
   }
 
-  .footer-container {
-    padding: 0 var(--space-6);
-    gap: var(--space-10);
-  }
-
   .footer-row-top {
     gap: var(--space-6);
+    padding-bottom: var(--space-6);
   }
 
   .footer-platforms {
     flex-direction: column;
-    gap: var(--space-3);
+    align-items: center;
+    gap: var(--space-4);
   }
 
   .platforms-label {
     font-size: var(--text-base);
   }
 
+  .platform-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+  }
+
   .platform-img {
-    height: 34px;
+    height: 28px;
+    max-width: 130px;
   }
 
   .mintur-img-large {
@@ -328,6 +349,7 @@
     flex-direction: column;
     gap: var(--space-2);
     font-size: var(--text-xs);
+    line-height: 1.6;
   }
 
   .footer-legal .sep {
@@ -346,16 +368,13 @@
 }
 
 @media (max-width: 480px) {
-  .footer-container {
-    padding: 0 var(--space-4);
-  }
-
   .footer-platforms {
     width: 100%;
   }
 
   .platform-img {
-    height: 32px;
+    height: 26px;
+    max-width: 120px;
   }
 
   .brand-ave-large {

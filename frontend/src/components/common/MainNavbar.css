@@ -23,14 +23,14 @@
 .navbar-container {
   max-width: var(--container-xl);
   margin: 0 auto;
-  padding: 0 var(--space-8);
+  padding: 0 clamp(var(--space-3), 3vw, var(--space-8));
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 56px;
   flex-wrap: nowrap;
   min-width: 0;
-  gap: var(--space-6);
+  gap: var(--space-3);
 }
 
 /* Brand/Logo */
@@ -71,10 +71,10 @@
   letter-spacing: var(--tracking-wide);
 }
 
-/* Desktop Navigation */
+/* Desktop Navigation (mobile-first: oculto por defecto, visible en desktop) */
 .desktop-nav {
-  display: flex !important;
-  flex-direction: row !important;
+  display: none;
+  flex-direction: row;
   align-items: center;
   gap: var(--space-2);
   flex: 1;
@@ -224,9 +224,9 @@
   text-decoration: none;
 }
 
-/* Desktop Actions */
+/* Desktop Actions (mobile-first: oculto por defecto, visible en desktop) */
 .desktop-actions {
-  display: flex;
+  display: none;
   align-items: center;
   gap: var(--space-3);
   flex-shrink: 0;
@@ -360,8 +360,9 @@
 }
 
 /* Mobile Menu Button (área táctil mínima 44x44 según WCAG) */
+/* Mobile-first: visible por defecto, ocultar en desktop */
 .mobile-menu-btn {
-  display: none;
+  display: inline-flex;
   background: none;
   border: none;
   cursor: pointer;

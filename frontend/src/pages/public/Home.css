@@ -356,32 +356,34 @@
 }
 
 .home-testimonials {
-  padding: var(--space-24) 0 var(--space-32) 0;
+  padding: clamp(var(--space-12), 8vw, var(--space-24)) 0 clamp(var(--space-16), 10vw, var(--space-32)) 0;
   background: linear-gradient(135deg, #faf6f1 0%, #f5e9dc 50%, #ede3d5 100%);
 }
 
 .testimonials-main-title {
-  font-size: clamp(var(--text-3xl), 4vw, var(--text-5xl));
+  font-size: clamp(1.5rem, 5vw, 3rem);
   font-weight: var(--font-bold);
   color: #2d2d2d;
   text-align: center;
-  margin: 0 0 var(--space-20) 0;
+  margin: 0 0 clamp(var(--space-8), 5vw, var(--space-20)) 0;
+  padding: 0 clamp(var(--space-3), 4vw, var(--space-6));
   letter-spacing: -0.02em;
 }
 
 .testimonials-cards-wrapper {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 450px));
-  gap: var(--space-12);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 450px));
+  gap: clamp(var(--space-4), 4vw, var(--space-12));
   justify-content: center;
   max-width: 1000px;
   margin: 0 auto;
+  padding: 0 clamp(var(--space-3), 4vw, var(--space-6));
 }
 
 .testimonial-card {
   background: linear-gradient(135deg, #fdf8f0 0%, #f9f3e8 100%);
   border-radius: 28px;
-  padding: var(--space-12) var(--space-10);
+  padding: clamp(var(--space-6), 5vw, var(--space-12)) clamp(var(--space-5), 4vw, var(--space-10));
   text-align: center;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
   transition: all 0.4s ease;
@@ -394,9 +396,9 @@
 }
 
 .testimonial-logo {
-  font-size: clamp(var(--text-4xl), 5vw, 56px);
+  font-size: clamp(2rem, 7vw, 3.5rem);
   font-weight: var(--font-bold);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
   letter-spacing: -0.03em;
   line-height: 1;
 }
@@ -417,8 +419,8 @@
   display: flex;
   justify-content: center;
   gap: var(--space-1);
-  margin-bottom: var(--space-4);
-  font-size: clamp(28px, 4vw, 40px);
+  margin-bottom: var(--space-3);
+  font-size: clamp(20px, 5vw, 32px);
 }
 
 .testimonial-stars .star {
@@ -440,7 +442,7 @@
 }
 
 .testimonial-based-on {
-  font-size: var(--text-lg);
+  font-size: clamp(0.875rem, 2.5vw, 1.125rem);
   color: #4a4a4a;
   font-weight: var(--font-medium);
   margin: 0;

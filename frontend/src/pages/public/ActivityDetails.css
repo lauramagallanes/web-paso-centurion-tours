@@ -278,6 +278,55 @@
   color: var(--color-text);
 }
 
+/* Segmented control para Turno (Mañana / Tarde) */
+.turno-segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  background: var(--color-surface-variant);
+  border: 1px solid var(--color-border-medium);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.turno-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.turno-segment i {
+  font-size: 1.1rem;
+}
+
+.turno-segment:hover:not(.is-active) {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.turno-segment.is-active {
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.turno-segment:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
 /* Participants Controls */
 .participants-control {
   display: flex;

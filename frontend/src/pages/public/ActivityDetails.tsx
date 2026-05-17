@@ -622,15 +622,33 @@ const ActivityDetails: React.FC = () => {
 
               {/* Horario */}
               <div className="form-group">
-                <label className="form-label">Horario</label>
-                <select
-                  className="form-input"
-                  value={selectedTurno}
-                  onChange={(e) => setSelectedTurno(e.target.value as 'MANANA' | 'TARDE')}
+                <span className="form-label" id="turno-label">Horario</span>
+                <div
+                  className="turno-segmented"
+                  role="radiogroup"
+                  aria-labelledby="turno-label"
                 >
-                  <option value="MANANA">Mañana</option>
-                  <option value="TARDE">Tarde</option>
-                </select>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={selectedTurno === 'MANANA'}
+                    className={`turno-segment ${selectedTurno === 'MANANA' ? 'is-active' : ''}`}
+                    onClick={() => setSelectedTurno('MANANA')}
+                  >
+                    <i className="bi bi-sunrise" aria-hidden="true"></i>
+                    <span>Mañana</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={selectedTurno === 'TARDE'}
+                    className={`turno-segment ${selectedTurno === 'TARDE' ? 'is-active' : ''}`}
+                    onClick={() => setSelectedTurno('TARDE')}
+                  >
+                    <i className="bi bi-sunset" aria-hidden="true"></i>
+                    <span>Tarde</span>
+                  </button>
+                </div>
               </div>
 
               {/* Cupos / Availability feedback (visible antes de tocar el +) */}

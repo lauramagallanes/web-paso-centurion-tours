@@ -636,37 +636,39 @@
   padding: var(--space-6);
 }
 
-/* SUPER VISIBLE ADMIN BUTTONS - NEVER HIDDEN */
+/* Botón Admin: dorado/ámbar elegante, alineado con la paleta del ecolodge */
 .admin-panel-button-super-visible {
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
   padding: 8px 16px !important;
-  background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-  color: white !important;
+  background: linear-gradient(135deg, #d4a64a, #b07f1f) !important;
+  color: #ffffff !important;
   border-radius: 8px !important;
   font-weight: 700 !important;
   font-size: 14px !important;
   text-decoration: none !important;
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4) !important;
-  border: 2px solid #fff !important;
-  animation: pulse-admin 2s infinite !important;
+  box-shadow: 0 2px 8px rgba(176, 127, 31, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
   z-index: 9999 !important;
   position: relative !important;
   min-width: 100px !important;
   text-align: center !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .admin-panel-button-super-visible:hover {
-  background: linear-gradient(135deg, #c0392b, #a93226) !important;
-  transform: translateY(-2px) scale(1.05) !important;
-  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6) !important;
-  color: white !important;
+  background: linear-gradient(135deg, #b07f1f, #8c6315) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 14px rgba(176, 127, 31, 0.5) !important;
+  color: #ffffff !important;
   text-decoration: none !important;
 }
 
 .admin-panel-button-super-visible .admin-icon {
   font-size: 18px !important;
+  display: inline-flex;
+  align-items: center;
 }
 
 .admin-panel-button-super-visible .admin-text {
@@ -676,29 +678,26 @@
   letter-spacing: 1px !important;
 }
 
-@keyframes pulse-admin {
-  0%, 100% { box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4); }
-  50% { box-shadow: 0 4px 20px rgba(231, 76, 60, 0.8); }
+/* Botón Admin en menú móvil */
+.admin-super-visible {
+  background: linear-gradient(135deg, #d4a64a, #b07f1f) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(176, 127, 31, 0.35) !important;
 }
 
-/* MOBILE ADMIN BUTTON - ALWAYS VISIBLE */
-.admin-super-visible {
-  background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-  color: white !important;
-  border: 2px solid #fff !important;
-  border-radius: 12px !important;
-  font-weight: 800 !important;
-  font-size: 16px !important;
-  animation: pulse-admin 2s infinite !important;
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.6) !important;
+.admin-super-visible .nav-icon,
+.admin-super-visible .nav-label {
+  color: #ffffff !important;
 }
 
 .admin-super-visible:hover,
 .admin-super-visible.active {
-  background: linear-gradient(135deg, #c0392b, #a93226) !important;
-  color: white !important;
-  transform: scale(1.02) !important;
-  border-color: #ffff00 !important;
+  background: linear-gradient(135deg, #b07f1f, #8c6315) !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
 }
 
 /* Force visibility in ALL responsive breakpoints */

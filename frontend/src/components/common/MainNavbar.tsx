@@ -8,6 +8,22 @@ import CartButton from './CartButton';
 import Logo from './Logo';
 import './MainNavbar.css';
 
+// Bootstrap Icons 1.13 no incluye un icono de cama; este SVG sigue el mismo
+// estilo (currentColor, viewBox 16x16) para integrarse con los demás bi-*.
+const BedIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+    width="1em"
+    height="1em"
+    fill="currentColor"
+    viewBox="0 0 16 16"
+    aria-hidden="true"
+  >
+    <path d="M1.5 4a.5.5 0 0 1 .5.5V8h11.5A1.5 1.5 0 0 1 15 9.5V13a.5.5 0 0 1-1 0v-1.5H2V13a.5.5 0 0 1-1 0V4.5a.5.5 0 0 1 .5-.5zM2 9v1.5h12V9.5a.5.5 0 0 0-.5-.5H2zm3.5-4a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2zM9 7V5.5A1.5 1.5 0 0 1 10.5 4h2A1.5 1.5 0 0 1 14 5.5V7H9zm1-1.5V7h3V5.5a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 0-.5.5z" />
+  </svg>
+);
+
 const MainNavbar: React.FC = () => {
   const { state, logout, isAdmin } = useAuth();
   const { theme } = useTheme();
@@ -206,7 +222,7 @@ const MainNavbar: React.FC = () => {
             
             {state.isAuthenticated && isAdmin() && (
               <Link to={routes.admin} className="admin-panel-button-super-visible">
-                <span className="admin-icon">⚙️</span>
+                <i className="admin-icon bi bi-shield-lock" aria-hidden="true"></i>
                 <span className="admin-text">ADMIN</span>
               </Link>
             )}
@@ -214,7 +230,7 @@ const MainNavbar: React.FC = () => {
             {state.isAuthenticated ? (
               <div className="user-menu">
                 <Link to={routes.myBookings} className="nav-link">
-                  <span className="nav-icon">📋</span>
+                  <i className="nav-icon bi bi-calendar-check" aria-hidden="true"></i>
                   <span className="nav-label">Mis Reservas</span>
                 </Link>
                 
@@ -312,7 +328,7 @@ const MainNavbar: React.FC = () => {
                 className={`mobile-nav-link ${isActiveRoute(routes.alojamientos) ? 'active' : ''}`}
                 onClick={closeMobileMenu}
               >
-                <i className="nav-icon bi bi-building" aria-hidden="true"></i>
+                <BedIcon className="nav-icon" />
                 <span className="nav-label">Alojamiento</span>
               </Link>
               
@@ -321,7 +337,7 @@ const MainNavbar: React.FC = () => {
                 className={`mobile-nav-link ${isActiveRoute(routes.activities) ? 'active' : ''}`}
                 onClick={closeMobileMenu}
               >
-                <i className="nav-icon bi bi-tree" aria-hidden="true"></i>
+                <i className="nav-icon bi bi-person-walking" aria-hidden="true"></i>
                 <span className="nav-label">Senderismo</span>
               </Link>
               
@@ -351,7 +367,7 @@ const MainNavbar: React.FC = () => {
                       className="mobile-nav-link admin-super-visible"
                       onClick={closeMobileMenu}
                     >
-                      <i className="nav-icon bi bi-gear" aria-hidden="true"></i>
+                      <i className="nav-icon bi bi-shield-lock" aria-hidden="true"></i>
                       <span className="nav-label">Panel Admin</span>
                     </Link>
                   )}
@@ -361,7 +377,7 @@ const MainNavbar: React.FC = () => {
                     className="mobile-nav-link"
                     onClick={closeMobileMenu}
                   >
-                    <i className="nav-icon bi bi-journal-bookmark" aria-hidden="true"></i>
+                    <i className="nav-icon bi bi-calendar-check" aria-hidden="true"></i>
                     <span className="nav-label">Mis Reservas</span>
                   </Link>
                 </>

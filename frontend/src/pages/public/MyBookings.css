@@ -529,6 +529,29 @@
   color: #a4b85a;
 }
 
+.mb-prex-contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  align-items: center;
+}
+
+.mb-prex-whatsapp {
+  display: inline-block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #128c7e;
+  text-decoration: underline;
+}
+
+.mb-prex-whatsapp:hover {
+  color: #0d6b5f;
+}
+
+[data-theme="dark"] .mb-prex-whatsapp {
+  color: #25d366;
+}
+
 /* Card Actions */
 .mb-card-actions {
   margin-top: 1rem;

@@ -995,7 +995,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  // ========== PLACETOPAY PAYMENT INTEGRATION ==========
+  // ========== Getnet (tarjeta) — sesión de pago ==========
 
   // Create a sendero reservation
   async createSenderoReservation(data: {
@@ -1123,7 +1123,7 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  // Create a PlacetoPay payment session
+  // Crear sesión de pago con tarjeta (Getnet)
   async createPaymentSession(reservaId: string, tipoReserva: string, tipoPago: string = 'TOTAL') {
     const response = await fetch(`${this.baseURL}/pagos/crear-sesion`, {
       method: 'POST',

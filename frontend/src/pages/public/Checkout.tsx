@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart, CartItem } from '../../contexts/CartContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Icon from '../../components/common/Icon';
-import { PREX_ACCOUNT, PREX_COUNTRIES } from '../../config/prex';
+import { PREX_ACCOUNT, PREX_COUNTRIES, PREX_WHATSAPP_DISPLAY, prexComprobanteWhatsAppUrl } from '../../config/prex';
 import './Checkout.css';
 
 interface ContactInfo {
@@ -380,11 +380,31 @@ const Checkout: React.FC = () => {
                 <li><span>Número de cuenta:</span><strong>{PREX_ACCOUNT.cuenta}</strong></li>
               </ul>
               <p className="prex-account-note">
-                Una vez hecha la transferencia, envíe el comprobante a{' '}
-                <strong>{PREX_ACCOUNT.email}</strong> con el asunto{' '}
-                <strong>“{PREX_ACCOUNT.asuntoEmail}”</strong>. Recuerde incluir el{' '}
+                Una vez hecha la transferencia, envíe el comprobante por correo a{' '}
+                <strong>{PREX_ACCOUNT.email}</strong> (asunto <strong>“{PREX_ACCOUNT.asuntoEmail}”</strong>) o por
+                WhatsApp al <strong>{PREX_WHATSAPP_DISPLAY}</strong>. Recuerde incluir el{' '}
                 <strong>código de orden</strong> para que podamos identificar su pago.
               </p>
+              <div className="prex-comprobante-actions">
+                <a
+                  className="prex-comprobante-link"
+                  href={`mailto:${PREX_ACCOUNT.email}?subject=${encodeURIComponent(`${PREX_ACCOUNT.asuntoEmail} — ${prexResult.codigoOrden || ''}`)}&body=${encodeURIComponent(
+                    `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nCódigo de orden: ${prexResult.codigoOrden || '—'}\nMonto: ${formatCurrency(prexResult.monto, prexResult.currency)}\n\nSaludos.`,
+                  )}`}
+                >
+                  Abrir el correo
+                </a>
+                <a
+                  className="prex-comprobante-link prex-comprobante-link--wa"
+                  href={prexComprobanteWhatsAppUrl(
+                    `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nCódigo de orden: ${prexResult.codigoOrden || '—'}\nMonto: ${formatCurrency(prexResult.monto, prexResult.currency)}\n\nSaludos.`,
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Abrir WhatsApp
+                </a>
+              </div>
             </div>
 
             <div className="prex-actions">
@@ -645,7 +665,7 @@ const Checkout: React.FC = () => {
                 <p className="checkout-secure">
                   {metodoPago === 'PREX'
                     ? 'Mostraremos los datos de la cuenta Prex para completar la transferencia. Su reserva se confirma cuando recibimos el pago.'
-                    : 'Tu pago se procesa de forma segura a través de Getnet (PlacetoPay). No guardamos los datos de tu tarjeta.'}
+                    : 'Su pago con tarjeta se procesa de forma segura con Getnet. No guardamos los datos de su tarjeta.'}
                 </p>
               </div>
             )}

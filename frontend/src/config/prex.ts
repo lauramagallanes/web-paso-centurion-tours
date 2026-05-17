@@ -11,6 +11,16 @@ export const PREX_ACCOUNT = {
   asuntoEmail: import.meta.env.VITE_PREX_EMAIL_SUBJECT || 'Pago de reserva',
 };
 
+/** WhatsApp para enviar comprobante de transferencia Prex (solo dígitos, sin +, para wa.me). */
+export const PREX_WHATSAPP_WA_ME = '59898372742';
+
+/** Número visible para el usuario. */
+export const PREX_WHATSAPP_DISPLAY = '+598 98 372 742';
+
+export function prexComprobanteWhatsAppUrl(messageBody: string): string {
+  return `https://wa.me/${PREX_WHATSAPP_WA_ME}?text=${encodeURIComponent(messageBody)}`;
+}
+
 /** Países donde Prex está disponible y por tanto se ofrece esta opción de pago. */
 export const PREX_COUNTRIES = ['UY', 'AR', 'CL', 'PE'] as const;
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/apiService';
-import { PREX_ACCOUNT } from '../../config/prex';
+import { PREX_ACCOUNT, PREX_WHATSAPP_DISPLAY, prexComprobanteWhatsAppUrl } from '../../config/prex';
 import { routes } from '../../utils/routes';
 import './MyBookings.css';
 
@@ -117,6 +117,7 @@ const PrexTransferDetails: React.FC<{
     ? `Hola,\n\nAdjunto el comprobante de la transferencia Prex correspondiente al saldo pendiente de la reserva.\n\nCódigo de reserva: ${codigoReserva}\nImporte del saldo: $${saldoPendiente.monto.toLocaleString()} ${saldoPendiente.currency}\n\nSaludos.`
     : `Hola,\n\nAdjunto el comprobante de la transferencia Prex.\n\nCódigo de reserva: ${codigoReserva}\n\nSaludos.`;
   const mailto = `mailto:${PREX_ACCOUNT.email}?subject=${encodeURIComponent(PREX_ACCOUNT.asuntoEmail)}&body=${encodeURIComponent(mailBody)}`;
+  const whatsappUrl = prexComprobanteWhatsAppUrl(mailBody);
   return (
     <div className="mb-prex-transfer-details">
       <h4 className="mb-prex-transfer-title">Datos para la transferencia</h4>
@@ -135,22 +136,28 @@ const PrexTransferDetails: React.FC<{
       <p className="mb-prex-transfer-note">
         {saldoPendiente ? (
           <>
-            Puede enviar el comprobante a <strong>{PREX_ACCOUNT.email}</strong> con el asunto{' '}
-            <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong>, incluyendo el código de reserva{' '}
-            <strong className="mb-code-inline">{codigoReserva}</strong> y el importe del saldo en el cuerpo del
-            mensaje. Cuando registremos el pago, actualizaremos el estado de su reserva.
+            Puede enviarnos el comprobante por correo a <strong>{PREX_ACCOUNT.email}</strong> (asunto{' '}
+            <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong>) o por WhatsApp al{' '}
+            <strong>{PREX_WHATSAPP_DISPLAY}</strong>. Incluya el código de reserva{' '}
+            <strong className="mb-code-inline">{codigoReserva}</strong> y el importe del saldo en el mensaje.
+            Cuando registremos el pago, actualizaremos el estado de su reserva.
           </>
         ) : (
           <>
-            Puede enviar el comprobante a <strong>{PREX_ACCOUNT.email}</strong> con el asunto{' '}
-            <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong> e incluir el código de reserva{' '}
-            <strong className="mb-code-inline">{codigoReserva}</strong> en el cuerpo del mensaje.
+            Puede enviarnos el comprobante por correo a <strong>{PREX_ACCOUNT.email}</strong> (asunto{' '}
+            <strong>«{PREX_ACCOUNT.asuntoEmail}»</strong>) o por WhatsApp al <strong>{PREX_WHATSAPP_DISPLAY}</strong>.
+            Incluya el código de reserva <strong className="mb-code-inline">{codigoReserva}</strong> en el mensaje.
           </>
         )}
       </p>
-      <a className="mb-prex-mailto" href={mailto}>
-        Abrir el correo para enviar el comprobante
-      </a>
+      <div className="mb-prex-contact-actions">
+        <a className="mb-prex-mailto" href={mailto}>
+          Abrir el correo
+        </a>
+        <a className="mb-prex-whatsapp" href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+          Abrir WhatsApp
+        </a>
+      </div>
     </div>
   );
 };
@@ -622,7 +629,7 @@ const MyBookings: React.FC = () => {
                     />
                     <div>
                       <strong>Tarjeta de crédito o débito</strong>
-                      <small>Pago seguro con Getnet (PlacetoPay). Visa, Mastercard y otras tarjetas.</small>
+                      <small>Pago seguro con Getnet. Visa, Mastercard y otras tarjetas.</small>
                     </div>
                   </label>
                   <label className={`mb-modal-option ${saldoFlow.metodo === 'PREX' ? 'selected' : ''}`}>

@@ -118,7 +118,7 @@ const PaymentResult: React.FC = () => {
           montoTotal: 0,
           tipoPago: 'TOTAL',
           placetoPayStatus: 'MOCK',
-          placetoPayMessage: 'PlacetoPay no configurado. Tu orden fue creada y queda pendiente de pago.',
+          placetoPayMessage: 'Getnet no está configurado en este entorno. Su orden quedó creada y pendiente de pago.',
           items: [],
         });
       } else if (reservaId) {
@@ -132,7 +132,7 @@ const PaymentResult: React.FC = () => {
           montoPagado: 0,
           saldoPendiente: 0,
           placetoPayStatus: 'MOCK',
-          placetoPayMessage: 'PlacetoPay no configurado. Tu reserva fue creada exitosamente.',
+          placetoPayMessage: 'Getnet no está configurado en este entorno. Su reserva quedó registrada correctamente.',
         });
       } else {
         setError('No se encontró información de la reserva o la orden.');

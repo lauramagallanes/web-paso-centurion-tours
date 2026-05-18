@@ -53,6 +53,24 @@ public class NotificacionReservaService {
     @Value("${SES_FROM_EMAIL:noreply@pasocenturion.com.uy}")
     private String sesFromEmail;
 
+    // Datos de la cuenta Prex que se le comparten al cliente para hacer la transferencia.
+    // Los defaults coinciden con frontend/src/config/prex.ts; se pueden sobreescribir vía
+    // env vars sin tocar el código.
+    @Value("${PREX_TITULAR:Laura Magallanes}")
+    private String prexTitular;
+
+    @Value("${PREX_CUENTA:1643941}")
+    private String prexCuenta;
+
+    @Value("${PREX_COMPROBANTE_EMAIL:info@pasocenturion.com.uy}")
+    private String prexComprobanteEmail;
+
+    @Value("${PREX_COMPROBANTE_EMAIL_SUBJECT:Pago de reserva}")
+    private String prexComprobanteEmailSubject;
+
+    @Value("${PREX_COMPROBANTE_WHATSAPP:+598 98 372 742}")
+    private String prexComprobanteWhatsapp;
+
     // ==================== EVENT LISTENERS ====================
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
@@ -272,7 +290,8 @@ public class NotificacionReservaService {
         b.append("Total:         ").append(formatPrecio(r.getPrecioTotal())).append(" UYU\n");
         b.append("Estado:        ").append(estadoAmigable(r.getEstado())).append("\n\n");
 
-        b.append(mensajeSegunPago(r.getEstado(), r.getEstadoPago(), r.getMetodoPago()));
+        b.append(mensajeSegunPago(r.getEstado(), r.getEstadoPago(), r.getMetodoPago(),
+                r.getCodigoReserva(), r.getNombreContacto()));
 
         b.append("\n----------------------------------------\n");
         b.append("ANTES DE TU EXPERIENCIA\n");
@@ -311,7 +330,8 @@ public class NotificacionReservaService {
         b.append("Total:         ").append(formatPrecio(r.getPrecioTotal())).append(" UYU\n");
         b.append("Estado:        ").append(estadoAmigable(r.getEstado())).append("\n\n");
 
-        b.append(mensajeSegunPago(r.getEstado(), r.getEstadoPago(), r.getMetodoPago()));
+        b.append(mensajeSegunPago(r.getEstado(), r.getEstadoPago(), r.getMetodoPago(),
+                r.getCodigoReserva(), r.getNombreContacto()));
 
         b.append("\n----------------------------------------\n");
         b.append("INFORMACIÓN ÚTIL\n");
@@ -328,7 +348,8 @@ public class NotificacionReservaService {
         return b.toString();
     }
 
-    private String mensajeSegunPago(EstadoReserva estado, EstadoPago estadoPago, String metodoPago) {
+    private String mensajeSegunPago(EstadoReserva estado, EstadoPago estadoPago, String metodoPago,
+                                    String codigoReserva, String nombreContacto) {
         if (estado == EstadoReserva.CANCELADA) {
             return "Tu reserva figura como CANCELADA. Si esto no es lo esperado, por favor"
                     + " contáctanos respondiendo a este correo.\n";
@@ -336,10 +357,7 @@ public class NotificacionReservaService {
         String metodo = metodoPago == null ? "" : metodoPago.toUpperCase();
 
         if ("PREX".equals(metodo)) {
-            return "Tu reserva quedó registrada como PENDIENTE de pago. Para confirmarla,\n"
-                    + "te pedimos realizar la transferencia mediante Prex dentro de las próximas 12 horas.\n"
-                    + "Si no recibimos el pago en ese plazo, la reserva se cancela automáticamente.\n"
-                    + "Puedes consultar los datos de transferencia desde \"Mis Reservas\" en el sitio.\n";
+            return buildBloqueTransferenciaPrex(codigoReserva, nombreContacto);
         }
         if ("EFECTIVO".equals(metodo) || "PAGO_EFECTIVO".equals(metodo)) {
             return "Reservaste con pago en efectivo al momento de la experiencia.\n"
@@ -350,6 +368,42 @@ public class NotificacionReservaService {
         }
         return "Tu reserva quedó registrada. En breve te contactamos por cualquier detalle pendiente.\n"
                 + "Puedes ver el estado y los próximos pasos desde \"Mis Reservas\" en el sitio.\n";
+    }
+
+    /**
+     * Bloque con los datos para transferir por Prex e instrucciones para enviar
+     * el comprobante. Se incluye cuando el cliente eligió pago con Prex.
+     */
+    private String buildBloqueTransferenciaPrex(String codigoReserva, String nombreContacto) {
+        StringBuilder b = new StringBuilder();
+        b.append("Tu reserva quedó registrada como PENDIENTE de pago. Para confirmarla,\n");
+        b.append("realiza la transferencia mediante Prex dentro de las próximas 12 horas.\n");
+        b.append("Si no recibimos el comprobante en ese plazo, la reserva se cancela automáticamente.\n\n");
+
+        b.append("----------------------------------------\n");
+        b.append("DATOS PARA LA TRANSFERENCIA PREX\n");
+        b.append("----------------------------------------\n");
+        b.append("Titular:           ").append(safe(prexTitular)).append("\n");
+        b.append("Número de cuenta:  ").append(safe(prexCuenta)).append("\n\n");
+
+        b.append("----------------------------------------\n");
+        b.append("CÓMO ENVIARNOS EL COMPROBANTE\n");
+        b.append("----------------------------------------\n");
+        b.append("Una vez realizada la transferencia, envíanos el comprobante por:\n\n");
+        b.append("  • Correo:    ").append(safe(prexComprobanteEmail))
+                .append("  (asunto: «").append(safe(prexComprobanteEmailSubject)).append("»)\n");
+        b.append("  • WhatsApp:  ").append(safe(prexComprobanteWhatsapp)).append("\n\n");
+
+        b.append("Importante: indica en el mensaje el nombre completo de quien reservó");
+        if (nombreContacto != null && !nombreContacto.isBlank()) {
+            b.append(" (").append(nombreContacto).append(")");
+        }
+        b.append("\ny, si lo tienes a mano, el código de reserva");
+        if (codigoReserva != null && !codigoReserva.isBlank()) {
+            b.append(" ").append(codigoReserva);
+        }
+        b.append(",\nasí podemos identificar tu pago rápidamente.\n");
+        return b.toString();
     }
 
     // ==================== HELPERS ====================

@@ -175,15 +175,13 @@ public class CheckoutService {
 
         String tipoPago = request.getTipoPago() != null ? request.getTipoPago().toUpperCase() : "TOTAL";
 
-        // Step 1: Create all reservations and OrdenCompra in a single transaction
-        OrdenConReservas result = crearOrdenConReservas(request, tipoPago);
+        // Step 1: Create all reservations, tag metodoPago, and OrdenCompra atomically in
+        // a single transaction. Tagging happens *inside* the transaction so AFTER_COMMIT
+        // listeners (notification emails) see the correct metodoPago.
+        OrdenConReservas result = crearOrdenConReservas(request, tipoPago, metodoPago);
         OrdenCompra orden = result.orden;
 
-        // Step 2 (PREX): skip PlacetoPay; user transfers manually and admin confirms.
-        // Tag every reservation with metodoPago=PREX so the auto-cancel job can find them
-        // 12h after creation if the admin hasn't registered the payment.
         if ("PREX".equals(metodoPago)) {
-            marcarReservasComoPrex(result.reservasCreadas, tipoPago);
             log.info("Orden {} marked as pending Prex transfer ({} reservas tagged)",
                     orden.getCodigoOrden(), result.reservasCreadas.size());
             return CheckoutOrdenResponse.of(
@@ -197,9 +195,6 @@ public class CheckoutService {
                     nombreContactoTrim(request.getNombreContacto())
             );
         }
-
-        // Tag CARD reservations too so admins can audit how the customer chose to pay
-        marcarReservasComoMetodoPago(result.reservasCreadas, "CARD", tipoPago);
 
         // Step 2 (CARD): call PlacetoPay (outside the transaction, failure is non-fatal for DB state)
         try {
@@ -301,7 +296,7 @@ public class CheckoutService {
     }
 
     @Transactional
-    protected OrdenConReservas crearOrdenConReservas(CheckoutOrdenRequest request, String tipoPago) {
+    protected OrdenConReservas crearOrdenConReservas(CheckoutOrdenRequest request, String tipoPago, String metodoPago) {
         List<ReservaCreada> reservasCreadas = new ArrayList<>();
         BigDecimal montoTotal = BigDecimal.ZERO;
 
@@ -364,6 +359,11 @@ public class CheckoutService {
         orden = ordenCompraRepository.save(orden);
         log.info("OrdenCompra created: {} with {} reservations, total: {}",
                 orden.getCodigoOrden(), reservasCreadas.size(), montoOrden);
+
+        // Tag metodoPago BEFORE the transaction commits so AFTER_COMMIT notification
+        // listeners see the correct value. Defaults to CARD when not explicit.
+        String metodoFinal = (metodoPago == null || metodoPago.isBlank()) ? "CARD" : metodoPago.toUpperCase();
+        marcarReservasComoMetodoPago(reservasCreadas, metodoFinal, tipoPago);
 
         return new OrdenConReservas(orden, reservasCreadas);
     }
@@ -620,14 +620,12 @@ public class CheckoutService {
     }
 
     /**
-     * Marks the just-created reservations as PREX. Required so the auto-cancel job can
-     * locate them after the 12h transfer window. Failures are logged but never block the
-     * checkout response (the order is already created).
+     * Marks the just-created reservations with the chosen payment method. Required so the
+     * auto-cancel job can locate Prex pendings after the 12h transfer window, and so notifications
+     * fired by AFTER_COMMIT listeners include the method. Called *inside* the creation
+     * transaction so the change is visible when listeners run. Failures are logged but never
+     * block the checkout response.
      */
-    private void marcarReservasComoPrex(List<ReservaCreada> reservas, String tipoPago) {
-        marcarReservasComoMetodoPago(reservas, "PREX", tipoPago);
-    }
-
     private void marcarReservasComoMetodoPago(List<ReservaCreada> reservas, String metodoPago, String tipoPago) {
         for (ReservaCreada rc : reservas) {
             try {

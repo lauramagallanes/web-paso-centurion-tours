@@ -136,6 +136,12 @@ resource "aws_lambda_function" "backend_api" {
       SES_FROM_EMAIL       = "noreply@pasocenturion.com.uy"
       CONTACT_EMAIL        = "consultas@pasocenturion.com.uy"
       RESERVAS_NOTIF_EMAIL = "reservas@pasocenturion.com.uy"
+      # Datos de cuenta Prex (se incluyen en el mail al cliente cuando paga con Prex)
+      PREX_TITULAR                   = "Laura Magallanes"
+      PREX_CUENTA                    = "1643941"
+      PREX_COMPROBANTE_EMAIL         = "info@pasocenturion.com.uy"
+      PREX_COMPROBANTE_EMAIL_SUBJECT = "Pago de reserva"
+      PREX_COMPROBANTE_WHATSAPP      = "+598 98 372 742"
     }
   }
 

@@ -188,9 +188,9 @@ const Activities: React.FC = () => {
               <div className="hero-left">
                 <h1 className="hero-title">Actividades y Experiencias Naturales</h1>
                 <p className="hero-subtitle">
-                  Senderos guiados por el Paisaje Protegido Paso Centurión. Observación de aves, 
-                  reconocimiento de flora y fauna, e interpretación ambiental con guías especializados 
-                  en grupos pequeños.
+                  Senderos guiados por el Paisaje Protegido Paso Centurión y Sierra de Ríos,
+                  observación de aves, reconocimiento de flora y fauna nativa,
+                  e interpretación ambiental con guías especializados en grupos pequeños.
                 </p>
               </div>
               <div className="hero-center">
@@ -270,9 +270,9 @@ const Activities: React.FC = () => {
             <div className="hero-left">
               <h1 className="hero-title">Actividades y Experiencias Naturales</h1>
               <p className="hero-subtitle">
-                Senderos guiados por el Paisaje Protegido Paso Centurión. Observación de aves, 
-                reconocimiento de flora y fauna, e interpretación ambiental con guías especializados 
-                en grupos pequeños.
+                Senderos guiados por el Paisaje Protegido Paso Centurión y Sierra de Ríos,
+                observación de aves, reconocimiento de flora y fauna nativa,
+                e interpretación ambiental con guías especializados en grupos pequeños.
               </p>
             </div>
             <div className="hero-center">

@@ -455,3 +455,104 @@
   }
 }
 
+
+/* ============================================================
+   Confirmation modal (eliminar item / vaciar carrito)
+   ============================================================ */
+.cart-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: cartConfirmFadeIn 0.18s ease-out;
+}
+
+.cart-confirm-modal {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--color-border);
+  width: 100%;
+  max-width: 460px;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  animation: cartConfirmPopIn 0.22s ease-out;
+}
+
+.cart-confirm-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+}
+
+.cart-confirm-text {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+.cart-confirm-text strong {
+  color: var(--color-text);
+}
+
+.cart-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+@keyframes cartConfirmFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes cartConfirmPopIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Dark mode */
+[data-theme="dark"] .cart-confirm-modal {
+  background-color: var(--color-primary);
+  border-color: var(--color-neutral-700);
+}
+
+[data-theme="dark"] .cart-confirm-title {
+  color: var(--color-text-on-primary, #ffffff);
+}
+
+[data-theme="dark"] .cart-confirm-text {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+[data-theme="dark"] .cart-confirm-text strong {
+  color: #ffffff;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .cart-confirm-modal {
+    padding: var(--space-5);
+  }
+
+  .cart-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .cart-confirm-actions button {
+    width: 100%;
+  }
+}
+

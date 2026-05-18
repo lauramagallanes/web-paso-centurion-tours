@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart, CartItem } from '../../contexts/CartContext';
 import Button from './Button';
@@ -110,7 +110,30 @@ const ShoppingCart: React.FC = () => {
   const navigate = useNavigate();
   const { state, removeItem, clearCart, closeCart } = useCart();
 
+  // Pieza del item a confirmar para eliminar; null si no hay confirmación abierta.
+  const [pendingRemove, setPendingRemove] = useState<CartItem | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+
   if (!state.isOpen) return null;
+
+  const handleRequestRemove = (cartItemId: string) => {
+    const item = state.items.find(i => i.cartItemId === cartItemId);
+    if (item) setPendingRemove(item);
+  };
+
+  const handleConfirmRemove = () => {
+    if (pendingRemove) {
+      void removeItem(pendingRemove.cartItemId);
+      setPendingRemove(null);
+    }
+  };
+
+  const handleConfirmClear = () => {
+    void clearCart();
+    setConfirmClear(false);
+  };
+
+  const hasAlojamiento = state.items.some(i => i.type === 'alojamiento');
 
   return (
     <>
@@ -119,7 +142,7 @@ const ShoppingCart: React.FC = () => {
       <div className="shopping-cart">
         <div className="cart-header">
           <h3 className="cart-title">
-            🛒 Mi Carrito
+            <i className="bi bi-cart3" aria-hidden="true"></i> Mi Carrito
             {state.itemCount > 0 && (
               <span className="cart-count">({state.itemCount})</span>
             )}
@@ -146,7 +169,7 @@ const ShoppingCart: React.FC = () => {
             <>
               <div className="cart-items">
                 {state.items.map(item => (
-                  <CartItemCard key={item.cartItemId} item={item} onRemove={removeItem} />
+                  <CartItemCard key={item.cartItemId} item={item} onRemove={handleRequestRemove} />
                 ))}
               </div>
 
@@ -157,7 +180,12 @@ const ShoppingCart: React.FC = () => {
                 </div>
 
                 <div className="cart-actions">
-                  <Button variant="ghost" size="sm" onClick={clearCart} className="clear-cart">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setConfirmClear(true)}
+                    className="clear-cart"
+                  >
                     Vaciar carrito
                   </Button>
                   <Button
@@ -178,6 +206,76 @@ const ShoppingCart: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Confirmación: eliminar un ítem */}
+      {pendingRemove && (
+        <div
+          className="cart-confirm-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cart-confirm-remove-title"
+          onClick={() => setPendingRemove(null)}
+        >
+          <div className="cart-confirm-modal" onClick={e => e.stopPropagation()}>
+            <h3 id="cart-confirm-remove-title" className="cart-confirm-title">
+              ¿Eliminar este ítem del carrito?
+            </h3>
+            <p className="cart-confirm-text">
+              <strong>{pendingRemove.name}</strong>
+              {pendingRemove.type === 'alojamiento' ? (
+                <>
+                  {' '}— Si lo quitas, se liberarán las fechas reservadas temporalmente y otras
+                  personas podrán reservarlas.
+                </>
+              ) : (
+                <> — Quitarás esta actividad de tu reserva.</>
+              )}
+            </p>
+            <div className="cart-confirm-actions">
+              <Button variant="ghost" size="md" onClick={() => setPendingRemove(null)}>
+                Cancelar
+              </Button>
+              <Button variant="primary" size="md" onClick={handleConfirmRemove}>
+                Sí, eliminar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmación: vaciar todo el carrito */}
+      {confirmClear && (
+        <div
+          className="cart-confirm-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cart-confirm-clear-title"
+          onClick={() => setConfirmClear(false)}
+        >
+          <div className="cart-confirm-modal" onClick={e => e.stopPropagation()}>
+            <h3 id="cart-confirm-clear-title" className="cart-confirm-title">
+              ¿Vaciar el carrito?
+            </h3>
+            <p className="cart-confirm-text">
+              Vas a quitar todos los ítems del carrito.
+              {hasAlojamiento && (
+                <>
+                  {' '}Las fechas de los alojamientos reservados temporalmente se liberarán para
+                  que otras personas puedan reservarlas.
+                </>
+              )}
+            </p>
+            <div className="cart-confirm-actions">
+              <Button variant="ghost" size="md" onClick={() => setConfirmClear(false)}>
+                Cancelar
+              </Button>
+              <Button variant="primary" size="md" onClick={handleConfirmClear}>
+                Sí, vaciar carrito
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

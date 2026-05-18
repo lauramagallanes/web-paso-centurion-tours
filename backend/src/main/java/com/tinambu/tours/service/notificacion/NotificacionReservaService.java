@@ -1,6 +1,8 @@
 package com.tinambu.tours.service.notificacion;
 
 import com.tinambu.tours.entity.reserva.AlojamientoReserva;
+import com.tinambu.tours.entity.reserva.EstadoPago;
+import com.tinambu.tours.entity.reserva.EstadoReserva;
 import com.tinambu.tours.entity.reserva.SenderoReserva;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,12 +24,18 @@ import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Envía notificaciones al equipo (reservas@) cuando se crea una reserva.
+ * Notificaciones por mail al crear una reserva:
  *
- * <p>Escucha eventos publicados desde {@code ReservaService} y dispara el envío
- * <strong>después del commit</strong> de la transacción. Si SES no está disponible
- * (entornos locales sin AWS) o si el envío falla, se hace logging y se sigue:
- * nunca rompemos el flujo de reserva por un mail.
+ * <ul>
+ *   <li>Al equipo (env {@code RESERVAS_NOTIF_EMAIL}, por defecto reservas@…) con los datos
+ *       internos para operaciones (estado, método de pago, contacto, etc.).</li>
+ *   <li>Al propio cliente que reservó (su {@code emailContacto}) con un resumen amigable
+ *       y los próximos pasos según el método de pago.</li>
+ * </ul>
+ *
+ * <p>Se ejecuta con {@code @TransactionalEventListener(AFTER_COMMIT)}: si la transacción
+ * de creación de la reserva hace rollback, no se envía nada. Cualquier fallo de SES se
+ * loguea y nunca se propaga, así un mail caído no rompe el flujo de reserva.
  */
 @Service
 public class NotificacionReservaService {
@@ -49,42 +57,81 @@ public class NotificacionReservaService {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onNuevaReservaSendero(NuevaReservaEvents.Sendero event) {
+        SenderoReserva r = event.getReserva();
+        String senderoNombre = event.getSenderoNombre();
+
+        // 1) Mail al equipo
         try {
-            SenderoReserva r = event.getReserva();
             String subject = "Nueva reserva de sendero - " + safe(r.getNombreContacto())
                     + " (" + safe(r.getCodigoReserva()) + ")";
-            String body = buildSenderoBody(r, event.getSenderoNombre());
-            enviarMail(subject, body, r.getEmailContacto());
+            enviarMail(reservasEmail, subject, buildSenderoStaffBody(r, senderoNombre), r.getEmailContacto());
         } catch (Exception e) {
-            log.error("[NOTIF-RESERVA] Error preparando notificación de sendero: {}", e.getMessage(), e);
+            log.error("[NOTIF-RESERVA] Error enviando mail al equipo (sendero {}): {}",
+                    r.getCodigoReserva(), e.getMessage(), e);
+        }
+
+        // 2) Mail al cliente
+        try {
+            if (esEmailValido(r.getEmailContacto())) {
+                String subject = "Confirmación de tu reserva en Tinambú · " + safe(senderoNombre);
+                enviarMail(r.getEmailContacto(), subject, buildSenderoClienteBody(r, senderoNombre), reservasEmail);
+            } else {
+                log.warn("[NOTIF-RESERVA] Email del cliente vacío para sendero {}; no se envía confirmación",
+                        r.getCodigoReserva());
+            }
+        } catch (Exception e) {
+            log.error("[NOTIF-RESERVA] Error enviando mail al cliente (sendero {}): {}",
+                    r.getCodigoReserva(), e.getMessage(), e);
         }
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onNuevaReservaAlojamiento(NuevaReservaEvents.Alojamiento event) {
+        AlojamientoReserva r = event.getReserva();
+        String alojamientoNombre = event.getAlojamientoNombre();
+
+        // 1) Mail al equipo
         try {
-            AlojamientoReserva r = event.getReserva();
             String subject = "Nueva reserva de alojamiento - " + safe(r.getNombreContacto())
                     + " (" + safe(r.getCodigoReserva()) + ")";
-            String body = buildAlojamientoBody(r, event.getAlojamientoNombre());
-            enviarMail(subject, body, r.getEmailContacto());
+            enviarMail(reservasEmail, subject, buildAlojamientoStaffBody(r, alojamientoNombre), r.getEmailContacto());
         } catch (Exception e) {
-            log.error("[NOTIF-RESERVA] Error preparando notificación de alojamiento: {}", e.getMessage(), e);
+            log.error("[NOTIF-RESERVA] Error enviando mail al equipo (alojamiento {}): {}",
+                    r.getCodigoReserva(), e.getMessage(), e);
+        }
+
+        // 2) Mail al cliente
+        try {
+            if (esEmailValido(r.getEmailContacto())) {
+                String subject = "Confirmación de tu reserva en Tinambú · " + safe(alojamientoNombre);
+                enviarMail(r.getEmailContacto(), subject,
+                        buildAlojamientoClienteBody(r, alojamientoNombre), reservasEmail);
+            } else {
+                log.warn("[NOTIF-RESERVA] Email del cliente vacío para alojamiento {}; no se envía confirmación",
+                        r.getCodigoReserva());
+            }
+        } catch (Exception e) {
+            log.error("[NOTIF-RESERVA] Error enviando mail al cliente (alojamiento {}): {}",
+                    r.getCodigoReserva(), e.getMessage(), e);
         }
     }
 
     // ==================== ENVÍO ====================
 
-    private void enviarMail(String subject, String body, String replyTo) {
+    /**
+     * Envía un mail vía SES. Cualquier fallo se loguea y se traga; el caller no debe romperse
+     * por un problema de mail.
+     */
+    private void enviarMail(String toEmail, String subject, String body, String replyTo) {
         if (sesClient == null) {
-            log.warn("[NOTIF-RESERVA] SES no disponible. Notificación NO enviada. Subject: {}\n{}", subject, body);
+            log.warn("[NOTIF-RESERVA] SES no disponible. Mail NO enviado a {} - {}", toEmail, subject);
             return;
         }
 
         try {
             SendEmailRequest.Builder req = SendEmailRequest.builder()
                     .source(sesFromEmail)
-                    .destination(Destination.builder().toAddresses(reservasEmail).build())
+                    .destination(Destination.builder().toAddresses(toEmail).build())
                     .message(Message.builder()
                             .subject(Content.builder().data(subject).charset("UTF-8").build())
                             .body(Body.builder()
@@ -98,19 +145,19 @@ public class NotificacionReservaService {
 
             SendEmailResponse response = sesClient.sendEmail(req.build());
             log.info("[NOTIF-RESERVA] Email enviado a {} (msgId={}) - {}",
-                    reservasEmail, response.messageId(), subject);
+                    toEmail, response.messageId(), subject);
         } catch (MessageRejectedException e) {
-            log.warn("[NOTIF-RESERVA] SES rechazó el envío (¿identidad no verificada?): {} - subject={}",
-                    e.getMessage(), subject);
+            log.warn("[NOTIF-RESERVA] SES rechazó el envío a {}: {} (subject={})",
+                    toEmail, e.getMessage(), subject);
         } catch (Exception e) {
-            log.error("[NOTIF-RESERVA] Error inesperado enviando notificación a {}: {}",
-                    reservasEmail, e.getMessage(), e);
+            log.error("[NOTIF-RESERVA] Error inesperado enviando mail a {}: {}",
+                    toEmail, e.getMessage(), e);
         }
     }
 
-    // ==================== PLANTILLAS ====================
+    // ==================== PLANTILLAS — STAFF ====================
 
-    private String buildSenderoBody(SenderoReserva r, String senderoNombre) {
+    private String buildSenderoStaffBody(SenderoReserva r, String senderoNombre) {
         StringBuilder b = new StringBuilder();
         b.append("Nueva reserva registrada en el sitio web.\n\n");
         b.append("========================================\n");
@@ -153,7 +200,7 @@ public class NotificacionReservaService {
         return b.toString();
     }
 
-    private String buildAlojamientoBody(AlojamientoReserva r, String alojamientoNombre) {
+    private String buildAlojamientoStaffBody(AlojamientoReserva r, String alojamientoNombre) {
         StringBuilder b = new StringBuilder();
         b.append("Nueva reserva registrada en el sitio web.\n\n");
         b.append("========================================\n");
@@ -200,6 +247,135 @@ public class NotificacionReservaService {
         b.append("\n========================================\n");
         b.append("Notificación automática del sistema de reservas.\n");
         return b.toString();
+    }
+
+    // ==================== PLANTILLAS — CLIENTE ====================
+
+    private String buildSenderoClienteBody(SenderoReserva r, String senderoNombre) {
+        StringBuilder b = new StringBuilder();
+        b.append("Hola ").append(primerNombre(r.getNombreContacto())).append(",\n\n");
+        b.append("¡Gracias por elegir Tinambú - Paso Centurión Tours!\n");
+        b.append("Recibimos tu reserva del sendero ").append(safe(senderoNombre)).append(".\n\n");
+
+        b.append("----------------------------------------\n");
+        b.append("DETALLES DE TU RESERVA\n");
+        b.append("----------------------------------------\n");
+        b.append("Código:        ").append(safe(r.getCodigoReserva())).append("\n");
+        b.append("Sendero:       ").append(safe(senderoNombre)).append("\n");
+        if (r.getFechaInicio() != null) {
+            b.append("Fecha:         ").append(r.getFechaInicio().format(FMT_FECHA)).append("\n");
+        }
+        if (r.getTurno() != null) {
+            b.append("Turno:         ").append(r.getTurno()).append("\n");
+        }
+        b.append("Personas:      ").append(r.getNumeroPersonas()).append("\n");
+        b.append("Total:         ").append(formatPrecio(r.getPrecioTotal())).append(" UYU\n");
+        b.append("Estado:        ").append(estadoAmigable(r.getEstado())).append("\n\n");
+
+        b.append(mensajeSegunPago(r.getEstado(), r.getEstadoPago(), r.getMetodoPago()));
+
+        b.append("\n----------------------------------------\n");
+        b.append("ANTES DE TU EXPERIENCIA\n");
+        b.append("----------------------------------------\n");
+        b.append("• Te recomendamos llegar con 15 minutos de anticipación.\n");
+        b.append("• Llevá calzado cómodo, protector solar y agua.\n");
+        b.append("• Si necesitas reagendar o tienes alguna duda, contáctanos respondiendo a este correo.\n\n");
+
+        b.append("¡Te esperamos!\n");
+        b.append("Equipo Tinambú - Paso Centurión Tours\n");
+        b.append("https://pasocenturion.com.uy\n");
+        return b.toString();
+    }
+
+    private String buildAlojamientoClienteBody(AlojamientoReserva r, String alojamientoNombre) {
+        StringBuilder b = new StringBuilder();
+        b.append("Hola ").append(primerNombre(r.getNombreContacto())).append(",\n\n");
+        b.append("¡Gracias por elegir Tinambú - Paso Centurión Tours!\n");
+        b.append("Recibimos tu reserva del alojamiento ").append(safe(alojamientoNombre)).append(".\n\n");
+
+        b.append("----------------------------------------\n");
+        b.append("DETALLES DE TU RESERVA\n");
+        b.append("----------------------------------------\n");
+        b.append("Código:        ").append(safe(r.getCodigoReserva())).append("\n");
+        b.append("Alojamiento:   ").append(safe(alojamientoNombre)).append("\n");
+        if (r.getFechaCheckIn() != null) {
+            b.append("Check-in:      ").append(r.getFechaCheckIn().format(FMT_FECHA)).append(" (a partir de las 15:00 h)\n");
+        }
+        if (r.getFechaCheckOut() != null) {
+            b.append("Check-out:     ").append(r.getFechaCheckOut().format(FMT_FECHA)).append(" (hasta las 12:00 h)\n");
+        }
+        if (r.getNumeroNoches() != null) {
+            b.append("Noches:        ").append(r.getNumeroNoches()).append("\n");
+        }
+        b.append("Huéspedes:     ").append(r.getNumeroHuespedes()).append("\n");
+        b.append("Total:         ").append(formatPrecio(r.getPrecioTotal())).append(" UYU\n");
+        b.append("Estado:        ").append(estadoAmigable(r.getEstado())).append("\n\n");
+
+        b.append(mensajeSegunPago(r.getEstado(), r.getEstadoPago(), r.getMetodoPago()));
+
+        b.append("\n----------------------------------------\n");
+        b.append("INFORMACIÓN ÚTIL\n");
+        b.append("----------------------------------------\n");
+        b.append("• El alojamiento incluye baño privado, agua caliente, frigobar, TV y WiFi.\n");
+        b.append("• Tienes acceso a las áreas comunes y al comedero de aves.\n");
+        b.append("• Estamos sobre la Ruta 7, dentro del Área Protegida Paso Centurión y Sierra de Ríos,\n");
+        b.append("  a 3 km del Río Yaguarón.\n");
+        b.append("• Si necesitas reagendar o tienes alguna duda, contáctanos respondiendo a este correo.\n\n");
+
+        b.append("¡Te esperamos!\n");
+        b.append("Equipo Tinambú - Paso Centurión Tours\n");
+        b.append("https://pasocenturion.com.uy\n");
+        return b.toString();
+    }
+
+    private String mensajeSegunPago(EstadoReserva estado, EstadoPago estadoPago, String metodoPago) {
+        if (estado == EstadoReserva.CANCELADA) {
+            return "Tu reserva figura como CANCELADA. Si esto no es lo esperado, por favor"
+                    + " contáctanos respondiendo a este correo.\n";
+        }
+        String metodo = metodoPago == null ? "" : metodoPago.toUpperCase();
+
+        if ("PREX".equals(metodo)) {
+            return "Tu reserva quedó registrada como PENDIENTE de pago. Para confirmarla,\n"
+                    + "te pedimos realizar la transferencia mediante Prex dentro de las próximas 12 horas.\n"
+                    + "Si no recibimos el pago en ese plazo, la reserva se cancela automáticamente.\n"
+                    + "Puedes consultar los datos de transferencia desde \"Mis Reservas\" en el sitio.\n";
+        }
+        if ("EFECTIVO".equals(metodo) || "PAGO_EFECTIVO".equals(metodo)) {
+            return "Reservaste con pago en efectivo al momento de la experiencia.\n"
+                    + "Coordinamos contigo el saldo antes de tu visita.\n";
+        }
+        if (estadoPago == EstadoPago.COMPLETO || estado == EstadoReserva.CONFIRMADA) {
+            return "Tu reserva quedó CONFIRMADA. Ya está todo listo, te esperamos.\n";
+        }
+        return "Tu reserva quedó registrada. En breve te contactamos por cualquier detalle pendiente.\n"
+                + "Puedes ver el estado y los próximos pasos desde \"Mis Reservas\" en el sitio.\n";
+    }
+
+    // ==================== HELPERS ====================
+
+    private static String estadoAmigable(EstadoReserva estado) {
+        if (estado == null) return "-";
+        switch (estado) {
+            case PENDIENTE:  return "Pendiente";
+            case CONFIRMADA: return "Confirmada";
+            case CANCELADA:  return "Cancelada";
+            case COMPLETADA: return "Completada";
+            default:         return estado.name();
+        }
+    }
+
+    private static String primerNombre(String nombreCompleto) {
+        if (nombreCompleto == null || nombreCompleto.isBlank()) return "";
+        String trimmed = nombreCompleto.trim();
+        int sp = trimmed.indexOf(' ');
+        return sp > 0 ? trimmed.substring(0, sp) : trimmed;
+    }
+
+    private static boolean esEmailValido(String email) {
+        if (email == null) return false;
+        String trimmed = email.trim();
+        return !trimmed.isEmpty() && trimmed.contains("@") && trimmed.contains(".");
     }
 
     private static String safe(String s) {

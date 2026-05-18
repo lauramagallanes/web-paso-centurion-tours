@@ -197,10 +197,24 @@ const Checkout: React.FC = () => {
     }
   }, [prexAvailable, metodoPago]);
 
-  // Al cambiar de paso, llevamos al usuario al inicio de la nueva vista
-  // (especialmente importante en mobile, donde la pantalla de Prex es larga).
+  // Al cambiar de paso, llevamos al usuario al inicio de la nueva vista.
+  // Usamos scroll instantáneo + doble rAF para esperar a que el nuevo paso
+  // (ej.: la pantalla "Transferencia pendiente" de Prex) termine de renderizar
+  // antes de fijar el scroll. Con `smooth` la animación competía con el cambio
+  // de layout y a veces el usuario quedaba sobre el footer.
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
+    const raf1 = requestAnimationFrame(() => {
+      const raf2 = requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+      });
+      (window as unknown as { __checkoutRaf2?: number }).__checkoutRaf2 = raf2;
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      const raf2 = (window as unknown as { __checkoutRaf2?: number }).__checkoutRaf2;
+      if (typeof raf2 === 'number') cancelAnimationFrame(raf2);
+    };
   }, [step]);
 
   const handleEditItem = (item: CartItem) => {

@@ -16,9 +16,11 @@ import com.tinambu.tours.entity.sendero.SenderoDisponibilidad;
 import com.tinambu.tours.entity.sendero.TurnoSendero;
 import com.tinambu.tours.exception.SinDisponibilidadException;
 import com.tinambu.tours.repository.*;
+import com.tinambu.tours.service.notificacion.NuevaReservaEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,6 +84,9 @@ public class ReservaService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     public ReservaResponse crearReservaSendero(ReservaRequest request) {
         log.info("Creating sendero reservation for: {}", request.getEmailContacto());
@@ -300,6 +305,14 @@ public class ReservaService {
 
         bloquearGuiaParaReserva(guia.getId(), reserva.getId(),
                 request.getFechaInicio(), request.getTurno(), sendero.getNombre());
+
+        // Notificación al equipo (se dispara recién after-commit; ver NotificacionReservaService).
+        try {
+            eventPublisher.publishEvent(new NuevaReservaEvents.Sendero(reserva, sendero.getNombre()));
+        } catch (Exception e) {
+            log.warn("[NOTIF-RESERVA] No se pudo publicar evento de reserva sendero {}: {}",
+                    reserva.getCodigoReserva(), e.getMessage());
+        }
 
         return convertirSenderoReservaAResponse(reserva);
     }
@@ -594,6 +607,13 @@ public class ReservaService {
         alojamientoService.bloquearAlojamientoParaReserva(
                 request.getAlojamientoId(), reserva.getId(),
                 request.getFechaCheckIn(), request.getFechaCheckOut());
+
+        try {
+            eventPublisher.publishEvent(new NuevaReservaEvents.Alojamiento(reserva, alojamiento.getNombre()));
+        } catch (Exception e) {
+            log.warn("[NOTIF-RESERVA] No se pudo publicar evento de reserva alojamiento (admin) {}: {}",
+                    reserva.getCodigoReserva(), e.getMessage());
+        }
 
         return convertirAlojamientoReservaAResponse(reserva, alojamiento);
     }
@@ -894,6 +914,13 @@ public class ReservaService {
             alojamientoService.liberarBloqueoCarrito(
                     usuarioCarritoOpt, request.getAlojamientoId(),
                     request.getFechaCheckIn(), request.getFechaCheckOut());
+        }
+
+        try {
+            eventPublisher.publishEvent(new NuevaReservaEvents.Alojamiento(reserva, alojamiento.getNombre()));
+        } catch (Exception e) {
+            log.warn("[NOTIF-RESERVA] No se pudo publicar evento de reserva alojamiento {}: {}",
+                    reserva.getCodigoReserva(), e.getMessage());
         }
 
         return convertirAlojamientoReservaAResponse(reserva, alojamiento);

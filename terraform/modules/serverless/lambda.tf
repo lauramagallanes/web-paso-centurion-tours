@@ -132,6 +132,10 @@ resource "aws_lambda_function" "backend_api" {
       P2P_INTEGRATION_MODE = var.enable_advanced_payment_integration ? "advanced" : "simple"
       SSM_P2P_LOGIN        = "/${var.environment}/payment/placetopay/login"
       SSM_P2P_SECRET_KEY   = "/${var.environment}/payment/placetopay/secret_key"
+      # Email notifications (SES)
+      SES_FROM_EMAIL       = "noreply@pasocenturion.com.uy"
+      CONTACT_EMAIL        = "consultas@pasocenturion.com.uy"
+      RESERVAS_NOTIF_EMAIL = "reservas@pasocenturion.com.uy"
     }
   }
 

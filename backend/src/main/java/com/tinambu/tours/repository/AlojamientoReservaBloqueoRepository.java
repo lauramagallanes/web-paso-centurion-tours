@@ -60,7 +60,7 @@ public interface AlojamientoReservaBloqueoRepository extends JpaRepository<Aloja
     @Query("UPDATE AlojamientoReservaBloqueo arb SET arb.activo = false WHERE arb.reservaId = :reservaId")
     void desactivarBloqueosPorReserva(@Param("reservaId") UUID reservaId);
 
-    @Query("SELECT arb.fecha FROM AlojamientoReservaBloqueo arb WHERE arb.alojamientoId = :alojamientoId " +
+    @Query("SELECT DISTINCT arb.fecha FROM AlojamientoReservaBloqueo arb WHERE arb.alojamientoId = :alojamientoId " +
            "AND arb.fecha >= :fechaInicio AND arb.fecha <= :fechaFin AND " + BLOQUEO_VIGENTE +
            "ORDER BY arb.fecha")
     List<LocalDate> findFechasBloqueadasEnRango(@Param("alojamientoId") UUID alojamientoId,
@@ -68,7 +68,7 @@ public interface AlojamientoReservaBloqueoRepository extends JpaRepository<Aloja
                                                @Param("fechaFin") LocalDate fechaFin,
                                                @Param("ahora") LocalDateTime ahora);
 
-    @Query("SELECT arb.fecha FROM AlojamientoReservaBloqueo arb WHERE arb.alojamientoId = :alojamientoId " +
+    @Query("SELECT DISTINCT arb.fecha FROM AlojamientoReservaBloqueo arb WHERE arb.alojamientoId = :alojamientoId " +
            "AND arb.fecha >= :fechaInicio AND arb.fecha <= :fechaFin AND " + BLOQUEO_VIGENTE +
            "AND (arb.carritoUsuarioId IS NULL OR arb.carritoUsuarioId <> :excluirCarritoUsuario) " +
            "ORDER BY arb.fecha")

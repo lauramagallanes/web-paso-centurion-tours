@@ -173,6 +173,7 @@ public class AlojamientoService {
 
     // Availability Methods
 
+    @Transactional(readOnly = true)
     public List<AlojamientoDisponibilidadResponse> listarDisponibilidades(UUID alojamientoId) {
         return disponibilidadRepository.findByAlojamientoIdOrdenadoPorFecha(alojamientoId)
                 .stream()

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { es } from 'date-fns/locale';
@@ -64,7 +64,8 @@ const RoomDetails: React.FC = () => {
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [guestsCount, setGuestsCount] = useState(2);
-  const [blockedDates, setBlockedDates] = useState<Date[]>([]);
+  // Stored as a Set of "YYYY-MM-DD" strings for O(1) lookups in filterDate.
+  const [blockedDateKeys, setBlockedDateKeys] = useState<Set<string>>(() => new Set());
   const [availabilityPeriods, setAvailabilityPeriods] = useState<{fechaInicio: string; fechaFin: string}[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAddedModal, setShowAddedModal] = useState(false);
@@ -218,23 +219,20 @@ const RoomDetails: React.FC = () => {
     loadRoomDetails();
   }, [id]);
 
-  // Load blocked dates and availability periods
+  // Load blocked dates and availability periods (range reduced to 1 year — booking 18 months
+  // ahead is unrealistic and made the payload + per-day filter work noticeably slower).
   useEffect(() => {
     const loadAvailabilityData = async () => {
       if (!id) return;
       try {
         const desde = new Date().toISOString().split('T')[0];
-        const hasta = new Date(Date.now() + 540 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const hasta = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         const [blockedResult, periodsResult] = await Promise.all([
           apiService.getFechasBloqueadas(id, desde, hasta).catch(() => []),
           apiService.getAlojamientoDisponibilidades(id).catch(() => []),
         ]);
         if (Array.isArray(blockedResult)) {
-          const dates = blockedResult.map((dateStr: string) => {
-            const [year, month, day] = dateStr.split('-').map(Number);
-            return new Date(year, month - 1, day);
-          });
-          setBlockedDates(dates);
+          setBlockedDateKeys(new Set<string>(blockedResult as string[]));
         }
         if (Array.isArray(periodsResult)) {
           setAvailabilityPeriods(periodsResult.map((p: any) => ({
@@ -249,26 +247,64 @@ const RoomDetails: React.FC = () => {
     loadAvailabilityData();
   }, [id]);
 
-  // Returns true only for dates within a configured availability period and not blocked
-  const isDateAvailable = (date: Date): boolean => {
-    // If no periods configured, no date is available
-    if (availabilityPeriods.length === 0) return false;
+  // Precompute parsed period timestamps once per change so filterDate stays O(periods).
+  const parsedAvailabilityPeriods = useMemo(
+    () =>
+      availabilityPeriods.map((period) => ({
+        startMs: new Date(period.fechaInicio + 'T00:00:00').getTime(),
+        endMs: new Date(period.fechaFin + 'T23:59:59').getTime(),
+      })),
+    [availabilityPeriods]
+  );
 
-    const isInPeriod = availabilityPeriods.some(period => {
-      const start = new Date(period.fechaInicio + 'T00:00:00');
-      const end = new Date(period.fechaFin + 'T23:59:59');
-      return date >= start && date <= end;
-    });
-    if (!isInPeriod) return false;
+  // Local "YYYY-MM-DD" key — matches the format returned by the backend so we can do Set lookups.
+  const toDateKey = useCallback((d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }, []);
 
-    // Check it's not a blocked date
-    const isBlocked = blockedDates.some(blocked =>
-      blocked.getFullYear() === date.getFullYear() &&
-      blocked.getMonth() === date.getMonth() &&
-      blocked.getDate() === date.getDate()
-    );
-    return !isBlocked;
-  };
+  const isWithinAvailabilityPeriod = useCallback(
+    (date: Date): boolean => {
+      if (parsedAvailabilityPeriods.length === 0) return false;
+      const ts = date.getTime();
+      for (let i = 0; i < parsedAvailabilityPeriods.length; i++) {
+        const p = parsedAvailabilityPeriods[i];
+        if (ts >= p.startMs && ts <= p.endMs) return true;
+      }
+      return false;
+    },
+    [parsedAvailabilityPeriods]
+  );
+
+  // Check-in filter: date must be inside an availability period and not in the blocked Set.
+  const isDateAvailable = useCallback(
+    (date: Date): boolean => {
+      if (!isWithinAvailabilityPeriod(date)) return false;
+      return !blockedDateKeys.has(toDateKey(date));
+    },
+    [isWithinAvailabilityPeriod, blockedDateKeys, toDateKey]
+  );
+
+  // Check-out filter: every night between check-in (inclusive) and selected date (exclusive)
+  // must be free. Uses the Set so each night lookup is O(1).
+  const isCheckoutDateAvailable = useCallback(
+    (date: Date): boolean => {
+      if (!isWithinAvailabilityPeriod(date)) return false;
+      if (!checkInDate) return true;
+      const cursor = new Date(checkInDate);
+      cursor.setHours(0, 0, 0, 0);
+      const checkoutMidnight = new Date(date);
+      checkoutMidnight.setHours(0, 0, 0, 0);
+      while (cursor < checkoutMidnight) {
+        if (blockedDateKeys.has(toDateKey(cursor))) return false;
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      return true;
+    },
+    [isWithinAvailabilityPeriod, blockedDateKeys, toDateKey, checkInDate]
+  );
 
   // Check availability whenever dates change
   useEffect(() => {
@@ -607,35 +643,7 @@ const RoomDetails: React.FC = () => {
                 <DatePicker
                   selected={checkOutDate}
                   onChange={(date: Date | null) => setCheckOutDate(date)}
-                  filterDate={(date: Date) => {
-                    // Check-out date must lie inside an availability period.
-                    if (availabilityPeriods.length === 0) return false;
-                    const inPeriod = availabilityPeriods.some(period => {
-                      const start = new Date(period.fechaInicio + 'T00:00:00');
-                      const end = new Date(period.fechaFin + 'T23:59:59');
-                      return date >= start && date <= end;
-                    });
-                    if (!inPeriod) return false;
-
-                    // Check-out itself is the leaving day (no overnight), so it
-                    // can sit on a blocked date. But all nights between check-in
-                    // (inclusive) and check-out (exclusive) must be free.
-                    if (!checkInDate) return true;
-                    const cursor = new Date(checkInDate);
-                    cursor.setHours(0, 0, 0, 0);
-                    const checkoutMidnight = new Date(date);
-                    checkoutMidnight.setHours(0, 0, 0, 0);
-                    while (cursor < checkoutMidnight) {
-                      const isBlocked = blockedDates.some(b =>
-                        b.getFullYear() === cursor.getFullYear() &&
-                        b.getMonth() === cursor.getMonth() &&
-                        b.getDate() === cursor.getDate()
-                      );
-                      if (isBlocked) return false;
-                      cursor.setDate(cursor.getDate() + 1);
-                    }
-                    return true;
-                  }}
+                  filterDate={isCheckoutDateAvailable}
                   minDate={checkInDate ? new Date(checkInDate.getTime() + 86400000) : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)}
                   dateFormat="EEE dd/MM/yyyy"
                   locale="es"

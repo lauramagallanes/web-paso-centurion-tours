@@ -116,6 +116,7 @@ public class PlacetoPayService {
                 montoACobrar,
                 reserva.getEmailContacto(),
                 reserva.getNombreContacto(),
+                reserva.getTelefonoContacto(),
                 ipAddress,
                 userAgent,
                 reservaId.toString(),
@@ -211,6 +212,7 @@ public class PlacetoPayService {
                 montoACobrar,
                 reserva.getEmailContacto(),
                 reserva.getNombreContacto(),
+                reserva.getTelefonoContacto(),
                 ipAddress,
                 userAgent,
                 reservaId.toString(),
@@ -294,6 +296,7 @@ public class PlacetoPayService {
                 montoACobrar,
                 orden.getEmailContacto(),
                 orden.getNombreContacto(),
+                orden.getTelefonoContacto(),
                 ipAddress,
                 userAgent,
                 ordenId.toString(),
@@ -600,7 +603,7 @@ public class PlacetoPayService {
 
     private Map<String, Object> buildSessionRequest(String reference, String description,
                                                       BigDecimal total, String email, String name,
-                                                      String ipAddress, String userAgent,
+                                                      String phone, String ipAddress, String userAgent,
                                                       String reservaId, String tipoReserva) {
         Map<String, Object> request = new HashMap<>();
 
@@ -619,15 +622,11 @@ public class PlacetoPayService {
 
         request.put("payment", payment);
 
-        // Buyer info
-        Map<String, Object> buyer = new HashMap<>();
-        buyer.put("email", email);
-        String[] nameParts = name.split(" ", 2);
-        buyer.put("name", nameParts[0]);
-        if (nameParts.length > 1) {
-            buyer.put("surname", nameParts[1]);
-        }
-        request.put("buyer", buyer);
+        // Buyer / payer info. PlacetoPay's risk engine (FraudGuard) scores transactions with
+        // incomplete person data as higher risk, so we send as much as we have (name, surname,
+        // email and mobile) in both the buyer and payer objects.
+        request.put("buyer", buildPersona(email, name, phone));
+        request.put("payer", buildPersona(email, name, phone));
 
         // Expiration (2 hours from now)
         LocalDateTime expiration = LocalDateTime.now().plusHours(2);
@@ -660,6 +659,29 @@ public class PlacetoPayService {
         request.put("skipResult", false);
 
         return request;
+    }
+
+    /**
+     * Builds a PlacetoPay person object (used for both buyer and payer) from the contact data
+     * we have on the reservation/order. Splits the full name into name + surname and includes
+     * the mobile when available, which helps reduce FraudGuard false positives.
+     */
+    private Map<String, Object> buildPersona(String email, String name, String phone) {
+        Map<String, Object> persona = new HashMap<>();
+        if (email != null && !email.isBlank()) {
+            persona.put("email", email.trim());
+        }
+        if (name != null && !name.isBlank()) {
+            String[] nameParts = name.trim().split(" ", 2);
+            persona.put("name", nameParts[0]);
+            if (nameParts.length > 1 && !nameParts[1].isBlank()) {
+                persona.put("surname", nameParts[1].trim());
+            }
+        }
+        if (phone != null && !phone.isBlank()) {
+            persona.put("mobile", phone.trim());
+        }
+        return persona;
     }
 
     private Map<String, Object> generarAuth() {

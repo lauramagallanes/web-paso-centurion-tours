@@ -23,6 +23,9 @@ public class PlacetoPayConfig {
     @Value("${placetopay.cancel-url:http://localhost:5173/pago/cancelado}")
     private String cancelUrl;
 
+    @Value("${placetopay.notification-url:}")
+    private String notificationUrl;
+
     @Value("${placetopay.currency:UYU}")
     private String currency;
 
@@ -36,6 +39,7 @@ public class PlacetoPayConfig {
     public String getBaseUrl() { return baseUrl; }
     public String getReturnUrl() { return returnUrl; }
     public String getCancelUrl() { return cancelUrl; }
+    public String getNotificationUrl() { return notificationUrl; }
     public String getCurrency() { return currency; }
 
     public boolean isConfigured() {

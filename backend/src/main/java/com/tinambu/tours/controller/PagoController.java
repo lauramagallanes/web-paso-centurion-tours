@@ -130,16 +130,23 @@ public class PagoController {
         }
     }
 
+    /**
+     * Notificación asíncrona (webhook) de PlacetoPay.
+     *
+     * Endpoint público (sin JWT) que PlacetoPay invoca cuando una sesión llega a un estado final.
+     * La firma del mensaje se valida dentro del servicio, por lo que no requiere autenticación propia.
+     * PlacetoPay no reintenta la notificación, así que respondemos siempre HTTP 2xx para reconocer
+     * la recepción; el detalle del procesamiento se refleja en el cuerpo y en los logs.
+     */
     @PostMapping("/webhook")
     public ResponseEntity<?> webhookPlacetoPay(@RequestBody Map<String, Object> payload) {
         try {
             log.info("POST /pagos/webhook - PlacetoPay notification received: {}", payload);
-            // Future: Process PlacetoPay webhook notifications
-            // For now, return OK to acknowledge
-            return ResponseEntity.ok(Map.of("status", "received"));
+            Map<String, Object> resultado = placetoPayService.procesarNotificacion(payload);
+            return ResponseEntity.ok(resultado);
         } catch (Exception e) {
             log.error("Error processing webhook", e);
-            return ResponseEntity.ok(Map.of("status", "error", "message", e.getMessage()));
+            return ResponseEntity.ok(Map.of("processed", false, "message", e.getMessage()));
         }
     }
 

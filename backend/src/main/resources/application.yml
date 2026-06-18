@@ -104,4 +104,5 @@ placetopay:
   base-url: ${P2P_BASE_URL:https://checkout-test.placetopay.com}
   return-url: ${P2P_RETURN_URL:http://localhost:5173/pago/resultado}
   cancel-url: ${P2P_CANCEL_URL:http://localhost:5173/pago/cancelado}
+  notification-url: ${P2P_NOTIFICATION_URL:}
   currency: ${P2P_CURRENCY:UYU}

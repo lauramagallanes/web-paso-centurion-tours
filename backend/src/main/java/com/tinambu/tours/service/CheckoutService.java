@@ -107,6 +107,11 @@ public class CheckoutService {
             }
         }
 
+        // Cancelar también la sesión en PlacetoPay (best-effort) para no dejar sesiones colgadas.
+        if (orden.getPlacetoPayRequestId() != null) {
+            placetoPayService.cancelarSesionPlacetoPay(orden.getPlacetoPayRequestId());
+        }
+
         orden.marcarCancelada();
         ordenCompraRepository.save(orden);
         log.info("Orden cancelada por usuario (pago abandonado): {}", orden.getCodigoOrden());
@@ -136,6 +141,9 @@ public class CheckoutService {
                 }
             }
 
+            if (ar.getPlacetoPayRequestId() != null) {
+                placetoPayService.cancelarSesionPlacetoPay(ar.getPlacetoPayRequestId());
+            }
             reservaService.cancelarReservaAlojamiento(reservaId);
             return true;
         }
@@ -152,6 +160,9 @@ public class CheckoutService {
                 }
             }
 
+            if (sr.getPlacetoPayRequestId() != null) {
+                placetoPayService.cancelarSesionPlacetoPay(sr.getPlacetoPayRequestId());
+            }
             reservaService.cancelarReservaSendero(reservaId);
             return true;
         }

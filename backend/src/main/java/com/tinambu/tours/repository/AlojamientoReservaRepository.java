@@ -10,12 +10,16 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface AlojamientoReservaRepository extends JpaRepository<AlojamientoReserva, UUID> {
 
     List<AlojamientoReserva> findByAlojamientoIdAndEstado(UUID alojamientoId, EstadoReserva estado);
+
+    /** Resolve an accommodation reservation from a PlacetoPay session id (used by the notification webhook). */
+    Optional<AlojamientoReserva> findByPlacetoPayRequestId(Long requestId);
 
     List<AlojamientoReserva> findByFechaCheckInBetween(LocalDate fechaInicio, LocalDate fechaFin);
 

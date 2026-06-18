@@ -521,7 +521,8 @@ public class PlacetoPayService {
                         reserva.getPlacetoPayRequestId());
             }
 
-            if ("REJECTED".equals(p2pStatus)) {
+            // REJECTED y PARTIAL_EXPIRED son estados finales sin pago completo aprobado.
+            if ("REJECTED".equals(p2pStatus) || "PARTIAL_EXPIRED".equals(p2pStatus)) {
                 return buildEstadoResponse(reservaId, reserva.getCodigoReserva(), "ALOJAMIENTO",
                         reserva.getPrecioTotal(), BigDecimal.ZERO, reserva.getPrecioTotal(),
                         reserva.getEstado().name(), "PENDIENTE", p2pStatus, p2pMessage,
@@ -580,7 +581,8 @@ public class PlacetoPayService {
                         "CONFIRMADA", reserva.getEstadoPago().name(), p2pStatus, p2pMessage, requestId);
             }
 
-            if ("REJECTED".equals(p2pStatus)) {
+            // REJECTED y PARTIAL_EXPIRED son estados finales sin pago completo aprobado.
+            if ("REJECTED".equals(p2pStatus) || "PARTIAL_EXPIRED".equals(p2pStatus)) {
                 return buildEstadoResponse(reservaId, codigoReserva, tipoReserva,
                         reserva.getPrecioTotal(), BigDecimal.ZERO, reserva.getPrecioTotal(),
                         reserva.getEstado().name(), "PENDIENTE", p2pStatus, p2pMessage, requestId);
@@ -642,6 +644,14 @@ public class PlacetoPayService {
         String cancelUrl = config.getCancelUrl() + "?" + idParam;
         request.put("cancelUrl", cancelUrl);
 
+        // Asynchronous notification (webhook). PlacetoPay calls this URL when the session reaches
+        // a final state, which is the reliable way to confirm payments when the user does not
+        // return to the site. Only sent when configured.
+        String notificationUrl = config.getNotificationUrl();
+        if (notificationUrl != null && !notificationUrl.isBlank()) {
+            request.put("notificationUrl", notificationUrl);
+        }
+
         // IP and User Agent
         request.put("ipAddress", ipAddress != null ? ipAddress : "127.0.0.1");
         request.put("userAgent", userAgent != null ? userAgent : "Tinambu Tours Web");
@@ -681,6 +691,141 @@ public class PlacetoPayService {
         }
 
         return auth;
+    }
+
+    // ==================== WEBHOOK NOTIFICATION ====================
+
+    /**
+     * Processes an asynchronous notification (webhook) sent by PlacetoPay when a session reaches
+     * a final state. This is the reliable confirmation path for the case where the user pays but
+     * never returns to the site.
+     *
+     * Flow:
+     *  1. Validate the message signature (SHA-256, with SHA-1 fallback) using our secretKey.
+     *  2. Resolve the local entity (orden / sendero / alojamiento) from the requestId.
+     *  3. Re-query the session against PlacetoPay (source of truth) and update our state.
+     *     Reusing the existing query methods keeps the update idempotent: confirming an already
+     *     confirmed reservation is a no-op, so duplicate notifications are handled safely.
+     *
+     * @return a small result map ({ processed, message }) for logging/diagnostics.
+     */
+    public Map<String, Object> procesarNotificacion(Map<String, Object> payload) {
+        Long requestId = getLongValue(payload, "requestId");
+        String status = getNestedString(payload, "status", "status");
+        String date = getNestedString(payload, "status", "date");
+        Object signatureObj = payload != null ? payload.get("signature") : null;
+        String signature = signatureObj != null ? signatureObj.toString() : null;
+
+        // Recurring payments arrive without requestId. We don't use recurrence, so acknowledge and ignore.
+        if (requestId == null) {
+            log.warn("PlacetoPay notification without requestId, ignored. payload={}", payload);
+            return notificacionResultado(false, "Notificación sin requestId; ignorada");
+        }
+
+        if (!config.isConfigured()) {
+            log.warn("PlacetoPay not configured; cannot validate notification for requestId {}", requestId);
+            return notificacionResultado(false, "PlacetoPay no configurado");
+        }
+
+        if (!validarFirmaNotificacion(requestId, status, date, signature)) {
+            log.warn("Invalid PlacetoPay notification signature for requestId {} (status {})", requestId, status);
+            return notificacionResultado(false, "Firma inválida");
+        }
+
+        Optional<OrdenCompra> orden = ordenCompraRepository.findByPlacetoPayRequestId(requestId);
+        if (orden.isPresent()) {
+            consultarEstadoPagoOrden(orden.get().getId());
+            log.info("Notification processed for orden {} (requestId {})", orden.get().getCodigoOrden(), requestId);
+            return notificacionResultado(true, "Orden actualizada");
+        }
+
+        Optional<SenderoReserva> sendero = senderoReservaRepository.findByPlacetoPayRequestId(requestId);
+        if (sendero.isPresent()) {
+            consultarEstadoPagoSendero(sendero.get().getId());
+            log.info("Notification processed for sendero reservation {} (requestId {})",
+                    sendero.get().getCodigoReserva(), requestId);
+            return notificacionResultado(true, "Reserva de sendero actualizada");
+        }
+
+        Optional<AlojamientoReserva> alojamiento = alojamientoReservaRepository.findByPlacetoPayRequestId(requestId);
+        if (alojamiento.isPresent()) {
+            consultarEstadoPagoAlojamiento(alojamiento.get().getId());
+            log.info("Notification processed for alojamiento reservation {} (requestId {})",
+                    alojamiento.get().getCodigoReserva(), requestId);
+            return notificacionResultado(true, "Reserva de alojamiento actualizada");
+        }
+
+        log.warn("No local entity found for PlacetoPay requestId {}", requestId);
+        return notificacionResultado(false, "Sesión no encontrada en el sistema");
+    }
+
+    private Map<String, Object> notificacionResultado(boolean processed, String message) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("processed", processed);
+        result.put("message", message);
+        return result;
+    }
+
+    /**
+     * Validates the notification signature following the PlacetoPay specification.
+     * SHA-256 signatures carry a "sha256:" prefix; otherwise the legacy SHA-1 algorithm is assumed.
+     * Formula: HASH(requestId + status.status + status.date + secretKey).
+     */
+    private boolean validarFirmaNotificacion(Long requestId, String status, String date, String signature) {
+        if (signature == null || status == null || date == null) {
+            return false;
+        }
+        String data = requestId + status + date + config.getSecretKey();
+
+        if (signature.startsWith("sha256:")) {
+            String received = signature.substring("sha256:".length());
+            String generated = hashHex("SHA-256", data);
+            return generated != null && generated.equalsIgnoreCase(received);
+        }
+
+        String generated = hashHex("SHA-1", data);
+        return generated != null && generated.equalsIgnoreCase(signature);
+    }
+
+    private String hashHex(String algorithm, String data) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(algorithm);
+            byte[] hash = digest.digest(data.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                String h = Integer.toHexString(0xff & b);
+                if (h.length() == 1) {
+                    hex.append('0');
+                }
+                hex.append(h);
+            }
+            return hex.toString();
+        } catch (Exception e) {
+            log.error("Error generating {} hash for notification signature", algorithm, e);
+            return null;
+        }
+    }
+
+    // ==================== CANCEL SESSION ====================
+
+    /**
+     * Best-effort cancellation of a PlacetoPay session when the user abandons the gateway.
+     * PlacetoPay only allows cancelling sessions without an approved payment; any error here is
+     * non-fatal (the session expires on its own), so failures are logged but never propagated.
+     */
+    public void cancelarSesionPlacetoPay(Long requestId) {
+        if (requestId == null || !config.isConfigured()) {
+            return;
+        }
+        try {
+            Map<String, Object> authMap = new HashMap<>();
+            authMap.put("auth", generarAuth());
+            Map<String, Object> response = callPlacetoPay("/api/session/" + requestId + "/cancel", authMap);
+            String status = response != null ? getNestedString(response, "status", "status") : null;
+            log.info("PlacetoPay session {} cancellation requested, response status: {}", requestId, status);
+        } catch (Exception e) {
+            log.warn("Could not cancel PlacetoPay session {}: {}", requestId, e.getMessage());
+        }
     }
 
     @SuppressWarnings("unchecked")

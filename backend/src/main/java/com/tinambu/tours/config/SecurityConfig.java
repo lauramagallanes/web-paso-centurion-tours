@@ -157,6 +157,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/reservas/email/**").permitAll()
                 // Consulta de cupos por fecha/turno para el detalle de sendero (solo lectura, sin datos sensibles)
                 .requestMatchers(HttpMethod.GET, "/reservas/sendero/disponibilidad").permitAll()
+
+                // Webhook de PlacetoPay: lo invoca el procesador de pagos (sin JWT). La autenticidad
+                // se garantiza validando la firma del mensaje dentro del servicio.
+                .requestMatchers(HttpMethod.POST, "/pagos/webhook").permitAll()
                 
                 // Cualquier otro endpoint requiere autenticación
                 .anyRequest().authenticated())

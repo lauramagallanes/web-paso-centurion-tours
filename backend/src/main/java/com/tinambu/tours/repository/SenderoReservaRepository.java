@@ -33,6 +33,9 @@ public interface SenderoReservaRepository extends JpaRepository<SenderoReserva, 
     @Query("SELECT sr FROM SenderoReserva sr WHERE sr.codigoReserva = :codigo")
     Optional<SenderoReserva> findByCodigoReserva(@Param("codigo") String codigo);
 
+    /** Resolve a sendero reservation from a PlacetoPay session id (used by the notification webhook). */
+    Optional<SenderoReserva> findByPlacetoPayRequestId(Long requestId);
+
     @Query("SELECT sr FROM SenderoReserva sr WHERE sr.emailContacto = :email ORDER BY sr.fechaCreacion DESC")
     List<SenderoReserva> findByEmailContacto(@Param("email") String email);
 

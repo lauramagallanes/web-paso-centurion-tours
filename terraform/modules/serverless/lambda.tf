@@ -128,7 +128,7 @@ resource "aws_lambda_function" "backend_api" {
       P2P_BASE_URL         = var.environment == "prod" ? "https://checkout.placetopay.com" : "https://uy-uat-checkout.placetopay.com"
       P2P_RETURN_URL       = var.environment == "prod" ? "https://${var.domain_name}/#/pago/resultado" : "http://tinambu-frontend-${var.environment}.s3-website-us-east-1.amazonaws.com/#/pago/resultado"
       P2P_CANCEL_URL       = var.environment == "prod" ? "https://${var.domain_name}/#/pago/cancelado" : "http://tinambu-frontend-${var.environment}.s3-website-us-east-1.amazonaws.com/#/pago/cancelado"
-      P2P_NOTIFICATION_URL = "https://${var.api_domain_name}/pagos/links/webhook"
+      P2P_NOTIFICATION_URL = "https://${var.api_domain_name}/pagos/webhook"
       P2P_INTEGRATION_MODE = var.enable_advanced_payment_integration ? "advanced" : "simple"
       SSM_P2P_LOGIN        = "/${var.environment}/payment/placetopay/login"
       SSM_P2P_SECRET_KEY   = "/${var.environment}/payment/placetopay/secret_key"

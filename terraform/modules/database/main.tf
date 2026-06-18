@@ -72,8 +72,11 @@ resource "aws_db_instance" "main" {
   identifier = "tinambu-db-${var.environment}"
 
   # Engine Configuration
+  # Solo se fija la versión mayor: con auto_minor_version_upgrade activo, AWS aplica los
+  # minor (p. ej. 15.17) automáticamente. Fijar "15.12" provocaba un intento de downgrade
+  # que AWS rechaza ("Cannot find upgrade path"). Con "15" Terraform acepta cualquier 15.x.
   engine         = "postgres"
-  engine_version = "15.12"
+  engine_version = "15"
   instance_class = var.instance_class
 
   # Storage Configuration

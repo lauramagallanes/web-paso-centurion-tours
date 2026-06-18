@@ -622,11 +622,9 @@ public class PlacetoPayService {
 
         request.put("payment", payment);
 
-        // Buyer / payer info. PlacetoPay's risk engine (FraudGuard) scores transactions with
-        // incomplete person data as higher risk, so we send as much as we have (name, surname,
-        // email and mobile) in both the buyer and payer objects.
+        // Buyer info. NOTE: el objeto `payer` se removió temporalmente como parte del diagnóstico
+        // de los rechazos por riesgo (?2). Se reincorporará una vez confirmado el origen.
         request.put("buyer", buildPersona(email, name, phone));
-        request.put("payer", buildPersona(email, name, phone));
 
         // Expiration (2 hours from now)
         LocalDateTime expiration = LocalDateTime.now().plusHours(2);
@@ -643,13 +641,8 @@ public class PlacetoPayService {
         String cancelUrl = config.getCancelUrl() + "?" + idParam;
         request.put("cancelUrl", cancelUrl);
 
-        // Asynchronous notification (webhook). PlacetoPay calls this URL when the session reaches
-        // a final state, which is the reliable way to confirm payments when the user does not
-        // return to the site. Only sent when configured.
-        String notificationUrl = config.getNotificationUrl();
-        if (notificationUrl != null && !notificationUrl.isBlank()) {
-            request.put("notificationUrl", notificationUrl);
-        }
+        // NOTE: `notificationUrl` (webhook) se removió temporalmente como parte del diagnóstico
+        // de los rechazos por riesgo (?2). Se reincorporará una vez confirmado el origen.
 
         // IP and User Agent
         request.put("ipAddress", ipAddress != null ? ipAddress : "127.0.0.1");
@@ -657,6 +650,10 @@ public class PlacetoPayService {
 
         request.put("locale", "es_UY");
         request.put("skipResult", false);
+
+        // DIAGNÓSTICO TEMPORAL: trazar exactamente qué IP/buyer enviamos a PlacetoPay.
+        log.info("[DIAG P2P] create-session ipAddress={} buyer={}",
+                request.get("ipAddress"), request.get("buyer"));
 
         return request;
     }
@@ -865,6 +862,8 @@ public class PlacetoPayService {
                     url, HttpMethod.POST, requestEntity, Map.class);
 
             log.info("PlacetoPay response status: {}", responseEntity.getStatusCode());
+            // DIAGNÓSTICO TEMPORAL: respuesta cruda para ver el `reason` real detrás del ?2.
+            log.info("[DIAG P2P] response body: {}", responseEntity.getBody());
             return responseEntity.getBody();
 
         } catch (Exception e) {
